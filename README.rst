@@ -1,6 +1,8 @@
-"""
-Django_tableaux: Django tables with Advanced User eXperience
 ===============
+django_tableaux
+===============
+**Django tables with Advanced User eXperience**
+
 This project builds upon two well-established django apps: `django_tables2 <https://github.com/jieter/django-tables2>`_
 and `django_filter <https://github.com/carltongibson/django-filter>`_ and enhances their functionality through a
 sprinkling of `htmx <https://htmx.org>`_ magic. It provides a single class-based view in which you can enable multiple
@@ -20,5 +22,3 @@ Key features
 The project is still in beta but is fully usable.
 
 Full documentation to follow.
-"""
-__version__ = "0.1"
