@@ -1,0 +1,42 @@
+{% block head %}
+  <style>
+    {% if view.sticky_header %}
+        th {
+            position: sticky;
+            top: 0;
+        }
+    {% endif %}
+
+    th.asc:after {
+        content: '\0000a0\0025b2';
+        float: right;
+    }
+
+    th.desc:after {
+        content: '\0000a0\0025bc';
+        float: right;
+    }
+  </style>
+{% endblock %}
+{% block content %}
+  {% if title %}<h3>{{ title }}</h3>{% endif %}
+  <div class="container p-0" style="height: calc(100% - 60px);">
+    {% if view.filterset_class and view.filter_row %}
+      <div class="bg-light ">
+        {% include "django_tableaux/filter_toolbar.html" %}
+      </div>
+    {% endif %}
+    <form hx-post="">
+      {% csrf_token %}
+      {% if actions or buttons or columns or view.filter_class and view.filter_modal %}
+        <div class="bg-light">
+          {% include "django_tableaux/action_toolbar.html" %}
+        </div>
+      {% endif %}
+      <div id="table_data" class="bg-white">
+        {% include "django_tableaux/render_table_data.html" %}
+      </div>
+    </form>
+  </div>
+  <div id="modals-here"></div>
+{% endblock %}

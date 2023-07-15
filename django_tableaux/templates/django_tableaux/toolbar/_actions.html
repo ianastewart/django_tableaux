@@ -1,0 +1,27 @@
+{% load querystring from django_tables2 %}
+{% if actions %}
+  <div>
+    <input type="hidden" name="query" value={% querystring without "page" "per_page" %}>
+    <div class="d-flex">
+      <div class="mb-0 pb-0 px-2" style="width:200px;">
+        <div id="selected"><span id="count">0</span> of {{ table.rows|length }} rows selected</div>
+        <div style="display: none;">
+          <input type="checkbox" id="select_all" name="select_all" class="py-0" value="Select all">
+          <label class="form-check-label ml-2 py-0" for="select_all">Select all</label>
+        </div>
+      </div>
+      <div class="my-2">
+        <div class="dropdown float-right">
+          <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="selectActionMenu" data-toggle="dropdown">
+            Select action
+          </button>
+          <div class="dropdown-menu">
+            {% for action in actions %}
+                <button class="dropdown-item" type="submit" name="{{ action.0 }}" hx-post>{{ action.1 }}</button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}

@@ -1,0 +1,12 @@
+<div class="d-flex justify-content-between mb-2">
+  {% include "django_tableaux/toolbar/_actions.html" %}
+  <div class="d-flex justify-content-start">
+    {% include "django_tableaux/toolbar/_buttons.html" %}
+  </div>
+  <div class="d-flex justify-content-end pt-1">
+    {% include "django_tableaux/filter_settings.html" %}
+    {% include "django_tableaux/toolbar/_columns.html" %}
+    {% include "django_tableaux/toolbar/_rows.html" %}
+  </div>
+</div>
+{% for filter in filters %}{{ filter }}{% endfor %}

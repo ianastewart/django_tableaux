@@ -1,0 +1,7 @@
+{% if table.filter and table.filter.style == table.filter.style.MODAL %}
+<!-- Dropdown class makes button consistent with row & column dropdown -->
+<div class="dropdown">
+  <button type="button" class="btn btn-sm btn-outline-primary mr-1" hx-get="" hx-target="#modals-here" name="filter">Filter
+  </button>
+</div>
+{% endif %}

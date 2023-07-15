@@ -1,0 +1,9 @@
+<input class="td_editing" style="width: 90px;" hx-put="" hx-target="#{{ target }}" hx-trigger="blur" name="{{ field.name }}" value="{{ field.value }}">
+<script>
+  document.querySelector(".td_editing").addEventListener("keypress", enter)
+  function enter(event) {
+    if (event.key == "Enter") {
+       // alert("Enter")
+    }
+}
+</script>

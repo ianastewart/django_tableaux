@@ -1,0 +1,6 @@
+{% load django_tableaux %}
+<div class="button-group p-1 mr-4">
+  {% for button in buttons %}
+    {{ button|render_button }}
+  {% endfor %}
+</div>

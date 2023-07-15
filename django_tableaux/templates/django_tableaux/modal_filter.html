@@ -1,0 +1,23 @@
+{% extends "django_tableaux/modal_base.html" %}
+{% load bootstrap4 %}
+{% block modal_title %}<span class="h4">Filter</span>{% endblock %}
+{% block modal_content %}
+  <form method="get" action="">
+    {{ block.super }}
+  </form>
+{% endblock %}
+{% block modal_body %}
+  <div class="modal-body">
+    {{ filter.form.media }}
+    <div class="d-flex-column">
+      {% for field in filter.form.visible_fields %}
+        {% bootstrap_field field form_group_class="form-group auto-submit" placeholder="" layout="horizontal" %}
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}
+{% block modal_footer %}
+  <div class="modal-footer">
+    <button type="submit" class="btn btn-primary" name="">Filter</button>
+  </div>
+{% endblock %}

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title></title>
+</head>
+<body>
+<script>
+  let url = window.location.href
+  let w = `_width=${window.outerWidth}`
+  if (url.indexOf("?")>0){
+    url+="&"+w
+  }else{
+    url+="?"+w
+  }
+  window.location = url
+</script>
+</body>
+</html>

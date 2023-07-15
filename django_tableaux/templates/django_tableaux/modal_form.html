@@ -1,0 +1,20 @@
+{% extends "django_tableaux/modals_base" %}
+{% load bootstrap4 %}
+{% block modal_content %}
+  <form method="post" action="">
+    {% csrf_token %}
+    {{ block.super }}
+  </form>
+{% endblock %}
+  {% block modal_body %}
+    <div class="modal-body">
+      {% bootstrap_form_errors form type="non_fields" %}
+      {% bootstrap_form form %}
+    </div>
+  {% endblock %}
+  {% block modal_footer %}
+    <div class="modal-footer">
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  {% endblock %}
+</form>
