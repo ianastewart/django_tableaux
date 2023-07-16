@@ -1,0 +1,17 @@
+asgiref==3.6.0
+backports.zoneinfo==0.2.1
+beautifulsoup4==4.12.2
+Django==4.2
+django-bootstrap4==23.1
+django-bootstrap5==23.1
+django-filter==23.1
+django-htmx==1.14.0
+django-tables2==2.5.3
+et-xmlfile==1.1.0
+openpyxl==3.1.2
+soupsieve==2.4.1
+sqlparse==0.4.4
+tablib==3.4.0
+tzdata==2023.3
+# -e git+https://github.com/ianastewart/django_tableaux#egg=django_tableaux
+# django_tableaux==0.2
