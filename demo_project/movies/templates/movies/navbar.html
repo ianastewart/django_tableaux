@@ -1,0 +1,29 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">Tables Pro</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Demos
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+          <a class="dropdown-item" href="{% url "basic" %}">Basic table</a>
+          <a class="dropdown-item" href="{% url "row_col" %}">Row & column settings</a>
+          <a class="dropdown-item" href="{% url "select_actions" %}">Selection and actions</a>
+          <a class="dropdown-item" href="{% url "infinite_scroll" %}">Infinite scroll with sticky header</a>
+          <a class="dropdown-item" href="{% url "infinite_load" %}">Infinite load with sticky header</a>
+          <a class="dropdown-item" href="{% url "filter_toolbar" %}">Filter toolbar</a>
+          <a class="dropdown-item" href="{% url "filter_modal" %}">Filter modal</a>
+          <a class="dropdown-item" href="{% url "filter_header" %}">Filter in header</a>
+          <a class="dropdown-item" href="{% url "row_click" %}">Click row shows detail page</a>
+          <a class="dropdown-item" href="{% url "row_click_modal" %}">Click row shows detail modal</a>
+          <a class="dropdown-item" href="{% url "editable" %}">Editable columns</a>
+        </div>
+      </li>
+    </ul>
+  </div>
+</nav>

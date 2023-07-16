@@ -37,6 +37,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.humanize",
+    "bootstrap4",
+    "django_tables2",
+    "django_filters",
+    "django_htmx",
+    "django_tableaux",
+    "movies",
 ]
 
 MIDDLEWARE = [
@@ -47,7 +54,9 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_htmx.middleware.HtmxMiddleware",
 ]
+
 
 ROOT_URLCONF = "demo_project.urls"
 

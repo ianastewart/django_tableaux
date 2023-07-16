@@ -1,0 +1,16 @@
+{% extends "movies/base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="container">
+<h1>{{ view.title}}</h1>
+<table>
+  <tr><td>Title </td><td>{{ movie.title }}</td></tr>
+  <tr><td>Budget </td><td>${{ movie.budget|intcomma }}</tr>
+  <tr><td>Popularity </td><td>{{ movie.popularity|intcomma }}</td></tr>
+  <tr><td>Release_date </td><td>{{ movie.release_date }}</td></tr>
+  <tr><td>Revenue </td><td>${{ movie.revenue|intcomma }}</td></tr>
+  <tr><td>Runtime </td><td>${{ movie.runtime|intcomma }}</td></tr>
+</table>
+<a href="{{ return }}">Back to table</a>
+</div>
+{% endblock %}

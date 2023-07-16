@@ -1,0 +1,11 @@
+{% extends "movies/base.html" %}
+{% block content %}
+<div class="container">
+  <ol class="list-group">
+  <h1>Movies</h1>
+{% for movie in movies %}
+  <li class="list-group-item">{{ movie.title}}</li>
+{% endfor %}
+</ol>
+</div>
+{% endblock %}
