@@ -4,7 +4,6 @@
   <div class="table-container">
     {% block table %}
       <table {% render_attrs table.attrs class="table" %}
-          {# add table data#}
           data-method="{{ table.method }}" data-url="{{ table.url }}"
           data-pk={{ table.pk }} data-target="{{ table.target }}">
         {% block table.thead %}
@@ -71,9 +70,5 @@
       {% endif %}
     {% endblock pagination %}
   </div>
-  <div id="field" aria-describedby="tooltip"></div>
-  <div id="tooltip" role="tooltip">
-    Error in field
-    <div id="arrow" data-popper-arrow></div>
-  </div>
+
 {% endblock table-wrapper %}

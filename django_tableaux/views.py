@@ -77,6 +77,7 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
     dataset_kwargs = None
 
     export_formats = (TableExport.CSV,)
+    ALLOWED_PARAMS = ["page", "per_page", "sort", "_width"]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -139,7 +140,6 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
         return super().get(request, *args, **kwargs)
 
     def get_htmx(self, request, *args, **kwargs):
-
         if request.htmx.trigger == "table_data":
             # triggered refresh of table data after create or update
             return self.render_template(self.templates["table_data"], *args, **kwargs)
@@ -152,6 +152,21 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
         elif request.htmx.trigger_name == "filter_form":
             # a filter value was changed
             return self.render_template(self.templates["table_data"], *args, **kwargs)
+
+        elif "clr_" in request.htmx.trigger_name:
+            # cancel a filter
+            filter = request.htmx.trigger_name.split("_")[1]
+            qd = request.GET.copy()
+            if filter == "all":
+                keys = list(qd.keys())
+                for key in keys:
+                    if key not in self.ALLOWED_PARAMS:
+                        qd.pop(key)
+            else:
+                qd.pop(filter)
+            url = request.htmx.current_url
+            url = url.split("?")[0] if "?" in url else url
+            return HttpResponseClientRedirect(f"{url}?{qd.urlencode()}")
 
         elif "id_row" in request.htmx.trigger:
             # change number of rows to display
@@ -233,13 +248,13 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
             ),
             breakpoints=breakpoints(self.table),
             width=self.width,
-            filters=[]
+            filters=[],
         )
         if "_width" in self.request.GET:
             context["breakpoints"] = None
         for key, value in self.request.GET.items():
-            if key not in ["page", "sort", "_width"] and value:
-                context['filters'].append(key)
+            if key not in self.ALLOWED_PARAMS and value:
+                context["filters"].append(key)
         return context
 
     def put(self, request, *args, **kwargs):
