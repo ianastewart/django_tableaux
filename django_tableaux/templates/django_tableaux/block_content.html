@@ -6,6 +6,11 @@
     </div>
   {% endif %}
   <form hx-post="" hx-target="#modals-here">
+    {% if filters %}
+  <div class="d-flex">
+      {% include "django_tableaux/toolbar/_filter_pills.html" %}
+  </div>
+  {% endif %}
     {% if actions or buttons or table.column_states or view.filterset_class and view.filter_modal %}
       <div class="{{ css_toolbar }}">
         {% include "django_tableaux/toolbar/main.html" %}

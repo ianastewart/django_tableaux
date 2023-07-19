@@ -35,7 +35,7 @@
                 {% for field in table.header_fields %}
                   <th>
                     {% if field %}
-                      {% bootstrap_field field show_label=False form_group_class="form-group hx-get m-0 p-0" %}
+                      {% include "django_tableaux/toolbar/_filter_field.html" with field=field header=True %}
                     {% endif %}
                   </th>
                 {% endfor %}

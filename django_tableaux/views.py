@@ -140,55 +140,59 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
         return super().get(request, *args, **kwargs)
 
     def get_htmx(self, request, *args, **kwargs):
-        if request.htmx.trigger == "table_data":
+        # Some actions depend on trigger_name; others on trigger
+        trigger_name = request.htmx.trigger_name
+        trigger = request.htmx.trigger
+        if trigger_name:
+            if trigger_name == "filter" and self.filterset_class:
+                # show filter modal
+                context = {"filter": self.filterset_class(request.GET)}
+                return render(request, self.templates["filter"], context)
+
+            elif trigger_name == "filter_form":
+                # a filter value was changed
+                return self.render_template(
+                    self.templates["table_data"], *args, **kwargs
+                )
+
+            elif "clr_" in trigger_name:
+                # cancel a filter
+                filter = trigger_name.split("_")[1]
+                qd = request.GET.copy()
+                if filter == "all":
+                    keys = list(qd.keys())
+                    for key in keys:
+                        if key not in self.ALLOWED_PARAMS:
+                            qd.pop(key)
+                else:
+                    qd.pop(filter)
+                return HttpResponseClientRedirect(f"{request.path}?{qd.urlencode()}")
+
+        if trigger == "table_data":
             # triggered refresh of table data after create or update
             return self.render_template(self.templates["table_data"], *args, **kwargs)
 
-        elif request.htmx.trigger_name == "filter" and self.filterset_class:
-            # show filter modal
-            context = {"filter": self.filterset_class(request.GET)}
-            return render(request, self.templates["filter"], context)
-
-        elif request.htmx.trigger_name == "filter_form":
-            # a filter value was changed
-            return self.render_template(self.templates["table_data"], *args, **kwargs)
-
-        elif "clr_" in request.htmx.trigger_name:
-            # cancel a filter
-            filter = request.htmx.trigger_name.split("_")[1]
-            qd = request.GET.copy()
-            if filter == "all":
-                keys = list(qd.keys())
-                for key in keys:
-                    if key not in self.ALLOWED_PARAMS:
-                        qd.pop(key)
-            else:
-                qd.pop(filter)
-            url = request.htmx.current_url
-            url = url.split("?")[0] if "?" in url else url
-            return HttpResponseClientRedirect(f"{url}?{qd.urlencode()}")
-
-        elif "id_row" in request.htmx.trigger:
+        elif "id_row" in trigger:
             # change number of rows to display
-            rows = request.htmx.trigger_name
+            rows = trigger_name
             save_per_page(request, rows)
             url = self._update_parameter(request, "per_page", rows)
             return HttpResponseClientRedirect(url)
 
-        elif "tr_" in request.htmx.trigger:
+        elif "tr_" in trigger:
             # infinite scroll/load_more or click on row
             if "_scroll" in request.GET:
                 return self.render_template(self.templates["rows"], *args, **kwargs)
 
             return self.row_clicked(
-                pk=request.htmx.trigger.split("_")[1],
+                pk=trigger.split("_")[1],
                 target=request.htmx.target,
                 return_url=request.htmx.current_url,
             )
 
-        elif "td_" in request.htmx.trigger:
+        elif "td_" in trigger:
             # cell clicked
-            bits = request.htmx.trigger.split("_")
+            bits = trigger.split("_")
             return self.cell_clicked(
                 pk=bits[1],
                 column_name=visible_columns(request, self.table_class, self.width)[
@@ -198,7 +202,7 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
             )
 
         # Column handling
-        elif "id_col_reset" in request.htmx.trigger:
+        elif "id_col_reset" in trigger:
             # Reset default columns settings.
             # To make sure the column drop down is correctly updated we do a client refresh,
             table = self.table_class([])
@@ -206,20 +210,24 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
             save_columns(request, self.width, table.columns_default)
             return HttpResponseClientRefresh()
 
-        elif "id_col" in request.htmx.trigger:
+        elif "id_col" in trigger:
             # Click on a column checkbox in the dropdown re-renders the table data with new column settings.
             # The column dropdown does not need to be rendered because the checkboxes are in the correct state,
-            col_name = request.htmx.trigger_name[5:]
-            checked = request.htmx.trigger_name in request.GET
+            col_name = trigger_name[5:]
+            checked = trigger_name in request.GET
             set_column(request, self.width, col_name, checked)
             return self.render_template(self.templates["table_data"], *args, **kwargs)
 
-        elif "id_" in request.htmx.trigger:
+        elif "id_" in trigger:
+            if trigger == request.htmx.target:
+                # Clear filter value triggered by  click on X in input-prepend
+                qd = request.GET.copy()
+                qd.pop(trigger_name)
+                return HttpResponseClientRedirect(f"{request.path}?{qd.urlencode()}")
+            #
             # Filter value changed
             url = self._update_parameter(
-                request,
-                request.htmx.trigger_name,
-                request.GET.get(request.htmx.trigger_name, ""),
+                request, trigger_name, request.GET.get(trigger_name, "")
             )
             return HttpResponseClientRedirect(url)
         raise ValueError("Bad htmx get request")
@@ -252,9 +260,10 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
         )
         if "_width" in self.request.GET:
             context["breakpoints"] = None
+
         for key, value in self.request.GET.items():
             if key not in self.ALLOWED_PARAMS and value:
-                context["filters"].append(key)
+                context["filters"].append((key, value))
         return context
 
     def put(self, request, *args, **kwargs):

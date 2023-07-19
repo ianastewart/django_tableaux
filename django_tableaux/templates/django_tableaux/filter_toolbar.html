@@ -5,11 +5,7 @@
     <input type="hidden" name="per_page" value="{{ per_page }}">
     <div class="d-flex">
       {% for field in filter.form.visible_fields %}
-        {% if filter_button %}
-          {% bootstrap_field field form_group_class="form-group pl-2 pt-2" label_class="small mb-0" placeholder="" %}
-        {% else %}
-          {% bootstrap_field field form_group_class="form-group pl-2 pt-2 auto-submit" label_class="small mb-0" placeholder="" %}
-        {% endif %}
+        {% include "django_tableaux/toolbar/_filter_field.html" with toolbar=True field=field filter_button=filter_button %}
       {% endfor %}
       {% if filter_button %}
         <div class="form-group pl-2 pt-2">
@@ -19,6 +15,7 @@
           </button>
         </div>
       {% endif %}
+  <span name="clr_all" hx-get="" class="filter-clear mt-3 p-3"> Clear</span></p>
     </div>
   </form>
 {% endif %}

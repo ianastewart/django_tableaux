@@ -30,6 +30,7 @@ let tablesPro = (function () {
         document.getElementById("id_filter_form").submit()
       }));
 
+      Array.from(document.querySelectorAll(".filter-clear")).forEach(e => e.addEventListener("click", filterClear))
       Array.from(document.querySelectorAll(".form-group.hx-get")).forEach(e => e.addEventListener("change", filterChanged))
       countChecked()
       document.body.addEventListener("trigger", function (evt) {
@@ -40,6 +41,10 @@ let tablesPro = (function () {
     function filterChanged() {
       window.htmx.ajax('GET', '', {source: '#' + this.lastChild.id, target: '#table_data'});
     }
+  function filterClear(e){
+      let input = window.htmx.closest(e.target, ".input-group").firstChild
+      window.htmx.ajax('GET', '', {source: input, target: input});
+  }
 
     function checkBoxes() {
       return Array.from(document.getElementsByClassName("select-checkbox"))
