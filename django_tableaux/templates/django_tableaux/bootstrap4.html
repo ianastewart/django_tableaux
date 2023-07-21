@@ -4,7 +4,7 @@
   <div class="table-container">
     {% block table %}
       <table {% render_attrs table.attrs class="table" %}
-          data-method="{{ table.method }}" data-url="{{ table.url }}"
+          data-click="{{ table.click_action }}" data-url="{{ table.url }}"
           data-pk={{ table.pk }} data-target="{{ table.target }}">
         {% block table.thead %}
           {% if table.show_header %}

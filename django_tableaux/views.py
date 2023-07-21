@@ -39,6 +39,12 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
         MODAL = 2
         HEADER = 3
 
+    class ClickAction(IntEnum):
+        NONE = 0
+        GET = 1
+        HX_GET = 2
+        CUSTOM = 3
+
     title = ""
     template_name = "django_tableaux/django_tableaux.html"
     templates = {
@@ -62,8 +68,8 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
     #
     column_settings = False
     row_settings = False
-    #
-    click_method = "get"
+
+    click_action = ClickAction.NONE
     click_url_name = ""
     click_target = "#modals-here"
     #
@@ -190,6 +196,17 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
                 return_url=request.htmx.current_url,
             )
 
+        elif "cell_" in trigger:
+            # cell clicked
+            bits = trigger.split("_")
+            return self.edit_cell(
+                pk=bits[1],
+                column_name=visible_columns(request, self.table_class, self.width)[
+                    int(bits[2])
+                ],
+                target=request.htmx.target,
+            )
+
         elif "td_" in trigger:
             # cell clicked
             bits = trigger.split("_")
@@ -274,6 +291,7 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
             int(bits[2])
         ]
         value = params.get(column_name, None)
+        print(bits[1], value)
         if value:
             return self.cell_changed(
                 record_pk=bits[1],
@@ -281,7 +299,7 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
                 value=params[column_name],
                 target=request.htmx.target,
             )
-        return HttpResponse("")
+        return HttpResponse("x")
 
     def post(self, request, *args, **kwargs):
         # Posts are an action performed on a queryset
@@ -354,11 +372,11 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
         """
         return None
 
-    def row_clicked(self, pk, target, return_url):
-        """User clicked on a row without defining a click_url"""
+    def cell_clicked(self, pk, column_name, target, return_url):
+        """User clicked on a cell with custom action"""
         return HttpResponseClientRefresh()
 
-    def cell_clicked(self, pk, column_name, target):
+    def edit_cell(self, pk, column_name, target):
         """User clicked on an editable cell"""
         if not self.model:
             raise ConfigurationError(
@@ -399,7 +417,7 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
         table.infinite_load = self.infinite_load
         table.sticky_header = self.sticky_header
         # variables that control action when table is clicked
-        table.method = self.click_method
+        table.click_action = self.click_action
         table.url = ""
         table.pk = False
         if self.click_url_name:
