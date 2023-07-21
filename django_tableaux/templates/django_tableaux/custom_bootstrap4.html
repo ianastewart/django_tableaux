@@ -1,6 +1,5 @@
 {% extends 'django_tableaux/bootstrap4.html' %}
-{% load django_tables2 bootstrap4 %}
-{% load i18n %}
+{% load django_tables2 bootstrap4 i18n %}
 {% block table.thead %}
   {% if table.show_header %}
     <thead {{ table.attrs.thead.as_html }}>

@@ -273,12 +273,15 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
         column_name = visible_columns(request, self.table_class, int(bits[3]))[
             int(bits[2])
         ]
-        return self.cell_changed(
-            record_pk=bits[1],
-            column_name=column_name,
-            value=params[column_name],
-            target=request.htmx.target,
-        )
+        value = params.get(column_name, None)
+        if value:
+            return self.cell_changed(
+                record_pk=bits[1],
+                column_name=column_name,
+                value=params[column_name],
+                target=request.htmx.target,
+            )
+        return HttpResponse("")
 
     def post(self, request, *args, **kwargs):
         # Posts are an action performed on a queryset
@@ -288,7 +291,7 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
             self.selected_objects = self.filtered_query_set(request)
         else:
             subset = "selected"
-            self.selected_ids = request.POST.getlist("select-checkbox")
+            self.selected_ids = request.POST["selected_ids"].split(",")
             self.selected_objects = self.get_queryset().filter(pk__in=self.selected_ids)
 
         if request.htmx.trigger_name:

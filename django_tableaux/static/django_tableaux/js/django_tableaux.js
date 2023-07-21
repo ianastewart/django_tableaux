@@ -23,28 +23,37 @@ let tablesPro = (function () {
         selAll.addEventListener("click", selectAll)
         selectAll()
       }
-
-      // document.getElementById('select_all_page').addEventListener("click", selectAllPage )
       Array.from(document.getElementsByTagName("table")).forEach(e => e.addEventListener("click", tableClick));
       Array.from(document.querySelectorAll(".auto-submit")).forEach(e => e.addEventListener("change", function () {
         document.getElementById("id_filter_form").submit()
       }));
-
       Array.from(document.querySelectorAll(".filter-clear")).forEach(e => e.addEventListener("click", filterClear))
       Array.from(document.querySelectorAll(".form-group.hx-get")).forEach(e => e.addEventListener("change", filterChanged))
       countChecked()
       document.body.addEventListener("trigger", function (evt) {
         window.htmx.ajax('GET', evt.detail.url, {source: '#table_data', 'target': '#table_data'});
       })
+      // When editing a cell inline enter key triggers blur
+      if (document.querySelector(".td_editing")) {
+        this.addEventListener("keypress", loseFocus)
+      }
+    }
+
+    function loseFocus(e) {
+      if (e.key == "Enter") {
+        document.activeElement.blur();
+      }
     }
 
     function filterChanged() {
-      window.htmx.ajax('GET', '', {source: '#' + this.lastChild.id, target: '#table_data'});
+      // filter within header changed
+      window.htmx.ajax('GET', '', {source: '#' + this.firstChild.getAttribute("for"), target: '#table_data'});
     }
-  function filterClear(e){
+
+    function filterClear(e) {
       let input = window.htmx.closest(e.target, ".input-group").firstChild
       window.htmx.ajax('GET', '', {source: input, target: input});
-  }
+    }
 
     function checkBoxes() {
       return Array.from(document.getElementsByClassName("select-checkbox"))
@@ -120,11 +129,15 @@ let tablesPro = (function () {
           countChecked();
 
         } else if (e.target.tagName === 'TD') {
-          let editing = document.getElementsByClassName("td_editing");
+          let editing = document.getElementsByClassName("td-editing");
           if (editing.length > 0) {
             // click on a cell when editing another causes put
             let el = editing[0].parentNode
-            window.htmx.ajax('PUT', "", {source: "#" + el.id, target: "#" + el.id, values: window.htmx.closest(el, 'tr')})
+            window.htmx.ajax('PUT', "", {
+              source: "#" + el.id,
+              target: "#" + el.id,
+              values: window.htmx.closest(el, 'tr')
+            })
           } else {
             let row = e.target.parentNode;
             let pk = row.id.slice(3);
@@ -136,7 +149,7 @@ let tablesPro = (function () {
               col += 1;
             }
             let tdId = ("td" + "_" + pk + "_" + col + "_" + window.outerWidth);
-            if (e.target.classList.contains("td_edit")) {
+            if (e.target.classList.contains("td-edit")) {
               // fetch template for editable cell
               e.target.setAttribute("id", tdId);
               window.htmx.ajax('GET', "", {source: '#' + tdId, target: '#' + tdId});
@@ -179,10 +192,15 @@ let tablesPro = (function () {
         return
       }
       let checked = Array.from(document.querySelectorAll(".select-checkbox:checked"));
-      checked.forEach(function (e) {
-        let row = e.parentElement.parentElement
+      let ids = []
+      checked.forEach(function (el) {
+        let row = el.parentElement.parentElement
         row.classList.add((("selected" in row.dataset) ? row.dataset.selected : "table-active"))
+        ids.push(el.value)
       });
+      if (document.querySelector("input[name='selected_ids']")){
+        this.value = ids.toString();
+      }
       let count = checked.length;
       let countField = document.getElementById('count');
       if (countField) {
@@ -194,6 +212,7 @@ let tablesPro = (function () {
         actionMenu.enabled = (count > 0 || selAll.checked);
       }
     }
+
     return tb
   }
 )

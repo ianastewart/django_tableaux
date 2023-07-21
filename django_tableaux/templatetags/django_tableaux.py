@@ -24,15 +24,16 @@ def render_button(button):
 @register.filter
 def td_attr(column, table):
     """
-    Add td_edit class to td attributes if it is editable
+    Add td-edit class to td attributes if it is editable
     NB col.attrs is an immutable property
     """
     html = column.attrs["td"].as_html()
-    if column.name in table.columns_editable and "td_edit" not in html:
+    td_edit = "td-edit"
+    if column.name in table.columns_editable and td_edit not in html:
         value = column.attrs["td"]["class"]
         if value:
-            s = html.replace(value, f"td_edit {value}")
+            s = html.replace(value, f"{td_edit} {value}")
         else:
-            s = html + ' class="td_edit"'
+            s = html + f' class="{td_edit}"'
         return mark_safe(s)
     return html
