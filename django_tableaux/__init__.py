@@ -1,5 +1,5 @@
 """
-Django_tableaux: Django tables with Advanced User eXperience
+Django tables with Advanced User eXperience
 ===============
 This project builds upon two well-established django apps: `django_tables2 <https://github.com/jieter/django-tables2>`_
 and `django_filter <https://github.com/carltongibson/django-filter>`_ and enhances their functionality through a
@@ -14,6 +14,7 @@ Key features
 * Infinite scroll
 * Infinite load-more data
 * Position filters in a toolbar, in a modal or embed them within the table header
+* Show active filters with ability to clear individual filters
 * Edit specific fields directly inside the table
 * Easy integration with generic views for CRUD operations
 

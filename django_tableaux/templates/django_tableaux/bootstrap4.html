@@ -1,9 +1,8 @@
-{% load django_tables2 bootstrap4 %}
-{% load i18n %}
+{% load django_tables2 i18n %}
 {% block table-wrapper %}
   <div class="table-container">
     {% block table %}
-      <table {% render_attrs table.attrs class="table" %}
+      <table {% render_attrs table.attrs %}
           data-click="{{ table.click_action }}" data-url="{{ table.url }}"
           data-pk={{ table.pk }} data-target="{{ table.target }}">
         {% block table.thead %}
@@ -19,7 +18,7 @@
                     {% else %}
                       {% if column.orderable %}
                         <a href="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}">
-                          {#            <span class="float-right text-white">{% if "-" in column.order_by.0 %}&#9651;{% else %}&#9661;{% endif %}</span>#}
+{#                                      <span class="float-right text-white">{% if "-" in column.order_by.0 %}&#9651;{% else %}&#9661;{% endif %}</span>#}
                           {{ column.header }}
                         </a>
                       {% else %}

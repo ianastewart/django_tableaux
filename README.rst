@@ -16,6 +16,7 @@ Key features
 * Infinite scroll
 * Infinite load-more data
 * Position filters in a toolbar, in a modal or embed them within the table header
+* Show active filters with ability to clear individual filters
 * Edit specific fields directly inside the table
 * Easy integration with generic views for CRUD operations
 

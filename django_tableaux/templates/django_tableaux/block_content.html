@@ -5,18 +5,18 @@
       {% include "django_tableaux/filter_toolbar.html" %}
     </div>
   {% endif %}
-    {% if filters %}
-  <div class="d-flex">
+  {% if filters %}
+    <div class="d-flex">
       {% include "django_tableaux/toolbar/_filter_pills.html" %}
-  </div>
-  {% endif %}
-    {% if actions or buttons or table.column_states or view.filterset_class and view.filter_modal %}
-      <div class="{{ css_toolbar }}">
-        {% include "django_tableaux/toolbar/main.html" %}
-      </div>
-    {% endif %}
-    <div id="table_data" class="{{ css_table }}">
-      {% include "django_tableaux/render_table_data.html" %}
     </div>
+  {% endif %}
+  {% if actions or buttons or table.column_states or view.filterset_class and view.filter_modal %}
+    <div class="{{ css_toolbar }}">
+      {% include "django_tableaux/toolbar/main.html" %}
+    </div>
+  {% endif %}
+  <div id="table_data" class="{{ css_table }}">
+    {% include "django_tableaux/render_table_data.html" %}
+  </div>
   <div id="modals-here"></div>
 </div>
