@@ -1,7 +1,7 @@
 {% load bootstrap4 %}
 <div id="modal-backdrop" class="modal-backdrop fade show" style="display:block;"></div>
 <div id="modal" class="modal fade show" tabindex="-1" style="display:block;">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable {{ view.modal_size }}">
+  <div class="modal-dialog {{ view.modal_class }}">
     <div class="modal-content">
       {% block modal_content %}
         {% block modal_header %}

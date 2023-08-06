@@ -32,7 +32,7 @@ class ConfigurationError(Exception):
     pass
 
 
-class DjangoTableauxView(SingleTableMixin, FilterView):
+class TableauxView(SingleTableMixin, FilterView):
     class FilterStyle(IntEnum):
         NONE = 0
         TOOLBAR = 1
@@ -64,6 +64,7 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
     #
     context_filter_name = "filter"
     filter_style = FilterStyle.TOOLBAR
+    filter_pills = False
     filter_button = False  # only relevant for TOOLBAR style
     #
     column_settings = False
@@ -265,6 +266,8 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
         context.update(
             title=self.title,
             filter_button=self.filter_button,
+            filter_pills=self.filter_pills,
+            filters=[],
             buttons=self.get_buttons(),
             actions=self.get_actions(),
             rows=self.rows_list(),
@@ -273,7 +276,6 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
             ),
             breakpoints=breakpoints(self.table),
             width=self.width,
-            filters=[],
         )
         if "_width" in self.request.GET:
             context["breakpoints"] = None
@@ -363,7 +365,6 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
 
     def handle_action(self, request, action):
         """
-        The action is also in the request.POST dictionary.
         self.selected_objects is a queryset that contains the objects to be processed.
         self.selected_ids is a list of model ids that were selected, empty for 'All rows'
         Possible return values:
@@ -443,6 +444,11 @@ class DjangoTableauxView(SingleTableMixin, FilterView):
             save_columns(
                 self.request, width=self.width, column_list=table.columns_visible
             )
+        else:
+            # ensure all fixed columns are in the visible list in case table definitions have been changed
+            for entry in table.columns_fixed:
+                if entry not in table.columns_visible:
+                    table.columns_visible.append(entry)
 
         set_column_states(table)
 

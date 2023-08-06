@@ -5,8 +5,8 @@
       {% include "django_tableaux/filter_toolbar.html" %}
     </div>
   {% endif %}
-  {% if filters %}
-    <div class="d-flex">
+  {% if view.filter_pills and filters %}
+    <div class="{{ css_toolbar }} d-flex">
       {% include "django_tableaux/toolbar/_filter_pills.html" %}
     </div>
   {% endif %}

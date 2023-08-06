@@ -58,7 +58,10 @@ def define_columns(table, width):
         if hasattr(table.Meta, "editable"):
             table.columns_editable = table.Meta.editable
         if hasattr(table.Meta, "columns"):
-            col_dict = table.Meta.columns
+            if type(table.Meta.columns) == dict:
+                col_dict = table.Meta.columns
+            else:
+                raise ValueError("Meta.columns must be a dictionary")
         if hasattr(table.Meta, "responsive"):
             table.responsive = True
             key = 0

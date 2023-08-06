@@ -23,8 +23,7 @@ let tablesPro = (function () {
         selAll.addEventListener("click", selectAll)
         selectAll()
       }
-      Array.from(document.querySelectorAll(".select-checkbox")).forEach(e => e.addEventListener("click", chkBoxClick));
-      Array.from(document.querySelectorAll("td")).forEach(e => e.addEventListener("click", tdClick));
+      Array.from(document.querySelectorAll("table")).forEach(e => e.addEventListener("click", tableClick));
       Array.from(document.querySelectorAll(".auto-submit")).forEach(e => e.addEventListener("change", function () {
         document.getElementById("id_filter_form").submit()
       }));
@@ -100,75 +99,78 @@ let tablesPro = (function () {
       lastChecked = null;
     }
 
-    function chkBoxClick(e) {
-      // Click on row's select checkbox - handle using shift to select multiple rows
-      if (selAllPage) {
-        selAllPage.checked = false
-      }
-      let chkBox = e.target
-      highlightRow(chkBox)
-      if (!lastChecked) {
-        lastChecked = chkBox
-      } else if (e.shiftKey) {
-        let chkBoxes = Array.from(document.getElementsByClassName("select-checkbox"))
-        let start = chkBoxes.indexOf(chkBox)
-        let end = chkBoxes.indexOf(lastChecked)
-        chkBoxes.slice(Math.min(start, end), Math.max(start, end) + 1).forEach(function (box) {
-          box.checked = chkBox.checked;
-        });
-        lastChecked = chkBox;
-      } else {
-        lastChecked = chkBox;
-      }
-      countChecked();
-    }
-
-    function tdClick(e) {
-      let editing = document.getElementsByClassName("td-editing");
-      if (editing.length > 0) {
-        if (e.target === editing[0]){
+    function tableClick(e) {
+      // Handle any clicks within the table.
+      // This catches clicks on elements that are added dynamically e.g. after infinite scroll
+      if (e.target.tagName === 'TD') {
+        // Ignore clicks in td holding select checkbox to handle near misses of checkbox
+        if (e.target.innerHTML.search('select-checkbox') >= 0) {
           return
         }
-        // click on a cell when editing another causes Put
-        let el = editing[0].parentNode
-        window.htmx.ajax('PUT', "", {
-          source: "#" + el.id,
-          target: "#" + el.id,
-          values: window.htmx.closest(el, 'tr')
-        })
-      } else {
-        let row = e.target.parentNode;
-        let pk = row.id.slice(3);
-        let table = row.parentNode.parentNode;
-        let col = 0;
-        let previous = e.target.previousElementSibling;
-        while (previous) {
-          previous = previous.previousElementSibling;
-          col += 1;
+        let editing = document.getElementsByClassName("td-editing");
+        if (editing.length > 0) {
+          // clicking on a cell when already editing causes a put
+          let el = editing[0].parentNode
+          window.htmx.ajax('PUT', "", {
+            source: "#" + el.id,
+            target: "#" + el.id,
+            values: window.htmx.closest(el, 'tr')
+          })
+        } else {
+          let row = e.target.parentNode;
+          let pk = row.id.slice(3);
+          let table = row.parentNode.parentNode;
+          let col = 0;
+          let previous = e.target.previousElementSibling;
+          while (previous) {
+            previous = previous.previousElementSibling;
+            col += 1;
+          }
+          let idSuffix = "_" + pk + "_" + col + "_" + window.outerWidth;
+          if (e.target.classList.contains("td-edit")) {
+            // fetch template for editable cell
+            e.target.setAttribute("id", "cell" + idSuffix);
+            window.htmx.ajax('GET', "", {source: '#cell' + idSuffix, target: '#cell' + idSuffix});
+          } else if (table.dataset.url) {
+            let url = table.dataset.url;
+            if (table.dataset.pk) {
+              url += pk;
+            }
+            //url += "?return=" +encodeURIComponent(window.location.pathname + window.location.search)
+            if (table.dataset.click === "ClickAction.GET") {
+              window.document.location.assign(url)
+            } else if (table.dataset.click === "ClickAction.HX_GET") {
+              window.htmx.ajax('GET', url, {source: '#' + row.id, target: table.dataset.target});
+            }
+          } else if (table.dataset.click === "ClickAction.CUSTOM") {
+            e.target.setAttribute("id", "td" + idSuffix);
+            window.htmx.ajax('GET', "", {
+              source: '#td' + idSuffix,
+              target: '#td' + idSuffix,
+            });
+          }
         }
-        let idSuffix = "_" + pk + "_" + col + "_" + window.outerWidth;
-        if (e.target.classList.contains("td-edit")) {
-          // fetch template for editable cell
-          e.target.setAttribute("id", "cell" + idSuffix);
-          window.htmx.ajax('GET', "", {source: '#cell' + idSuffix, target: '#cell' + idSuffix});
-        } else if (table.dataset.url) {
-          let url = table.dataset.url;
-          if (table.dataset.pk) {
-            url += pk;
-          }
-          //url += "?return=" +encodeURIComponent(window.location.pathname + window.location.search)
-          if (table.dataset.click === "ClickAction.GET") {
-            window.document.location.assign(url)
-          } else if (table.dataset.click === "ClickAction.HX_GET") {
-            window.htmx.ajax('GET', url, {source: '#' + row.id, target: table.dataset.target});
-          }
-        } else if (table.dataset.click === "ClickAction.CUSTOM") {
-          e.target.setAttribute("id",  "td" + idSuffix);
-          window.htmx.ajax('GET', "", {
-            source: '#td' + idSuffix,
-            target: '#td' + idSuffix,
+      } else if (e.target.name === 'select-checkbox') {
+        // Click on row's select checkbox - handle using shift to select multiple rows
+        if (selAllPage) {
+          selAllPage.checked = false
+        }
+        let chkBox = e.target
+        highlightRow(chkBox)
+        if (!lastChecked) {
+          lastChecked = chkBox
+        } else if (e.shiftKey) {
+          let chkBoxes = checkBoxes()
+          let start = chkBoxes.indexOf(chkBox)
+          let end = chkBoxes.indexOf(lastChecked)
+          chkBoxes.slice(Math.min(start, end), Math.max(start, end) + 1).forEach(function (box) {
+            box.checked = chkBox.checked;
           });
+          lastChecked = chkBox;
+        } else {
+          lastChecked = chkBox;
         }
+        countChecked();
       }
     }
 
@@ -182,7 +184,8 @@ let tablesPro = (function () {
       }
     }
 
-// Count the number of checked rows and nake sure they are highlighted
+    // Count the number of checked rows and nake sure they are highlighted
+    // update hidden input with associated ids
     function countChecked() {
       if (selAll && selAll.checked) {
         return
@@ -209,10 +212,8 @@ let tablesPro = (function () {
         actionMenu.enabled = (count > 0 || selAll.checked);
       }
     }
-
     return tb
   }
-
 )
 ();
 window.addEventListener("load", tablesPro.init)
