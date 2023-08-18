@@ -57,6 +57,7 @@ class TableauxView(SingleTableMixin, FilterView):
 
     model = None
     form_class = None
+    filterset_class = None
 
     table_pagination = {"per_page": 10}
     infinite_scroll = False
