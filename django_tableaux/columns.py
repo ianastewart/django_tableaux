@@ -2,14 +2,15 @@ import itertools
 import django_tables2 as tables
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django_tableaux.utils import load_columns, save_columns
+from django.utils.safestring import mark_safe
 
 
 class RightAlignedColumn(tables.Column):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if not "th" in self.attrs:
+        if "th" not in self.attrs:
             self.attrs["th"] = {}
-        if not "td" in self.attrs:
+        if "td" not in self.attrs:
             self.attrs["td"] = {}
         self.attrs["th"]["style"] = "text-align: right;"
         self.attrs["td"]["style"] = "text-align: right;"
@@ -18,9 +19,9 @@ class RightAlignedColumn(tables.Column):
 class CenteredColumn(tables.Column):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if not "th" in self.attrs:
+        if "th" not in self.attrs:
             self.attrs["th"] = {}
-        if not "td" in self.attrs:
+        if "td" not in self.attrs:
             self.attrs["td"] = {}
         self.attrs["th"]["style"] = "text-align: center;"
         self.attrs["td"]["style"] = "text-align: center;"
@@ -50,7 +51,7 @@ class CurrencyColumn(RightAlignedColumn):
     def render(self, value):
         if self.integer:
             value = int(value)
-        return f"{self.prefix} {intcomma(value)} {self.suffix}"
+        return mark_safe(f"{self.prefix}{intcomma(value)}{self.suffix}")
 
 
 class CheckBoxColumn(tables.TemplateColumn):

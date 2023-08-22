@@ -1,14 +1,15 @@
 import logging
 from enum import IntEnum
 
+from django.core.exceptions import ImproperlyConfigured
 from django.http import QueryDict, HttpResponse
 from django.shortcuts import render, reverse
 from django.urls.resolvers import NoReverseMatch
-from django_filters.views import FilterView
+from django.views.generic import TemplateView
+from django_filters.filterset import filterset_factory
 from django_htmx.http import (
     HttpResponseClientRefresh,
     HttpResponseClientRedirect,
-    retarget,
     trigger_client_event,
 )
 from django_tables2 import SingleTableMixin
@@ -28,11 +29,7 @@ from django_tableaux.utils import (
 logger = logging.getLogger(__name__)
 
 
-class ConfigurationError(Exception):
-    pass
-
-
-class TableauxView(SingleTableMixin, FilterView):
+class TableauxView(SingleTableMixin, TemplateView):
     class FilterStyle(IntEnum):
         NONE = 0
         TOOLBAR = 1
@@ -58,13 +55,15 @@ class TableauxView(SingleTableMixin, FilterView):
     model = None
     form_class = None
     filterset_class = None
+    filterset_fields = None
+    filterset = None
 
     table_pagination = {"per_page": 10}
     infinite_scroll = False
     infinite_load = False
     #
     context_filter_name = "filter"
-    filter_style = FilterStyle.TOOLBAR
+    filter_style = FilterStyle.NONE
     filter_pills = False
     filter_button = False  # only relevant for TOOLBAR style
     #
@@ -82,7 +81,6 @@ class TableauxView(SingleTableMixin, FilterView):
     export_format = "csv"
     export_class = TableExport
     export_name = "table"
-    dataset_kwargs = None
 
     export_formats = (TableExport.CSV,)
     ALLOWED_PARAMS = ["page", "per_page", "sort", "_width"]
@@ -91,20 +89,18 @@ class TableauxView(SingleTableMixin, FilterView):
         super().__init__(**kwargs)
         self.table = None
         self.width = 0
+        self.object_list = None
         self.selected_objects = None
         self.selected_ids = None
 
     def get_export_filename(self, export_format):
         return f"{self.export_name}.{export_format}"
 
-    def get_dataset_kwargs(self):
-        return self.dataset_kwargs
-
     def get(self, request, *args, **kwargs):
-        table = self.get_table()
+        table_class = self.get_table_class()
         # If table is responsive and no width parameter was sent,
         # tell client to repeat request adding the width parameter
-        if hasattr(table, "Meta") and hasattr(table.Meta, "responsive"):
+        if hasattr(table_class, "Meta") and hasattr(table_class.Meta, "responsive"):
             if "_width" in request.GET:
                 self.width = int(request.GET["_width"])
             else:
@@ -114,38 +110,96 @@ class TableauxView(SingleTableMixin, FilterView):
             return self.get_htmx(request, *args, **kwargs)
 
         if "_export" in request.GET:
-            export_format = request.GET.get("_export", self.export_format)
-            qs = self.get_queryset()
-            subset = request.GET.get("_subset", None)
-            if subset:
-                if subset == "selected":
-                    qs = qs.filter(id__in=request.session.get("selected_ids", []))
-                elif subset == "all":
-                    filterset_class = self.get_filterset_class()
-                    filterset = self.get_filterset(filterset_class)
-                    if (
-                        not filterset.is_bound
-                        or filterset.is_valid()
-                        or not self.get_strict()
-                    ):
-                        qs = filterset.qs
-            filename = "Export"
-            # Use tablib to export in desired format
-            self.object_list = qs
-            self.preprocess_table(table)
-            table.before_render(request)
-            exclude_columns = [
-                k for k, v in table.columns.columns.items() if not v.visible
-            ]
-            exclude_columns.append("selection")
-            exporter = self.export_class(
-                export_format=export_format,
-                table=table,
-                exclude_columns=exclude_columns,
-                dataset_kwargs=self.get_dataset_kwargs(),
-            )
-            return exporter.response(filename=f"{filename}.{export_format}")
-        return super().get(request, *args, **kwargs)
+            return self.export_table()
+
+        return self.render_table()
+
+    def render_table(self, template_name=None):
+        """
+        Use the TemplateResponse Mixin to render the table, optionally using a specific template
+        """
+        self.object_list = self.get_queryset()
+        self.filterset = self.get_filterset(self.object_list)
+        if self.filterset is not None:
+            self.object_list = self.filterset.qs
+        self.table = self.get_table()
+        self.preprocess_table(self.table)
+        context = self.get_context_data()
+        if template_name is not None:
+            saved = self.template_name
+            self.template_name = template_name
+        response = self.render_to_response(context)
+        if template_name is not None:
+            self.template_name = saved
+        return response
+
+    def export_table(self):
+        self.object_list = self.get_queryset()
+        subset = self.request.GET.get("_subset", None)
+        if subset:
+            if subset == "selected":
+                self.object_list = self.object_list.filter(
+                    id__in=self.request.session.get("selected_ids", [])
+                )
+            elif subset == "all":
+                self.filterset = self.get_filterset(self.object_list)
+                self.object_list = self.filterset.qs
+        filename = "Export"
+        export_format = self.request.GET.get("_export", self.export_format)
+        # Use tablib to export in desired format
+        table = self.get_table()
+        self.preprocess_table(table)
+        exclude_columns = [k for k, v in table.columns.columns.items() if not v.visible]
+        exclude_columns.append("selection")
+        exporter = self.export_class(
+            export_format=export_format,
+            table=table,
+            exclude_columns=exclude_columns,
+        )
+        return exporter.response(filename=f"{filename}.{export_format}")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            table=self.table,
+            filter=self.filterset,
+            object_list=self.object_list,
+            title=self.title,
+            filter_button=self.filter_button,
+            filter_pills=self.filter_pills,
+            filters=[],
+            buttons=self.get_buttons(),
+            actions=self.get_actions(),
+            rows=self.rows_list(),
+            per_page=self.request.GET.get(
+                "per_page", self.table_pagination.get("per_page", 25)
+            ),
+            breakpoints=breakpoints(self.table),
+            width=self.width,
+        )
+        if "_width" in self.request.GET:
+            context["breakpoints"] = None
+
+        for key, value in self.request.GET.items():
+            if key not in self.ALLOWED_PARAMS and value:
+                context["filters"].append((key, value))
+        return context
+
+    def get_filterset(self, queryset=None):
+        filterset_class = self.filterset_class
+        filterset_fields = self.filterset_fields
+
+        if filterset_class is None and filterset_fields:
+            filterset_class = filterset_factory(self.model, fields=filterset_fields)
+
+        if filterset_class is None:
+            return None
+
+        return filterset_class(
+            self.request.GET,
+            queryset=queryset,
+            request=self.request,
+        )
 
     def get_htmx(self, request, *args, **kwargs):
         # Some actions depend on trigger_name; others on trigger
@@ -190,7 +244,7 @@ class TableauxView(SingleTableMixin, FilterView):
         elif "tr_" in trigger:
             # infinite scroll/load_more or click on row
             if "_scroll" in request.GET:
-                return self.render_template(self.templates["rows"], *args, **kwargs)
+                return self.render_table(self.templates["rows"])
 
             return self.row_clicked(
                 pk=trigger.split("_")[1],
@@ -223,7 +277,7 @@ class TableauxView(SingleTableMixin, FilterView):
         # Column handling
         elif "id_col_reset" in trigger:
             # Reset default columns settings.
-            # To make sure the column drop down is correctly updated we do a client refresh,
+            # To make sure the column drop down is correctly updated we do a full client refresh,
             table = self.table_class([])
             define_columns(table, self.width)
             save_columns(request, self.width, table.columns_default)
@@ -235,7 +289,7 @@ class TableauxView(SingleTableMixin, FilterView):
             col_name = trigger_name[5:]
             checked = trigger_name in request.GET
             set_column(request, self.width, col_name, checked)
-            return self.render_template(self.templates["table_data"], *args, **kwargs)
+            return self.render_table(self.templates["table_data"])
 
         elif "id_" in trigger:
             if trigger == request.htmx.target:
@@ -259,32 +313,6 @@ class TableauxView(SingleTableMixin, FilterView):
 
     def get_actions(self):
         return []
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        self.table = context["table"]
-        self.preprocess_table(self.table, context["filter"])
-        context.update(
-            title=self.title,
-            filter_button=self.filter_button,
-            filter_pills=self.filter_pills,
-            filters=[],
-            buttons=self.get_buttons(),
-            actions=self.get_actions(),
-            rows=self.rows_list(),
-            per_page=self.request.GET.get(
-                "per_page", self.table_pagination.get("per_page", 25)
-            ),
-            breakpoints=breakpoints(self.table),
-            width=self.width,
-        )
-        if "_width" in self.request.GET:
-            context["breakpoints"] = None
-
-        for key, value in self.request.GET.items():
-            if key not in self.ALLOWED_PARAMS and value:
-                context["filters"].append((key, value))
-        return context
 
     def put(self, request, *args, **kwargs):
         # PUT is used to update a cell after inline editing
@@ -317,7 +345,7 @@ class TableauxView(SingleTableMixin, FilterView):
 
         if request.htmx.trigger_name:
             if "export" in request.htmx.trigger_name:
-                # Export is a special case which must redirect to a regular GET that returns the file
+                # Export is a special case. It redirects to a regular GET that returns the file
                 request.session["selected_ids"] = self.selected_ids
                 bits = request.htmx.trigger_name.split("_")
                 export_format = bits[1] if len(bits) > 1 else "csv"
@@ -381,11 +409,11 @@ class TableauxView(SingleTableMixin, FilterView):
     def edit_cell(self, pk, column_name, target):
         """User clicked on an editable cell"""
         if not self.model:
-            raise ConfigurationError(
+            raise ImproperlyConfigured(
                 "Model must be specified or cell_clicked must be overriden for editable cells",
             )
         if not self.form_class:
-            raise ConfigurationError(
+            raise ImproperlyConfigured(
                 "You must specify the form_class for editable cells"
             )
         try:
@@ -432,7 +460,11 @@ class TableauxView(SingleTableMixin, FilterView):
                     table.url = reverse(self.click_url_name, kwargs={"pk": 0})[:-2]
                     table.pk = True
                 except NoReverseMatch:
-                    pass
+                    raise (
+                        ImproperlyConfigured(
+                            f"Cannot resolve click_url_name: '{self.click_url_name}'"
+                        )
+                    )
         table.target = self.click_target
 
         # define possible columns depending upon the current width
@@ -465,13 +497,6 @@ class TableauxView(SingleTableMixin, FilterView):
                         else:
                             table.header_fields.append(None)
 
-    def render_template(self, template_name, *args, **kwargs):
-        saved = self.template_name
-        self.template_name = template_name
-        response = super().get(self.request, *args, **kwargs)
-        self.template_name = saved
-        return response
-
     @staticmethod
     def _update_parameter(request, key, value):
         query_dict = request.GET.copy()
@@ -492,7 +517,7 @@ class SelectedMixin:
 
     def get_query_set(self):
         if self.model is None:
-            raise ConfigurationError("Model must be specified for SelectedMixin")
+            raise ImproperlyConfigured("Model must be specified for SelectedMixin")
         ids = self.request.session.get("selected_ids", [])
         if ids:
             return self.model.objects.filter(id__in=ids)

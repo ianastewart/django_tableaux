@@ -1,5 +1,6 @@
 {% load django_tables2 django_tableaux %}
 {% load i18n %}
+<div hx-history="false">
 {% for row in table.paginated_rows %}
   {% block table.tbody.row %}
     {% if forloop.last and table.infinite_scroll and table.page.number < table.page.paginator.num_pages %}
@@ -74,3 +75,5 @@
     {% endblock table.tbody.empty_text %}
   {% endif %}
 {% endfor %}
+</div>
+<script>tablesPro.init()</script>
