@@ -109,9 +109,9 @@ let tablesPro = (function () {
         }
         let editing = document.getElementsByClassName("td-editing");
         if (editing.length > 0) {
-          // clicking on a cell when already editing causes a put
+          // clicking on a cell when already editing causes a patch
           let el = editing[0].parentNode
-          window.htmx.ajax('PUT', "", {
+          window.htmx.ajax('PATCH', "", {
             source: "#" + el.id,
             target: "#" + el.id,
             values: window.htmx.closest(el, 'tr')

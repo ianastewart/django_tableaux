@@ -46,8 +46,8 @@ class TableauxView(SingleTableMixin, TemplateView):
     template_name = "django_tableaux/django_tableaux.html"
     templates = {
         "filter": "django_tableaux/modal_filter.html",
-        "table_data": "django_tableaux/render_table_data.html",
-        "rows": "django_tableaux/render_rows.html",
+        "table_data": "django_tableaux/render_table.html",
+        "rows": "django_tableaux/render_table_data.html",
         "cell_form": "django_tableaux/cell_form.html",
         "cell_error": "django_tableaux/cell_error.html",
     }
@@ -78,11 +78,11 @@ class TableauxView(SingleTableMixin, TemplateView):
     buttons = []
     object_name = ""
     #
+    export_filename = "table"
     export_format = "csv"
     export_class = TableExport
-    export_name = "table"
-
     export_formats = (TableExport.CSV,)
+
     ALLOWED_PARAMS = ["page", "per_page", "sort", "_width"]
 
     def __init__(self, **kwargs):
@@ -92,9 +92,6 @@ class TableauxView(SingleTableMixin, TemplateView):
         self.object_list = None
         self.selected_objects = None
         self.selected_ids = None
-
-    def get_export_filename(self, export_format):
-        return f"{self.export_name}.{export_format}"
 
     def get(self, request, *args, **kwargs):
         table_class = self.get_table_class()
@@ -144,7 +141,6 @@ class TableauxView(SingleTableMixin, TemplateView):
             elif subset == "all":
                 self.filterset = self.get_filterset(self.object_list)
                 self.object_list = self.filterset.qs
-        filename = "Export"
         export_format = self.request.GET.get("_export", self.export_format)
         # Use tablib to export in desired format
         table = self.get_table()
@@ -156,7 +152,7 @@ class TableauxView(SingleTableMixin, TemplateView):
             table=table,
             exclude_columns=exclude_columns,
         )
-        return exporter.response(filename=f"{filename}.{export_format}")
+        return exporter.response(filename=f"{self.export_filename}.{export_format}")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -289,7 +285,7 @@ class TableauxView(SingleTableMixin, TemplateView):
             col_name = trigger_name[5:]
             checked = trigger_name in request.GET
             set_column(request, self.width, col_name, checked)
-            return self.render_table(self.templates["table_data"])
+            return self.render_table("django_tableaux/render_table_data.html")
 
         elif "id_" in trigger:
             if trigger == request.htmx.target:
@@ -314,8 +310,8 @@ class TableauxView(SingleTableMixin, TemplateView):
     def get_actions(self):
         return []
 
-    def put(self, request, *args, **kwargs):
-        # PUT is used to update a cell after inline editing
+    def patch(self, request, *args, **kwargs):
+        # PATCH is used to update a cell after inline editing
         params = QueryDict(request.body)
         bits = request.htmx.target.split("_")
         column_name = visible_columns(request, self.table_class, int(bits[3]))[
@@ -403,11 +399,15 @@ class TableauxView(SingleTableMixin, TemplateView):
         return None
 
     def cell_clicked(self, pk, column_name, target, return_url):
-        """User clicked on a cell with custom action"""
+        """
+        User clicked on a cell with custom action
+        """
         return HttpResponseClientRefresh()
 
     def edit_cell(self, pk, column_name, target):
-        """User clicked on an editable cell"""
+        """
+        User clicked on an editable cell
+        """
         if not self.model:
             raise ImproperlyConfigured(
                 "Model must be specified or cell_clicked must be overriden for editable cells",
@@ -425,7 +425,9 @@ class TableauxView(SingleTableMixin, TemplateView):
             raise ValueError(f"Error {str(e)} while editing field {column_name}")
 
     def cell_changed(self, record_pk, column_name, value, target):
-        """Editable cell value changed"""
+        """
+        Editable cell value changed
+        """
         try:
             record = self.model.objects.get(pk=record_pk)
             setattr(record, column_name, value)

@@ -1,0 +1,9 @@
+{% load django_tables2 i18n %}
+  <div class="table-container">
+      <table {% render_attrs table.attrs %} id="table_data"
+          data-click="{{ table.click_action }}" data-url="{{ table.url }}"
+          data-pk={{ table.pk }} data-target="{{ table.target }}">
+        {% include "django_tableaux/render_table_data.html" %}
+      </table>
+      {% include "django_tableaux/render_paginator.html" %}
+  </div>

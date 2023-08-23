@@ -45,7 +45,7 @@
         {% endblock table.thead %}
         {% block table.tbody %}
           <tbody {{ table.attrs.tbody.as_html }}>
-          {% include "django_tableaux/render_rows.html" %}
+          {% include "django_tableaux/render_table_data.html" %}
           </tbody>
         {% endblock table.tbody %}
         {% block table.tfoot %}

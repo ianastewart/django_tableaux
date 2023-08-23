@@ -1,2 +1,10 @@
-{% load render_table from django_tables2 %}
-{% render_table table "django_tableaux/bootstrap4.html" %}
+{% block table_header %}
+  {% include "django_tableaux/render_header.html" %}
+{% endblock table_header %}
+{% block table_body %}
+  {% include "django_tableaux/render_body.html" %}
+{% endblock table_body %}
+{% block table_footer %}
+  {% include "django_tableaux/render_footer.html" %}
+{% endblock table_footer %}
+

@@ -15,8 +15,6 @@
       {% include "django_tableaux/toolbar/main.html" %}
     </div>
   {% endif %}
-  <div id="table_data" class="{{ css_table }}">
-    {% include "django_tableaux/render_table_data.html" %}
-  </div>
+    {% include "django_tableaux/render_table.html" %}
   <div id="modals-here"></div>
 </div>
