@@ -14,7 +14,7 @@ from django_htmx.http import (
 )
 from django_tables2 import SingleTableMixin
 from django_tables2.export.export import TableExport
-
+from django.template.response import TemplateResponse
 from django_tableaux.utils import (
     breakpoints,
     define_columns,
@@ -44,13 +44,7 @@ class TableauxView(SingleTableMixin, TemplateView):
 
     title = ""
     template_name = "django_tableaux/django_tableaux.html"
-    templates = {
-        "filter": "django_tableaux/modal_filter.html",
-        "table_data": "django_tableaux/render_table.html",
-        "rows": "django_tableaux/render_table_data.html",
-        "cell_form": "django_tableaux/cell_form.html",
-        "cell_error": "django_tableaux/cell_error.html",
-    }
+    template_library = "bootstrap4"
 
     model = None
     form_class = None
@@ -111,7 +105,19 @@ class TableauxView(SingleTableMixin, TemplateView):
 
         return self.render_table()
 
-    def render_table(self, template_name=None):
+    def get_queryset(self):
+        if hasattr(self, "queryset"):
+            return self.queryset
+        if self.model is not None:
+            return self.model._default_manager.all()
+        else:
+            raise ImproperlyConfigured(
+                "%(cls)s is missing a QuerySet. Define "
+                "%(cls)s.model, %(cls)s.queryset, or override "
+                "%(cls)s.get_queryset()." % {"cls": self.__class__.__name__}
+            )
+
+    def render_table(self, template_name=None, library=False):
         """
         Use the TemplateResponse Mixin to render the table, optionally using a specific template
         """
@@ -120,15 +126,26 @@ class TableauxView(SingleTableMixin, TemplateView):
         if self.filterset is not None:
             self.object_list = self.filterset.qs
         self.table = self.get_table()
-        self.preprocess_table(self.table)
+        self.preprocess_table(self.table, self.filterset)
         context = self.get_context_data()
-        if template_name is not None:
-            saved = self.template_name
-            self.template_name = template_name
-        response = self.render_to_response(context)
-        if template_name is not None:
-            self.template_name = saved
-        return response
+        template_name = template_name or self.template_name
+        return self.render_to_response(template_name, context, library=library)
+
+    def render_to_response(
+        self, template_name, context, library=False, **response_kwargs
+    ):
+        response_kwargs.setdefault("content_type", self.content_type)
+        template = (
+            [f"django_tableaux/{self.template_library}/{template_name}"]
+            if library
+            else [template_name]
+        )
+        return TemplateResponse(
+            request=self.request,
+            template=template,
+            context=context,
+            **response_kwargs,
+        )
 
     def export_table(self):
         self.object_list = self.get_queryset()
@@ -209,9 +226,7 @@ class TableauxView(SingleTableMixin, TemplateView):
 
             elif trigger_name == "filter_form":
                 # a filter value was changed
-                return self.render_template(
-                    self.templates["table_data"], *args, **kwargs
-                )
+                return self.render_table("render_table_data", library=True)
 
             elif "clr_" in trigger_name:
                 # cancel a filter
@@ -228,7 +243,7 @@ class TableauxView(SingleTableMixin, TemplateView):
 
         if trigger == "table_data":
             # triggered refresh of table data after create or update
-            return self.render_template(self.templates["table_data"], *args, **kwargs)
+            return self.render_table("render_body.html", library=True)
 
         elif "id_row" in trigger:
             # change number of rows to display
@@ -240,7 +255,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         elif "tr_" in trigger:
             # infinite scroll/load_more or click on row
             if "_scroll" in request.GET:
-                return self.render_table(self.templates["rows"])
+                return self.render_table("render_body.html", library=True)
 
             return self.row_clicked(
                 pk=trigger.split("_")[1],
@@ -285,7 +300,7 @@ class TableauxView(SingleTableMixin, TemplateView):
             col_name = trigger_name[5:]
             checked = trigger_name in request.GET
             set_column(request, self.width, col_name, checked)
-            return self.render_table("django_tableaux/render_table_data.html")
+            return self.render_table("render_table_data.html", library=True)
 
         elif "id_" in trigger:
             if trigger == request.htmx.target:
@@ -356,9 +371,6 @@ class TableauxView(SingleTableMixin, TemplateView):
             if response:
                 return response
         return HttpResponseClientRefresh()
-
-    def get_export_format(self):
-        return self.export_format
 
     def get_filterset_kwargs(self, filterset_class):
         kwargs = super().get_filterset_kwargs(filterset_class)

@@ -3,12 +3,12 @@
 <form id="action_form" hx-target="#modals-here">{% csrf_token %}
     <input type="hidden" name="query" value={% querystring without "page" "per_page" %}>
     <input type="hidden" name="selected_ids">
-    <div class="d-flex">
-      <div class="mb-0 pb-0 px-2" style="width:200px;">
+    <div style="display: flex; align-items: center;">
+      <div style="width:200px;">
         <div id="selected"><span id="count">0</span> of {{ table.rows|length }} rows selected</div>
         <div style="display: none;">
-          <input type="checkbox" id="select_all" name="select_all" class="py-0" value="Select all">
-          <label class="form-check-label ml-2 py-0" for="select_all">Select all</label>
+          <input type="checkbox" id="select_all" name="select_all" value="Select all" class="ml-2">
+          <label class=" ml-2 py-0" for="select_all">Select all rows</label>
         </div>
       </div>
       <div class="my-2">

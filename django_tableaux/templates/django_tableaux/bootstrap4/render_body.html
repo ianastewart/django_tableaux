@@ -1,6 +1,6 @@
 {% load django_tables2 django_tableaux %}
 {% load i18n %}
-<tbody {{ table.attrs.tbody.as_html }}>
+
 {% for row in table.paginated_rows %}
   {% block table.tbody.row %}
     <tr {{ row.attrs.as_html }} id="tr_{{ row.record.id }}"
@@ -73,4 +73,3 @@
     {% endblock table.tbody.empty_text %}
   {% endif %}
 {% endfor %}
-</tbody>

@@ -1,0 +1,12 @@
+{% block table_header %}
+  {% include "django_tableaux/bootstrap4/render_header.html" %}
+{% endblock table_header %}
+{% block table_body %}
+  <tbody {{ table.attrs.tbody.as_html }}>
+  {% include "django_tableaux/bootstrap4/render_body.html" %}
+  </tbody>
+{% endblock table_body %}
+{% block table_footer %}
+  {% include "django_tableaux/bootstrap4/render_footer.html" %}
+{% endblock table_footer %}
+
