@@ -12,3 +12,9 @@ dynamic = ["version", "description"]
 
 [project.urls]
 Home = "https://github.com/ianastewart/django_tableaux/"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+python_files = ["test_*.py", "*_tests.py"]
+django_find_project = false
+pythonpath = [".", "src"]
