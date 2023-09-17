@@ -486,7 +486,7 @@ class TableauxView(SingleTableMixin, TemplateView):
                     )
         table.target = self.click_target
 
-        set_select_column(self)
+        set_select_column(table)
         if self.get_bulk_actions() and not table.select_name:
             raise ImproperlyConfigured(
                 "Bulk actions require a selection column to be defined"
