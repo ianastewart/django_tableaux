@@ -1,5 +1,5 @@
 """
-Django tables with Advanced User eXperience
+Django Tables with Advanced User eXperience
 ===============
 This project builds upon two well-established django apps: `django_tables2 <https://github.com/jieter/django-tables2>`_
 and `django_filter <https://github.com/carltongibson/django-filter>`_ and enhances their functionality through a
@@ -8,7 +8,7 @@ features to deliver a customised user experience that embodies the best practice
 
 Key features
 ============
-* The columns to display can be user-defined
+* The columns to display can be interactively selected by the user
 * Fully responsive: Define different column layouts for mobile, tablet and desktop
 * Bulk actions on selected rows or on all (possibly filtered) rows
 * Infinite scroll
@@ -22,4 +22,4 @@ The project is still in beta but is fully usable.
 
 Full documentation to follow.
 """
-__version__ = "0.6.4"
+__version__ = "0.6.5"
