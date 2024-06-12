@@ -1,0 +1,19 @@
+{% load django_tables2 django_tableaux %}
+<tr {{ row.attrs.as_html }} id="tr_{{ row.record.id }}" {% if oob %}hx-swap-oob="true" {% endif %}
+    {% if forloop.last and table.infinite_scroll and table.page.number < table.page.paginator.num_pages %}
+hx-get="{% querystring table.prefixed_page_field=table.page.next_page_number without "_scroll" %}"
+hx-target="#tr_{{ row.record.id }}"
+hx-trigger="intersect once" hx-swap="afterend" hx-vals='{"_scroll": "true"}'
+{% endif %}
+>
+{% for column, cell in row.items %}
+{% if column.name in table.columns_visible %}
+<td {{ column|td_attr:table }}>
+  {% if column.localize == None %}{{ cell }}{% else %}{% if column.localize %}{{ cell|localize }}
+  {% else %}
+  {{ cell|unlocalize }}{% endif %}
+  {% endif %}
+</td>
+{% endif %}
+{% endfor %}
+</tr>

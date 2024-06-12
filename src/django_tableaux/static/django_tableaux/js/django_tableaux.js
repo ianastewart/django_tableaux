@@ -102,20 +102,58 @@ let tableaux = (function () {
     function tableClick(e) {
       // Handle any clicks within the table.
       // This catches clicks on elements that are added dynamically e.g. after infinite scroll
+      if (e.target.classList.contains("td-editing")) {
+        // click on open drop drop down hx-posts the value and closes the dropdown
+        if (e.target.classList.contains("open")) {
+          window.htmx.ajax('POST', "", {
+            source: "#" + e.target.id,
+            target: "#" + e.target.id,
+            values: {"id": window.htmx.closest(e.target, "tr").id.split("_")[1]}
+          })
+          e.target.classList.remove("open")
+        } else {
+          // first click flags dropdown as open
+          e.target.classList.add("open")
+        }
+      }else{
+        let el = document.querySelector(".td-editing")
+        // Clicking table outsoide dropdown posts existing value and closes dropdown
+        if (el){
+          window.htmx.ajax('POST', "", {
+            source: "#" + el.id,
+            target: "#" + el.id,
+            values: {"id": window.htmx.closest(el, "tr").id.split("_")[1],
+            "column": e.target.name}
+          })
+        }
+      }
+
       if (e.target.tagName === 'TD') {
         // Ignore clicks in td holding select checkbox to handle near misses of checkbox
         if (e.target.innerHTML.search('select-checkbox') >= 0) {
           return
-        }
-        let editing = document.getElementsByClassName("td-editing");
-        if (editing.length > 0) {
-          // clicking on a cell when already editing causes a patch
-          let el = editing[0].parentNode
-          window.htmx.ajax('PATCH', "", {
-            source: "#" + el.id,
-            target: "#" + el.id,
-            values: window.htmx.closest(el, 'tr')
-          })
+          /*
+          let editing = document.getElementsByClassName("td-editing");
+          if (editing.length > 0) {
+            el = editing[0]
+            if (el.classList.contains("open")){
+              el.classList.remove("open")
+                window.htmx.ajax('PATCH', "", {
+                source: "#" + el.id,
+                target: "#" + el.id,
+                values: window.htmx.closest(el, 'tr')
+              });
+            }else{
+              el.classList.add("open")
+            }
+            // clicking on a cell when already editing causes a patch
+            // let el = editing[0].parentNode
+            // window.htmx.ajax('PATCH', "", {
+            //   source: "#" + el.id,
+            //   target: "#" + el.id,
+            //   values: window.htmx.closest(el, 'tr')
+            // })
+            */
         } else {
           let row = e.target.parentNode;
           let pk = row.id.slice(3);
@@ -212,8 +250,33 @@ let tableaux = (function () {
         actionMenu.enabled = (count > 0 || selAll.checked);
       }
     }
+
     return tb
   }
 )
 ();
 window.addEventListener("load", tableaux.init)
+
+
+$(document).click(function (e) {
+  let isEditing = document.querySelector(".editing")
+  if (isEditing) {
+    if (!isEditing === e.target) {
+      alert("Remove");
+      e.target.classList.remove("open");
+    }
+  }
+});
+
+function handleClick() {
+  let me = document.querySelector(".editing");
+  if (me.classList.contains("open")) {
+    //alert("Open");
+    me.classList.remove("open");
+  } else {
+    //alert("Adding class")
+    me.classList.add("open");
+  }
+}
+
+

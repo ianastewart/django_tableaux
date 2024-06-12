@@ -1,26 +1,10 @@
 {% load django_tables2 django_tableaux %}
 {% load i18n %}
-
+<tbody {{ table.attrs.tbody.as_html }} id="tbody" >
 {% for row in table.paginated_rows %}
   {% block table.tbody.row %}
-    <tr {{ row.attrs.as_html }} id="tr_{{ row.record.id }}"
-        {% if forloop.last and table.infinite_scroll and table.page.number < table.page.paginator.num_pages %}
-          hx-get="{% querystring table.prefixed_page_field=table.page.next_page_number without "_scroll" %}"
-          hx-target="#tr_{{ row.record.id }}"
-          hx-trigger="intersect once" hx-swap="afterend" hx-vals='{"_scroll": "true"}'
-        {% endif %}
-    >
-      {% for column, cell in row.items %}
-        {% if column.name in table.columns_visible %}
-          <td {{ column|td_attr:table }}>
-            {% if column.localize == None %}{{ cell }}{% else %}{% if column.localize %}{{ cell|localize }}
-            {% else %}
-              {{ cell|unlocalize }}{% endif %}
-            {% endif %}
-          </td>
-        {% endif %}
-      {% endfor %}
-    </tr>
+<!--    {% include templates.render_row %}-->
+  {% include templates.render_row %}
     {% if table.mobile %}
       {% for column, cell in row.items %}
         {% if column.name in table.columns_optional %}
@@ -40,7 +24,7 @@
     {% if forloop.last and table.infinite_scroll and table.page.number >= table.page.paginator.num_pages %}
       <tr>
         <td colspan="{{ table.columns|length }}" style="text-align: center">
-          -- End of data --
+          {% trans "-- End of data --" %}
         </td>
       </tr>
     {% endif %}
@@ -73,3 +57,4 @@
     {% endblock table.tbody.empty_text %}
   {% endif %}
 {% endfor %}
+ </tbody>

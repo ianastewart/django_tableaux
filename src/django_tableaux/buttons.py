@@ -6,12 +6,23 @@ from .utils import get_template_prefix
 
 class Button:
     template_name = "button.html"
+    prefix = "btn_"
+    name = ""
 
-    def __init__(self, content, name="", typ="button", css="btn btn-primary", **kwargs):
+    def __init__(
+        self, content="", name="", typ="button", css="btn btn-primary", **kwargs
+    ):
+        if content == "" and name == "":
+            raise ValueError("Button content and name are both empty.")
+        self.name = (
+            f"{self.prefix}{name}"
+            if name
+            else f"{self.prefix}{slugify(content).replace('-', '_')}"
+        )
         self.context = {
             "element": "a" if kwargs.get("href") else "button",
             "content": content,
-            "name": slugify(content) if not name else name,
+            "name": self.name,
             "class": css,
         }
         if self.context["element"] == "button":
@@ -26,3 +37,9 @@ class Button:
             )
         )
         return html
+
+    def original_name(self):
+        """
+        Return the button name without the prefix added
+        """
+        return self.name[len(self.prefix) :]

@@ -14,26 +14,26 @@ def _view_name(request):
         return "test"
 
 
-def save_columns(request: HttpRequest, width: int, column_list: list):
-    key = f"columns:{_view_name(request)}:{width}"
+def save_columns(request: HttpRequest, table, width: int, column_list: list):
+    key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{width}"
     request.session[key] = column_list
 
 
-def load_columns(request: HttpRequest, width: int):
-    key = f"columns:{_view_name(request)}:{width}"
+def load_columns(request: HttpRequest, table, width: int):
+    key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{width}"
     return request.session[key] if key in request.session else None
 
 
 def set_column(
-    request: HttpRequest, width: int, column_name: str, checked: bool
+    request: HttpRequest, table, width: int, column_name: str, checked: bool
 ) -> list:
-    columns = load_columns(request, width)
+    columns = load_columns(request, table, width)
     if checked:
         if column_name not in columns:
             columns.append(column_name)
     elif column_name in columns:
         columns.remove(column_name)
-    save_columns(request, width, columns)
+    save_columns(request, table, width, columns)
     return columns
 
 
@@ -45,7 +45,7 @@ def visible_columns(request: HttpRequest, table_class, width):
     define_columns(table, width)
     if not table.responsive:
         width = 0
-    columns = load_columns(request, width)
+    columns = load_columns(request, table, width)
     return [col for col in table.sequence if col in columns]
 
 

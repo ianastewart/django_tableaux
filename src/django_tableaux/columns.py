@@ -5,6 +5,11 @@ from .utils import get_template_prefix
 from django.utils.safestring import mark_safe
 
 
+class EditableColumn(tables.Column):
+    def render(self, value, record):
+        return value
+
+
 class RightAlignedColumn(tables.Column):
     def __init__(self, **kwargs):
         super().__init__()
