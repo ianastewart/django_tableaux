@@ -1,8 +1,12 @@
 from pathlib import Path
+import sys
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+# sys.path.insert(0, os.path.join(BASE_DIR, "src"))
+# sys.path.insert(0, os.path.join(BASE_DIR, "myapp"))
+# print(BASE_DIR)
 SECRET_KEY = "just-an-insecure-test-key"
 DEBUG = True
 
@@ -18,7 +22,7 @@ INSTALLED_APPS = [
     "django_tables2",
     "django_filters",
     "django_htmx",
-    "src.django_tableaux",
+    "django_tableaux",
     "myapp",
     "tests",
 ]
