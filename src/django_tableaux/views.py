@@ -31,6 +31,7 @@ from .utils import (
     visible_columns,
     save_per_page,
     build_templates_dictionary,
+    render_editable_form,
 )
 
 logger = logging.getLogger(__name__)
@@ -104,7 +105,6 @@ class TableauxView(SingleTableMixin, TemplateView):
                 self.width = int(request.GET["_width"])
             else:
                 return render(request, self.templates["width_request"])
-
         if request.htmx:
             return self.get_htmx(request, *args, **kwargs)
 
@@ -396,7 +396,7 @@ class TableauxView(SingleTableMixin, TemplateView):
 
         if request.htmx:
             # check for inline edit request
-            if "editcol" in request.htmx.trigger:
+            if request.htmx.trigger and "editcol" in request.htmx.trigger:
                 bits = request.htmx.trigger.split("_")
                 id = bits[-1]
                 column = "_".join(bits[1:-1])

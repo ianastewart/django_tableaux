@@ -1,10 +1,13 @@
-from urllib.parse import urlparse, parse_qs, quote
 from os import listdir
 from os.path import isfile, join, exists
-from django.http import HttpRequest
-from django.conf import settings
+
 from django.apps import apps
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpRequest
+from django.shortcuts import render
+from django.template import loader
+from django.utils.safestring import mark_safe
 
 
 def _view_name(request):
@@ -102,9 +105,9 @@ def define_columns(table, width):
         if hasattr(table.Meta, "responsive"):
             table.responsive = True
             key = 0
-            for breakpoint in table.Meta.responsive.keys():
-                if width >= breakpoint:
-                    key = breakpoint
+            for break_point in table.Meta.responsive.keys():
+                if width >= break_point:
+                    key = break_point
             col_dict = table.Meta.responsive.get(key, {})
             # todo attrs
         table.columns_fixed = col_dict.get("fixed", [])
@@ -125,8 +128,8 @@ def define_columns(table, width):
 
 def set_column_states(table):
     """
-    Control column visibility and
-    add attribute 'columns_states' - a list of tuples used to create the column dropdown
+    Control column visibility and add attribute 'columns_states' to the table
+    This is a list of tuples used to create the column dropdown
     Expects 'table.columns_visible' to have been updated beforehand
     """
     table.column_states = [
@@ -201,3 +204,34 @@ def build_templates_dictionary(library=""):
         else:
             result[name] = join(DEFAULT_APP, DEFAULT_LIBRARY, file)
     return result
+
+
+def render_editable_link(
+    record=None, column=None, value=None, url="", template_name=None
+):
+    """
+    Call this code in a 'render_foo' method with a table definition
+    Renders an <a> tag with hx-get to fetch a form that is rendered inside the cell
+    Note this does not use the template library code
+    """
+    template_name = template_name or "django_tableaux/bootstrap4/cell_edit.html"
+    if record is None or column is None or value is None:
+        raise ValueError(
+            "Function render_editable() requires record, column and value to be specified"
+        )
+    context = {"id": record.id, "column": column, "value": value, "url": url}
+    return mark_safe(loader.render_to_string(template_name, context))
+
+
+def render_editable_form(
+    request, record_id, column=None, value=None, form_class=None, template_name=None
+):
+    """
+    Render a form inside a table cell so the cell value can be edited
+    django_tableaux.js will send hx-post when a value is selected or entered
+    Note this does not use the template library code
+    """
+    template_name = template_name or "django_tableaux/bootstrap4/cell_edit.html"
+    form = form_class(initial={"value": value})
+    context = {"id": record_id, "column": column, "value": value, "form": form}
+    return render(request, template_name, context)

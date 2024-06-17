@@ -7,7 +7,7 @@
         {% if field.widget_type == "select" %}
           <select name="{{ column }}" class="td-editing" title="" id="editcol_{{ column }}_{{ id }}">
             {% for widget in field.subwidgets %}
-              {{ widget }}
+              <option value="{{ widget.data.value|stringformat:'s' }}" {% if widget.data.value == value %}selected{% endif %}>{{ widget.data.label }}</option>
             {% endfor %}
           </select>
         {% endif %}
