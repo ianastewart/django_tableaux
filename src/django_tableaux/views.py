@@ -91,7 +91,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         super().__init__(**kwargs)
         self.table = None
         self.width = 0
-        self.object_list = None
+        # self.object_list = None
         self.selected_objects = None
         self.selected_ids = None
         self.templates = build_templates_dictionary()
@@ -125,26 +125,37 @@ class TableauxView(SingleTableMixin, TemplateView):
                 "%(cls)s.get_queryset()." % {"cls": self.__class__.__name__}
             )
 
+    def get_filtered_object_list(self):
+        self.object_list = self.get_table_data()
+        self.filterset = self.get_filterset(self.object_list)
+        if self.filterset is not None:
+            self.object_list = self.filterset.qs
+        self.object_list = self.process_filtered_object_list()
+        return self.object_list
+
+    def process_filtered_object_list(self):
+        """
+        Overide this to do further processing on objects list after filtering
+        """
+        return self.object_list
+
     def render_table(self, template_name=None):
         """
         Use the TemplateResponse Mixin to render the table, optionally using a specific template
         """
-        self.object_list = self.get_queryset()
-        self.filterset = self.get_filterset(self.object_list)
-        if self.filterset is not None:
-            self.object_list = self.filterset.qs
+        self.get_filtered_object_list()
         self.table = self.get_table()
         self.preprocess_table(self.table, self.filterset)
         context = self.get_context_data()
         template_name = template_name or self.template_name
         return self.render_to_response(template_name, context)
 
-    def render_body(self, template_name=None):
-        template_name = template_name or self.templates["render_body"]
+    def render_rows(self, template_name=None):
+        template_name = template_name or self.templates["render_rows"]
         return self.render_table(template_name)
 
     def render_row(self, id=None, template_name=None):
-        self.object_list = self.get_queryset().filter(id=id)
+        self.object_list = self.get_table_data().filter(id=id)
         self.table = self.get_table_class()(data=self.object_list)
         self.preprocess_table(self.table, self.filterset)
         context = self.get_context_data(oob=True, row=self.table.rows[0])
@@ -161,7 +172,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         )
 
     def export_table(self):
-        self.object_list = self.get_queryset()
+        self.get_filtered_object_list()
         subset = self.request.GET.get("_subset", None)
         if subset:
             if subset == "selected":
@@ -278,7 +289,7 @@ class TableauxView(SingleTableMixin, TemplateView):
 
             if trigger == "table_data":
                 # triggered refresh of table data after create or update
-                return self.render_table(self.templates["render_body"])
+                return self.render_table(self.templates["render_rows"])
 
             elif "id_row" in trigger:
                 # change number of rows to display
@@ -290,7 +301,7 @@ class TableauxView(SingleTableMixin, TemplateView):
             elif "tr_" in trigger:
                 # infinite scroll/load_more or click on row
                 if "_scroll" in request.GET:
-                    return self.render_table(self.templates["render_body"])
+                    return self.render_table(self.templates["render_rows"])
 
                 return self.row_clicked(
                     pk=trigger.split("_")[1],
@@ -422,7 +433,7 @@ class TableauxView(SingleTableMixin, TemplateView):
                     # Export is a special case. It redirects to a regular GET that returns the file
                     request.session["selected_ids"] = self.selected_ids
                     bits = request.htmx.trigger_name.split("_")
-                    export_format = bits[1] if len(bits) > 1 else "csv"
+                    export_format = bits[-1] if bits[-1] != "export" else "csv"
                     path = request.path + request.POST["query"]
                     if len(request.POST["query"]) > 1:
                         path += "&"
