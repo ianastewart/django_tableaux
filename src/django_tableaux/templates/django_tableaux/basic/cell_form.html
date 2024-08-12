@@ -1,0 +1,15 @@
+<input class="td-editing m-0" style="width: 90px;" hx-put="" hx-target="#{{ target }}" hx-trigger="blur"
+       name="{{ field.name }}" value="{{ field.value }}">
+<script>
+  let input = document.querySelector(".td-editing")
+  const end=input.value.length
+  input.setSelectionRange(end, end)
+  input.focus()
+  document.querySelector(".td-editing").addEventListener("keypress", loseFocus)
+
+  function loseFocus(e) {
+    if (e.key == "Enter") {
+      document.activeElement.blur();
+    }
+  }
+</script>

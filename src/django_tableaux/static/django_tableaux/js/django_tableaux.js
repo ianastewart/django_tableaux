@@ -32,11 +32,13 @@ let tableaux = (function () {
       document.body.addEventListener("trigger", function (evt) {
         window.htmx.ajax('GET', evt.detail.url, {source: '#table_data', 'target': '#table_data'});
       })
+      document.body.addEventListener("click", selectListClick)
       // When editing a cell inline enter key triggers blur
       if (document.querySelector(".td_editing")) {
         this.addEventListener("keypress", loseFocus)
       }
       countChecked()
+
     }
 
     function loseFocus(e) {
@@ -252,21 +254,33 @@ let tableaux = (function () {
     }
 
     return tb
+
+    // Handle clicks on a select list drop down as used for row and columns
+    function selectListClick(ev) {
+      let el = ev.target.closest(".select-list")
+    if (el) {
+      if (ev.target.classList.contains("select-title")) {
+        document.querySelectorAll(".select-options").forEach(function (e) {
+          if (ev.target != e) {
+            e.classList.remove("opened")
+          }
+        });
+        ev.target.nextElementSibling.classList.toggle("opened");
+      }else{
+        if (el.classList.contains("multiple")){
+          return
+        }else{
+          el.querySelector(".select-options").classList.remove("opened")
+        }
+      }
+    } else {
+      document.querySelectorAll(".select-options").forEach(e => e.classList.remove("opened"));
+      }
+    }
   }
 )
 ();
 window.addEventListener("load", tableaux.init)
-
-
-$(document).click(function (e) {
-  let isEditing = document.querySelector(".editing")
-  if (isEditing) {
-    if (!isEditing === e.target) {
-      alert("Remove");
-      e.target.classList.remove("open");
-    }
-  }
-});
 
 function handleClick() {
   let me = document.querySelector(".editing");

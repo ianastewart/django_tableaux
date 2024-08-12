@@ -1,10 +1,6 @@
 import logging
 from enum import IntEnum
-from os import listdir
-from os.path import isfile, join
 
-from django.apps import apps
-from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import QueryDict, HttpResponse
 from django.shortcuts import render, reverse
@@ -31,7 +27,6 @@ from .utils import (
     visible_columns,
     save_per_page,
     build_templates_dictionary,
-    render_editable_form,
 )
 
 logger = logging.getLogger(__name__)
@@ -52,7 +47,7 @@ class TableauxView(SingleTableMixin, TemplateView):
 
     title = ""
     template_name = "django_tableaux/bootstrap4/tableaux.html"
-    template_library = "bootstrap4"
+    template_library = ""  #  "bootstrap4"
 
     model = None
     form_class = None
@@ -94,7 +89,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         # self.object_list = None
         self.selected_objects = None
         self.selected_ids = None
-        self.templates = build_templates_dictionary()
+        self.templates = build_templates_dictionary(self.template_library)
 
     def get(self, request, *args, **kwargs):
         table_class = self.get_table_class()
@@ -208,8 +203,10 @@ class TableauxView(SingleTableMixin, TemplateView):
             buttons=self.get_buttons(),
             actions=self.get_bulk_actions(),
             rows=self.rows_list(),
-            per_page=self.request.GET.get(
-                "per_page", self.table_pagination.get("per_page", 25)
+            per_page=int(
+                self.request.GET.get(
+                    "per_page", self.table_pagination.get("per_page", 25)
+                )
             ),
             breakpoints=breakpoints(self.table),
             width=self.width,
@@ -223,6 +220,12 @@ class TableauxView(SingleTableMixin, TemplateView):
                 context["filters"].append((key, value))
         return context
 
+    def get_initial_data(self):
+        """Initial values for filter"""
+        if self.table_pagination:
+            return self.table_pagination.copy()
+        return {}
+
     def get_filterset(self, queryset=None):
         filterset_class = self.filterset_class
         filterset_fields = self.filterset_fields
@@ -232,6 +235,23 @@ class TableauxView(SingleTableMixin, TemplateView):
 
         if filterset_class is None:
             return None
+        filter_data = self.request.GET.copy()
+        per_page = filter_data.pop("per_page", None)
+        if per_page:
+            try:
+                lines = int(per_page[0])
+                self.table_pagination["per_page"] = lines
+            except ValueError:
+                pass
+        initial = self.get_initial_data()
+        for key, value in initial.items():
+            if key == "per_page":
+                lines = value
+            elif key in filterset_class.base_filters and key not in filter_data:
+                filter_data[key] = value
+        # self.filter = self.filterset_class(
+        #     filter_data, queryset=queryset, request=self.request
+        # )
 
         return filterset_class(
             self.request.GET,
@@ -245,6 +265,22 @@ class TableauxView(SingleTableMixin, TemplateView):
         trigger = request.htmx.trigger
 
         if trigger_name is not None:
+            if "_row_" in trigger_name:
+                rows = trigger_name[5:]
+                save_per_page(request, rows)
+                url = self._update_parameter(request, "per_page", rows)
+                return HttpResponseClientRedirect(url)
+
+            if "_col_" in trigger_name:
+                # Click on a column checkbox in the dropdown re-renders the table data with new column settings.
+                # The column dropdown does not need to be rendered because the checkboxes are in the correct state,
+                self.object_list = self.get_queryset()
+                table = self.get_table()
+                col_name = trigger_name[5:]
+                checked = trigger_name in request.GET
+                set_column(request, table, self.width, col_name, checked)
+                return self.render_table(self.templates["render_table_data"])
+
             if trigger_name == "filter" and self.filterset_class:
                 # show filter modal
                 context = {"filter": self.filterset_class(request.GET)}
@@ -293,7 +329,10 @@ class TableauxView(SingleTableMixin, TemplateView):
 
             elif "id_row" in trigger:
                 # change number of rows to display
-                rows = trigger_name
+                if trigger_name == "rows-select":
+                    rows = request.GET["rows-select"]
+                else:
+                    rows = trigger_name
                 save_per_page(request, rows)
                 url = self._update_parameter(request, "per_page", rows)
                 return HttpResponseClientRedirect(url)
@@ -339,16 +378,6 @@ class TableauxView(SingleTableMixin, TemplateView):
                 define_columns(table, self.width)
                 save_columns(request, table, self.width, table.columns_default)
                 return HttpResponseClientRefresh()
-
-            elif "id_col" in trigger:
-                # Click on a column checkbox in the dropdown re-renders the table data with new column settings.
-                # The column dropdown does not need to be rendered because the checkboxes are in the correct state,
-                self.object_list = self.get_queryset()
-                table = self.get_table()
-                col_name = trigger_name[5:]
-                checked = trigger_name in request.GET
-                set_column(request, table, self.width, col_name, checked)
-                return self.render_table(self.templates["render_table_data"])
 
             elif "id_" in trigger:
                 if trigger == request.htmx.target:
@@ -448,8 +477,8 @@ class TableauxView(SingleTableMixin, TemplateView):
 
     def handle_cell_changed(self, id, column, value):
         """
-        This handles the simple cae of updating a field on a record
-        For anything mpre complex, override this method.
+        This handles the simple case of updating a field on a record
+        For anything more complex, override this method.
         """
         record = self.get_queryset().filter(id=id).first()
         if hasattr(record, column):
@@ -610,6 +639,11 @@ class TableauxView(SingleTableMixin, TemplateView):
                             table.header_fields.append(table.filter.form[col])
                         else:
                             table.header_fields.append(None)
+        if self.sticky_header:
+            if table.attrs.get("class") is None:
+                table.attrs["class"] = "sticky-header"
+            elif "sticky-header" not in table.attrs["class"]:
+                table.attrs["class"] += " sticky-header"
 
     @staticmethod
     def _update_parameter(request, key, value):

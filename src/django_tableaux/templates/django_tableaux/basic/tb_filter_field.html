@@ -1,0 +1,10 @@
+{% load bootstrap4 %}
+{% if header %}
+  {% bootstrap_field field show_label=False form_group_class="form-group hx-get m-0 p-0" addon_after='<span class="filter-clear">X</span>' %}
+{% elif toolbar %}
+  {% if filter_button %}
+    {% bootstrap_field field form_group_class="form-group pl-2 pt-2" label_class="small mb-0" placeholder="" addon_after='<span class="filter-clear">X</span>' %}
+  {% else %}
+    {% bootstrap_field field form_group_class="form-group pl-2 pt-2 auto-submit" label_class="small mb-0" placeholder="" addon_after='<span class="filter-clear">X</span>' %}
+  {% endif %}
+{% endif %}

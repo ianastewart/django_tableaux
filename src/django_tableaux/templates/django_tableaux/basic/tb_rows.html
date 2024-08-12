@@ -1,0 +1,32 @@
+{% if view.row_settings %}
+  <div class="select-list">
+    <div class="select-title">Rows</div>
+    <div class="select-options">
+        {% for row in rows %}
+          <div class="select-option {% if row == per_page %}selected{% endif %}" hx-target="#table_data"
+                  hx-get="" name="_row_{{ row }}">{{ row }} rows</div>
+        {% endfor %}
+    </div>
+  </div>
+
+
+  {#<select name="rows-select" id="id_row" onclick="rows_select();">#}
+  {#    {% for row in rows %}#}
+  {#    <option value="{{ row }}" {% if row == per_page %}selected{% endif %}>{{ row }} rows</option>#}
+  {#    {% endfor %}#}
+  {#</select>#}
+  {#  #}
+  {#<script>#}
+  {#  function rows_select(e){#}
+  {#  let me = document.getElementById("id_row")#}
+  {#  if (me.classList.contains("open")) {#}
+  {#    me.classList.remove("open");#}
+  {#      window.htmx.ajax('GET', "", {#}
+  {#        source: '#id_row',#}
+  {#        target: '#table_data',#}
+  {#      });#}
+  {#  } else {#}
+  {#    me.classList.add("open");#}
+  {#  }#}
+  {#</script>#}
+{% endif %}

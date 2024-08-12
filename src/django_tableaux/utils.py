@@ -156,7 +156,7 @@ def load_per_page(request: HttpRequest):
 
 
 DEFAULT_APP = "django_tableaux"
-DEFAULT_LIBRARY = "bootstrap4"
+DEFAULT_LIBRARY = "basic"
 
 
 def get_template_library():
@@ -173,7 +173,7 @@ def get_template_prefix():
 
 def build_templates_dictionary(library=""):
     """
-    Returns a dictionary with key=template name (without .html suffix) and value = template path
+    Returns a dictionary with key=template name (without .html suffix) and value=template path
     """
     result = {}
     library = library or get_template_library()
