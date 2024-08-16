@@ -3,28 +3,26 @@
   <form id="action_form" hx-target="#modals-here">{% csrf_token %}
     <input type="hidden" name="query" value={% querystring without "page" "per_page" %}>
     <input type="hidden" name="selected_ids">
-    <div style="display: flex; align-items: center;">
+    <div class="flex-display">
       <div style="width:200px;">
-        <div id="selected" style="margin-left: 0.75em"><span id="count">0</span> of {{ table.rows|length }} rows
+        <div id="selected" style="margin-left: 0.25em"><span id="count">0</span> of {{ table.rows|length }} rows
           selected
         </div>
         <div style="display: none;">
-          <input type="checkbox" id="select_all" name="select_all" value="Select all" style="margin-left: 0.75em">
-          <label class=" ml-2 py-0" for="select_all">Select all rows</label>
+          <input type="checkbox" id="select_all" name="select_all" value="Select all" style="margin-left: 0.25em">
+          <label class="" for="select_all">Select all rows</label>
         </div>
       </div>
 
-      <div class="dropdown float-right">
-        <button class="btn btn-primary dropdown-toggle" type="button" id="selectActionMenu" data-toggle="dropdown">
-          Select action
-        </button>
-        <div class="dropdown-menu">
+      <div class="select-list">
+        <div class="select-title">Actions</div>
+        <div class="select-options">
           {% for action in actions %}
-            <button class="dropdown-item" name="{{ action.0 }}" hx-post>{{ action.1 }}</button>
+            <div class="select-option" name="{{ action.0 }}" hx-post >{{ action.1 }}</div>
           {% endfor %}
         </div>
-
       </div>
     </div>
+
   </form>
 {% endif %}

@@ -23,12 +23,12 @@ let tableaux = (function () {
         selAll.addEventListener("click", selectAll)
         selectAll()
       }
-      Array.from(document.querySelectorAll("table")).forEach(e => e.addEventListener("click", tableClick));
-      Array.from(document.querySelectorAll(".auto-submit")).forEach(e => e.addEventListener("change", function () {
+      document.querySelectorAll("table").forEach(e => e.addEventListener("click", tableClick));
+      document.querySelectorAll(".auto-submit").forEach(e => e.addEventListener("change", function () {
         document.getElementById("id_filter_form").submit()
       }));
-      Array.from(document.querySelectorAll(".filter-clear")).forEach(e => e.addEventListener("click", filterClear))
-      Array.from(document.querySelectorAll(".form-group.hx-get")).forEach(e => e.addEventListener("change", filterChanged))
+      document.querySelectorAll(".filter-clear").forEach(e => e.addEventListener("click", filterClear))
+      document.querySelectorAll(".form-group.hx-get").forEach(e => e.addEventListener("change", filterChanged))
       document.body.addEventListener("trigger", function (evt) {
         window.htmx.ajax('GET', evt.detail.url, {source: '#table_data', 'target': '#table_data'});
       })
@@ -38,7 +38,19 @@ let tableaux = (function () {
         this.addEventListener("keypress", loseFocus)
       }
       countChecked()
-
+      var mqls =[window.matchMedia("(min-width: 576px)"),
+        window.matchMedia("(min-width: 768px)"),
+        window.matchMedia("(min-width: 992px)"),
+        window.matchMedia("(min-width: 1200px)")
+        ]
+      function handleWidthChange(mql){
+        window.location.href=window.location.href
+      }
+      //handleWidthChange(mediaQueryList);
+      for (var i=0; i<mqls.length; i++)
+      {
+        mqls[i].addEventListener("change", handleWidthChange)
+      }
     }
 
     function loseFocus(e) {
@@ -258,10 +270,12 @@ let tableaux = (function () {
     // Handle clicks on a select list drop down as used for row and columns
     function selectListClick(ev) {
       let el = ev.target.closest(".select-list")
+
     if (el) {
+      let elOptions = el.querySelector(".select-options")
       if (ev.target.classList.contains("select-title")) {
         document.querySelectorAll(".select-options").forEach(function (e) {
-          if (ev.target != e) {
+          if (elOptions != e) {
             e.classList.remove("opened")
           }
         });

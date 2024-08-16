@@ -1,5 +1,6 @@
 {% load django_tables2 django_tableaux %}
 {% load i18n %}
+  <tbody {{ table.attrs.tbody.as_html }} id="tbody" >
 {% for row in table.paginated_rows %}
   {% block table.tbody.row %}
   {% include templates.render_row %}
@@ -55,3 +56,4 @@
     {% endblock table.tbody.empty_text %}
   {% endif %}
 {% endfor %}
+  </tbody>

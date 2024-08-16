@@ -125,14 +125,14 @@ class TableauxView(SingleTableMixin, TemplateView):
         self.filterset = self.get_filterset(self.object_list)
         if self.filterset is not None:
             self.object_list = self.filterset.qs
-        self.object_list = self.process_filtered_object_list()
+        self.process_filtered_object_list()
         return self.object_list
 
     def process_filtered_object_list(self):
         """
-        Overide this to do further processing on objects list after filtering
+        Override this to do further processing on self.object_list after filtering
         """
-        return self.object_list
+        pass
 
     def render_table(self, template_name=None):
         """
@@ -265,6 +265,12 @@ class TableauxView(SingleTableMixin, TemplateView):
         trigger = request.htmx.trigger
 
         if trigger_name is not None:
+            if trigger_name == "page":
+                return self.render_table(self.templates["render_table"])
+
+            if trigger_name == "sort":
+                return self.render_table(self.templates["render_table"])
+
             if "_row_" in trigger_name:
                 rows = trigger_name[5:]
                 save_per_page(request, rows)
@@ -272,10 +278,16 @@ class TableauxView(SingleTableMixin, TemplateView):
                 return HttpResponseClientRedirect(url)
 
             if "_col_" in trigger_name:
-                # Click on a column checkbox in the dropdown re-renders the table data with new column settings.
-                # The column dropdown does not need to be rendered because the checkboxes are in the correct state,
-                self.object_list = self.get_queryset()
                 table = self.get_table()
+                if "__reset" in trigger_name:
+                    # Reset default columns settings.
+                    # To make sure the column drop down is correctly updated we do a full client refresh,
+                    define_columns(table, self.width)
+                    save_columns(request, table, self.width, table.columns_default)
+                    return HttpResponseClientRefresh()
+                # Click on a checkbox in the column dropdown re-renders the table data with new column settings.
+                # The column dropdown does not need to be rendered because the checkboxes are in the correct state
+                self.object_list = self.get_queryset()
                 col_name = trigger_name[5:]
                 checked = trigger_name in request.GET
                 set_column(request, table, self.width, col_name, checked)
@@ -327,16 +339,6 @@ class TableauxView(SingleTableMixin, TemplateView):
                 # triggered refresh of table data after create or update
                 return self.render_table(self.templates["render_rows"])
 
-            elif "id_row" in trigger:
-                # change number of rows to display
-                if trigger_name == "rows-select":
-                    rows = request.GET["rows-select"]
-                else:
-                    rows = trigger_name
-                save_per_page(request, rows)
-                url = self._update_parameter(request, "per_page", rows)
-                return HttpResponseClientRedirect(url)
-
             elif "tr_" in trigger:
                 # infinite scroll/load_more or click on row
                 if "_scroll" in request.GET:
@@ -369,15 +371,6 @@ class TableauxView(SingleTableMixin, TemplateView):
                     ],
                     target=request.htmx.target,
                 )
-
-            # Column handling
-            elif "id_col_reset" in trigger:
-                # Reset default columns settings.
-                # To make sure the column drop down is correctly updated we do a full client refresh,
-                table = self.get_table_class([])
-                define_columns(table, self.width)
-                save_columns(request, table, self.width, table.columns_default)
-                return HttpResponseClientRefresh()
 
             elif "id_" in trigger:
                 if trigger == request.htmx.target:
