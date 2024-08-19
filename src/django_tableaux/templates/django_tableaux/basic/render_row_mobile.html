@@ -1,0 +1,39 @@
+{% load django_tables2 django_tableaux %}
+{#<tr {{ row.attrs.as_html }} id="tr_{{ row.record.id }}" {% if oob %}hx-swap-oob="true" {% endif %}>#}
+{#{% for column, cell in row.items %}#}
+{#{% if column.name in table.columns_fixed %}#}
+{#  {% if column.name != "selection" %}#}
+{#    <th {{ column|td_attr:table }}>{{ cell }}</th>#}
+{#  {% else %}#}
+{#    <th {{ column|td_attr:table }} colspan="2">#}
+{#      {% if column.localize == None %}{{ cell }}{% else %}{% if column.localize %}{{ cell|localize }}#}
+{#      {% else %}#}
+{#      {{ cell|unlocalize }}{% endif %}#}
+{#      {% endif %}#}
+{#    </th>#}
+{#    {% endif %}#}
+{#  {% endif %}#}
+{#{% endfor %}#}
+{#</tr>#}
+{% for column, cell in row.items %}
+  {% if column.name in table.columns_visible %}
+    <tr {{ row.attrs.as_html }}>
+  {% if column|is_selection %}
+      <td {{ row.attrs.as_html }}>{{ cell }}</td ><td {{ row.attrs.as_html }}></td>
+      {% else %}<td {{ row.attrs.as_html }}>{{ column.header }}</td><td {{ row.attrs.as_html }}>{{ cell }}</td>
+    {% endif %}
+  {% endif %}
+
+{#  {% if column.name not in table.columns_fixed %}#}
+{#    {% if column.name in columns.visible %}#}
+{#      <th>{{ column.name }}</th>#}
+{#      <td>#}
+{#      {% if column.localize == None %}{{ cell }}{% else %}{% if column.localize %}{{ cell|localize }}#}
+{#        {% else %}#}
+{#          {{ cell|unlocalize }}{% endif %}#}
+{#        {% endif %}#}
+{#      </td>#}
+{#   {% endif %}#}
+{#  {% endif %}#}
+{% endfor %}
+

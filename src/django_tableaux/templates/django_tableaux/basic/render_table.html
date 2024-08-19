@@ -1,9 +1,12 @@
 {% load django_tables2 i18n %}
-  <div class="table-container dt-table" id="table_container">
-      <table {% render_attrs table.attrs %} id="table_data"
-          data-click="{{ table.click_action }}" data-url="{{ table.url }}"
-          data-pk={{ table.pk }} data-target="{{ table.target }}">
-        {% include templates.render_table_data %}
-      </table>
-      {% include templates.render_paginator %}
-  </div>
+<div class="table-container dt-table" id="table_container">
+  {{ breakpoints|json_script:"breakpoints" }}
+  {% include templates.render_paginator %}
+  <table {% render_attrs table.attrs %} id="table_data" data-click="{{ table.click_action }}" data-url="{{ table.url }}"
+                                        data-pk={{ table.pk }} data-target="{{ table.target }}">
+    {% if caption %}
+      <caption class="caption.attrs">{{ caption }}</caption>{% endif %}
+    {% include templates.render_table_data %}
+  </table>
+
+</div>

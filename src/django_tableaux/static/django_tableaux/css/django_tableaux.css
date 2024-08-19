@@ -12,24 +12,35 @@
         border-collapse: collapse;
         width: 100%
     }
-
     th, td {
         padding: 5px;
         text-align: left;
         border: 1px solid;
         border-color: var(--border-color);
     }
-
     th {
         background-color: var(--header-background);
         color: #111;
     }
 
+
     td {
         background-color: var(--background);
         color: var(--header-color);
     }
+    td.odd {
+        background-color: yellow;
+    }
+    td.even{
+    background-color: orange;
+    }
+    caption {
+        caption-side: bottom;
+        text-align: left
+    }
 }
+
+
 .container {
   width: 100%;
   padding-right: 15px;
@@ -113,7 +124,12 @@
         }
     }
 }
-
+.even {
+    background-color: #ddd;!important;
+}
+.odd {
+    background-color: #ffffff;!important;
+}
 /*
 th.asc:after {
     content: '\0000a0\0025b2';

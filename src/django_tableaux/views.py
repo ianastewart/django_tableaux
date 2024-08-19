@@ -46,8 +46,9 @@ class TableauxView(SingleTableMixin, TemplateView):
         CUSTOM = 3
 
     title = ""
+    caption = ""
     template_name = "django_tableaux/bootstrap4/tableaux.html"
-    template_library = ""  #  "bootstrap4"
+    template_library = ""
 
     model = None
     form_class = None
@@ -145,10 +146,6 @@ class TableauxView(SingleTableMixin, TemplateView):
         template_name = template_name or self.template_name
         return self.render_to_response(template_name, context)
 
-    def render_rows(self, template_name=None):
-        template_name = template_name or self.templates["render_rows"]
-        return self.render_table(template_name)
-
     def render_row(self, id=None, template_name=None):
         self.object_list = self.get_table_data().filter(id=id)
         self.table = self.get_table_class()(data=self.object_list)
@@ -197,6 +194,7 @@ class TableauxView(SingleTableMixin, TemplateView):
             filter=self.filterset,
             object_list=self.object_list,
             title=self.title,
+            caption=self.caption,
             filter_button=self.filter_button,
             filter_pills=self.filter_pills,
             filters=[],
@@ -212,8 +210,6 @@ class TableauxView(SingleTableMixin, TemplateView):
             width=self.width,
             templates=self.templates,
         )
-        if "_width" in self.request.GET:
-            context["breakpoints"] = None
 
         for key, value in self.request.GET.items():
             if key not in self.ALLOWED_PARAMS and value:

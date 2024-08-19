@@ -1,24 +1,12 @@
 {% load django_tables2 django_tableaux %}
 {% load i18n %}
-  <tbody {{ table.attrs.tbody.as_html }} id="tbody" >
+
 {% for row in table.paginated_rows %}
   {% block table.tbody.row %}
-  {% include templates.render_row %}
     {% if table.mobile %}
-      {% for column, cell in row.items %}
-        {% if column.name in table.columns_optional %}
-          <tr>
-            <td style="border-top: 0px;"></td>
-            <td style="border-top: 0px;">{{ column }}</td>
-            <td style="border-top: 0px; text-align: right;">
-              {% if column.localize == None %}{{ cell }}{% else %}{% if column.localize %}{{ cell|localize }}
-              {% else %}
-                {{ cell|unlocalize }}{% endif %}
-              {% endif %}
-            </td>
-          </tr>
-        {% endif %}
-      {% endfor %}
+    {% include templates.render_row_mobile %}
+    {% else %}
+    {% include templates.render_row %}
     {% endif %}
     {% if forloop.last and table.infinite_scroll and table.page.number >= table.page.paginator.num_pages %}
       <tr>

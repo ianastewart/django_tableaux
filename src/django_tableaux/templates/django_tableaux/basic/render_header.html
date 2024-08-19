@@ -1,30 +1,33 @@
 {% load django_tables2 django_tableaux %}
-{% if table.show_header %}
+{% if table.show_header and not table.mobile %}
   {#  sort attributes and filter row #}
   <thead {{ table.attrs.thead.as_html }} style="margin: 0px;">
   <tr>
     {% for column in table.columns %}
       {% if column.name in table.columns_visible %}
         <th {{ column.attrs.th.as_html }}
-          {% if column.orderable %}
+            {% if table.mobile %}
+              {% if column.name != "selection" and column.name in table.columns_fixed %}colspan="2" {% endif %}
+            {% endif %}
+            {% if column.orderable %}
               hx-target="#table_container" hx-push-url="true"
               hx-get="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}"
               name="sort"
-          {% endif %}>
-              {% if column.name == "selection" %}
-                <input type="checkbox" id="select_all_page" name="select_all_page">
-              {% else %}
-                {{ column.header }}
-                {% if column.orderable %}
-                  {% if column.is_ordered %}
-                    {% if "-" in column.order_by.0 %}&#9651;{% else %}&#9661;{% endif %}
-                  {% endif %}
-                  {% else %}
-                  &nbsp;&nbsp;
-                  {% endif %}
+            {% endif %}>
+          {% if column.name == "selection" %}
+            <input type="checkbox" id="select_all_page" name="select_all_page">
+          {% else %}
+            {{ column.header }}
+            {% if column.orderable %}
+              {% if column.is_ordered %}
+                {% if "-" in column.order_by.0 %}&#9651;{% else %}&#9661;{% endif %}
               {% endif %}
-            </th>
+            {% else %}
+              &nbsp;&nbsp;
+            {% endif %}
           {% endif %}
+        </th>
+      {% endif %}
     {% endfor %}
   </tr>
   {% if table.filter.style == table.filter.style.HEADER %}

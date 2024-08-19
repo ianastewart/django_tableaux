@@ -128,7 +128,7 @@ def define_columns(table, width):
 
 def set_column_states(table):
     """
-    Control column visibility and add attribute 'columns_states' to the table
+    Control column visibility and add attribute 'column_states' to the table
     This is a list of tuples used to create the column dropdown
     Expects 'table.columns_visible' to have been updated beforehand
     """
@@ -139,10 +139,9 @@ def set_column_states(table):
 
 
 def breakpoints(table):
-    bps = (
+    return (
         list(table.Meta.responsive.keys()) if hasattr(table.Meta, "responsive") else []
     )
-    return {"breakpoints": bps}
 
 
 def save_per_page(request: HttpRequest, value: str):

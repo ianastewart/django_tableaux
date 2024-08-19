@@ -5,14 +5,15 @@ let tableaux = (function () {
     let lastChecked = null
     let selAll = null
     let selAllPage = null
-    tb.init = function () {
-      let url = new URL(window.location.href)
-      const w = url.searchParams.get("_width")
-      if (w !== null) {
-        if (parseInt(w) !== window.outerWidth) {
-          window.location.href = window.location.href.replace(`_width=${w}`, `_width=${window.outerWidth}`)
-        }
-      }
+    tb.init = function() {
+      request_width()
+      // let url = new URL(window.location.href)
+      // const w = url.searchParams.get("_width")
+      // if (w !== null) {
+      //   if (parseInt(w) !== window.outerWidth) {
+      //     window.location.href = window.location.href.replace(`_width=${w}`, `_width=${window.outerWidth}`)
+      //   }
+      // }
       selAll = document.getElementById('select_all')
       selAllPage = document.getElementById('select_all_page')
       if (selAllPage) {
@@ -38,18 +39,31 @@ let tableaux = (function () {
         this.addEventListener("keypress", loseFocus)
       }
       countChecked()
-      var mqls =[window.matchMedia("(min-width: 576px)"),
-        window.matchMedia("(min-width: 768px)"),
-        window.matchMedia("(min-width: 992px)"),
-        window.matchMedia("(min-width: 1200px)")
-        ]
-      function handleWidthChange(mql){
-        window.location.href=window.location.href
+      // build media queries for the table's breakpoints
+      const bps = JSON.parse(document.getElementById("breakpoints").textContent);
+      let mqls = []
+      for (let i=0; i<bps.length; i++){
+        let mq = "(min-width: " + bps[i] + "px)"
+        mqls.push(window.matchMedia(mq))
       }
-      //handleWidthChange(mediaQueryList);
-      for (var i=0; i<mqls.length; i++)
-      {
+      function handleWidthChange(mql) {
+        request_width()
+      }
+
+
+      for (let i = 0; i < mqls.length; i++) {
         mqls[i].addEventListener("change", handleWidthChange)
+      }
+    }
+
+    function request_width(){
+      let width = window.outerWidth
+      let url = new URL(window.location.href)
+      const w = url.searchParams.get("_width")
+      if (w !== null) {
+        if (parseInt(w) !== width) {
+          window.location.href = window.location.href.replace(`_width=${w}`, `_width=${width}`)
+        }
       }
     }
 
@@ -129,15 +143,17 @@ let tableaux = (function () {
           // first click flags dropdown as open
           e.target.classList.add("open")
         }
-      }else{
+      } else {
         let el = document.querySelector(".td-editing")
         // Clicking table outsoide dropdown posts existing value and closes dropdown
-        if (el){
+        if (el) {
           window.htmx.ajax('POST', "", {
             source: "#" + el.id,
             target: "#" + el.id,
-            values: {"id": window.htmx.closest(el, "tr").id.split("_")[1],
-            "column": e.target.name}
+            values: {
+              "id": window.htmx.closest(el, "tr").id.split("_")[1],
+              "column": e.target.name
+            }
           })
         }
       }
@@ -271,24 +287,24 @@ let tableaux = (function () {
     function selectListClick(ev) {
       let el = ev.target.closest(".select-list")
 
-    if (el) {
-      let elOptions = el.querySelector(".select-options")
-      if (ev.target.classList.contains("select-title")) {
-        document.querySelectorAll(".select-options").forEach(function (e) {
-          if (elOptions != e) {
-            e.classList.remove("opened")
+      if (el) {
+        let elOptions = el.querySelector(".select-options")
+        if (ev.target.classList.contains("select-title")) {
+          document.querySelectorAll(".select-options").forEach(function (e) {
+            if (elOptions != e) {
+              e.classList.remove("opened")
+            }
+          });
+          ev.target.nextElementSibling.classList.toggle("opened");
+        } else {
+          if (el.classList.contains("multiple")) {
+            return
+          } else {
+            el.querySelector(".select-options").classList.remove("opened")
           }
-        });
-        ev.target.nextElementSibling.classList.toggle("opened");
-      }else{
-        if (el.classList.contains("multiple")){
-          return
-        }else{
-          el.querySelector(".select-options").classList.remove("opened")
         }
-      }
-    } else {
-      document.querySelectorAll(".select-options").forEach(e => e.classList.remove("opened"));
+      } else {
+        document.querySelectorAll(".select-options").forEach(e => e.classList.remove("opened"));
       }
     }
   }
