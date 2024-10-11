@@ -1,11 +1,11 @@
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
-from .utils import get_template_prefix
+from .utils import get_template_path
 
 
 class Button:
-    template_name = "button.html"
+    template_name = "button"
     prefix = "btn_"
     name = ""
 
@@ -32,7 +32,7 @@ class Button:
     def render(self):
         html = mark_safe(
             render_to_string(
-                template_name=f"{get_template_prefix()}/{self.template_name}",
+                template_name=get_template_path(self.template_name),
                 context=self.context,
             )
         )

@@ -1,0 +1,23 @@
+{% if view.row_settings %}
+<div class="dropdown">
+  <button class="btn btn-outline-secondary dropdown-toggle mr-1" type="button" id="dropdownRowsButton"
+          data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    {{ per_page }} rows
+  </button>
+  <div class="dropdown-menu" aria-labelledby="dropdownRowsButton"  hx-target="#table_data">
+    {% for row in rows %}
+    <div class="dropdown-item pl-2" name="{{ row }}" id="id_row_{{ row }}" hx-get="">{{ row }} rows</div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% if view.row_settings %}
+  <label for="id_rows">{{ per page }} rows</label>
+<select hx-target="#table_data">
+    {% for row in rows %}
+        <option><a href="#" name="{{ row }}" id="id_row_{{ row }}" hx-get="">{{ row }} rows</a></option>
+    {% endfor %}
+    </ul>
+  </summary>
+</details>
+{% endif %}

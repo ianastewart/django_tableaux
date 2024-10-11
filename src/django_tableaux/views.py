@@ -1,6 +1,10 @@
 import logging
 from enum import IntEnum
+from os import listdir
+from os.path import isfile, join
 
+from django.apps import apps
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import QueryDict, HttpResponse
 from django.shortcuts import render, reverse
@@ -27,6 +31,7 @@ from .utils import (
     visible_columns,
     save_per_page,
     build_templates_dictionary,
+    render_editable_form,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,9 +51,8 @@ class TableauxView(SingleTableMixin, TemplateView):
         CUSTOM = 3
 
     title = ""
-    caption = ""
     template_name = "django_tableaux/bootstrap4/tableaux.html"
-    template_library = ""
+    template_library = None
 
     model = None
     form_class = None
@@ -126,14 +130,14 @@ class TableauxView(SingleTableMixin, TemplateView):
         self.filterset = self.get_filterset(self.object_list)
         if self.filterset is not None:
             self.object_list = self.filterset.qs
-        self.process_filtered_object_list()
+        self.object_list = self.process_filtered_object_list()
         return self.object_list
 
     def process_filtered_object_list(self):
         """
-        Override this to do further processing on self.object_list after filtering
+        Overide this to do further processing on objects list after filtering
         """
-        pass
+        return self.object_list
 
     def render_table(self, template_name=None):
         """
@@ -334,6 +338,13 @@ class TableauxView(SingleTableMixin, TemplateView):
             if trigger == "table_data":
                 # triggered refresh of table data after create or update
                 return self.render_table(self.templates["render_rows"])
+
+            elif "id_row" in trigger:
+                # change number of rows to display
+                rows = trigger_name
+                save_per_page(request, rows)
+                url = self._update_parameter(request, "per_page", rows)
+                return HttpResponseClientRedirect(url)
 
             elif "tr_" in trigger:
                 # infinite scroll/load_more or click on row

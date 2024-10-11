@@ -22,7 +22,7 @@ INSTALLED_APPS = [
     "django_tables2",
     "django_filters",
     "django_htmx",
-    "django_tableaux",
+    "src.django_tableaux",
     "myapp",
     "tests",
 ]
@@ -82,4 +82,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Django_bootstrap4 settings
 BOOTSTRAP4 = {"error_css_class": "", "success_css_class": ""}
-DJANGO_TABLEAUX_LIBRARY = "bootstrap4"
+DJANGO_TABLEAUX_LIBRARY = "picocss"

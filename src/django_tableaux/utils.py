@@ -1,5 +1,4 @@
-from os import listdir
-from os.path import isfile, join, exists
+from os import listdir, path
 
 from django.apps import apps
 from django.conf import settings
@@ -54,8 +53,8 @@ def visible_columns(request: HttpRequest, table_class, width):
 
 def set_select_column(table):
     """
-    Set table.select_name to name of the (first) Selection column if one exists
-    and update sequence if necessary
+    Set table.select_name to name of the (first) Selection column if one path.exists
+    and update sequence if necessary.
     """
     table.select_name = ""
     for col in table.columns:
@@ -90,7 +89,7 @@ def define_columns(table, width):
     table.columns_fixed = []
     table.columns_default = table.sequence
     table.columns_editable = []
-    # Ensure table.select_name exists for ease of testing
+    # Ensure table.select_name path.exists for ease of testing
     if not hasattr(table, "select_name"):
         table.select_name = ""
     if table.Meta:
@@ -98,7 +97,7 @@ def define_columns(table, width):
         if hasattr(table.Meta, "editable"):
             table.columns_editable = table.Meta.editable
         if hasattr(table.Meta, "columns"):
-            if type(table.Meta.columns) == dict:
+            if table.Meta.columns is dict:
                 col_dict = table.Meta.columns
             else:
                 raise ValueError("Meta.columns must be a dictionary")
@@ -128,7 +127,7 @@ def define_columns(table, width):
 
 def set_column_states(table):
     """
-    Control column visibility and add attribute 'column_states' to the table
+    Control column visibility and add attribute 'columns_states' to the table
     This is a list of tuples used to create the column dropdown
     Expects 'table.columns_visible' to have been updated beforehand
     """
@@ -139,9 +138,10 @@ def set_column_states(table):
 
 
 def breakpoints(table):
-    return (
+    bps = (
         list(table.Meta.responsive.keys()) if hasattr(table.Meta, "responsive") else []
     )
+    return {"breakpoints": bps}
 
 
 def save_per_page(request: HttpRequest, value: str):
@@ -155,7 +155,7 @@ def load_per_page(request: HttpRequest):
 
 
 DEFAULT_APP = "django_tableaux"
-DEFAULT_LIBRARY = "basic"
+DEFAULT_LIBRARY = "bootstrap4"
 
 
 def get_template_library():
@@ -164,44 +164,51 @@ def get_template_library():
     return DEFAULT_LIBRARY
 
 
-def get_template_prefix():
-    # used for components that directly specify their template
-    library = get_template_library()
-    return library if library[:10] == "templates/" else f"{DEFAULT_APP}/{library}"
-
-
-def build_templates_dictionary(library=""):
-    """
-    Returns a dictionary with key=template name (without .html suffix) and value=template path
-    """
-    result = {}
-    library = library or get_template_library()
+def template_paths(library=None):
     app_path = apps.get_app_config(DEFAULT_APP).path
-    lib_files = []
-    prefix = ""
+    default_path = path.join(app_path, "templates", DEFAULT_APP, DEFAULT_LIBRARY)
+    custom_path = None
+    library = library or get_template_library()
     if library != DEFAULT_LIBRARY:
         if library[:10] == "templates/":
-            full_path = settings.BASE_DIR / library
-            if not exists(full_path):
-                raise ImproperlyConfigured(
-                    f"Template library '{library}' does not exist."
-                )
-            prefix = full_path
+            custom_path = settings.BASE_DIR / library
         else:
-            # check if in own app
-            full_path = join(app_path, "templates", DEFAULT_APP, library)
-            if exists(full_path):
-                prefix = f"{DEFAULT_APP}/{library}"
-                lib_files = [
-                    f for f in listdir(full_path) if isfile(join(full_path, f))
-                ]
-    # iterate default library and add entries to result unless file exists in specified library
-    for file in listdir(join(app_path, "templates", DEFAULT_APP, DEFAULT_LIBRARY)):
-        name = file.split(".")[0]
-        if file in lib_files:
-            result[name] = join(prefix, file)
+            custom_path = path.join(app_path, "templates", DEFAULT_APP, library)
+        if not path.exists(custom_path):
+            raise ImproperlyConfigured(
+                f"Template library '{library}' does not exist."
+            )
+    return default_path, custom_path
+
+def get_template_path(template_name) -> str:
+    """
+    Return the full path for a template by first searching the custom directory
+    then the default directory
+    """
+    default_path, custom_path = template_paths()
+    if custom_path:
+        custom_name = path.join(custom_path, template_name)
+        if path.exists(custom_name):
+            return custom_name
+    default_name = path.join(default_path, template_name)
+    if path.exists(default_name):
+        return default_name
+    raise ValueError("Template {template_name} does not exist.")
+
+
+def build_templates_dictionary(library=None):
+    """
+    Returns a dictionary with key=template name and value = template path
+    """
+    result = {}
+    default_path, custom_path = template_paths(library=library)
+    # iterate default library and add entries to result unless file path.exists in custom library
+    for template in listdir(default_path):
+        short_name = template[:-5]
+        if custom_path and path.isfile(path.join(custom_path, template)):
+            result[short_name] = path.join(custom_path, template)
         else:
-            result[name] = join(DEFAULT_APP, DEFAULT_LIBRARY, file)
+            result[short_name] = path.join(default_path, template)
     return result
 
 

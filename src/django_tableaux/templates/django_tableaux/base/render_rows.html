@@ -1,0 +1,58 @@
+{% load django_tables2 django_tableaux %}
+{% load i18n %}
+{% for row in table.paginated_rows %}
+  {% block table.tbody.row %}
+    {% include templates.render_row %}
+    {% if table.mobile %}
+      {% for column, cell in row.items %}
+        {% if column.name in table.columns_optional %}
+          <tr>
+            <td style="border-top: 0px;"></td>
+            <td style="border-top: 0px;">{{ column }}</td>
+            <td style="border-top: 0px; text-align: right;">
+              {% if column.localize == None %}{{ cell }}{% else %}{% if column.localize %}
+                {{ cell|localize }}
+              {% else %}
+                {{ cell|unlocalize }}{% endif %}
+              {% endif %}
+            </td>
+          </tr>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if forloop.last and table.infinite_scroll and table.page.number >= table.page.paginator.num_pages %}
+      <tr>
+        <td colspan="{{ table.columns|length }}" style="text-align: center">
+          {% trans "-- End of data --" %}
+        </td>
+      </tr>
+    {% endif %}
+  {% endblock table.tbody.row %}
+  {% if forloop.last and table.infinite_load %}
+    {% if table.page.number < table.page.paginator.num_pages %}
+      <tr id="tr_last"
+          hx-target="#tr_last"
+          hx-swap="outerHTML"
+          hx-get="{% querystring table.prefixed_page_field=table.page.next_page_number without "_scroll" %}"
+          hx-vals='{"_scroll": "true"}'>
+        <td colspan="{{ table.columns|length }}" style="text-align: center">
+          {% include templates.load_more %}
+        </td>
+      </tr>
+    {% else %}
+      <tr>
+        <td colspan="{{ table.columns|length }}" style="text-align: center">
+          {% trans "-- End of data --" %}
+        </td>
+      </tr>
+    {% endif %}
+  {% endif %}
+{% empty %}
+  {% if table.empty_text %}
+    {% block table.tbody.empty_text %}
+      <tr>
+        <td colspan="{{ table.columns|length }}">{{ table.empty_text }}</td>
+      </tr>
+    {% endblock table.tbody.empty_text %}
+  {% endif %}
+{% endfor %}
