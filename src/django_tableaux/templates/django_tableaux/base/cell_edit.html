@@ -1,0 +1,18 @@
+{% if not form %}
+  <a id="editcol_{{ column }}_{{ id }}" href="#" hx-get="" hx-target="this" hx-swap="outerHTML">{{ value }}</a>
+{% else %}
+  <form>{% csrf_token %}
+    {% for field in form.visible_fields %}
+      {% if field.name == column %}
+        {% if field.widget_type == "select" %}
+          <select name="{{ column }}" class="td-editing" title="" id="editcol_{{ column }}_{{ id }}">
+            {% for widget in field.subwidgets %}
+              <option value="{{ widget.data.value|stringformat:'s' }}"
+                      {% if widget.data.value == value %}selected{% endif %}>{{ widget.data.label }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  </form>
+{% endif %}

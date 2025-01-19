@@ -1,0 +1,15 @@
+
+{% block table_header %}
+  {% include templates.render_header %}
+{% endblock table_header %}
+{% block table_body %}
+<tbody {{ table.attrs.tbody.as_html }} id="tbody" >
+  {% include templates.render_rows%}
+</tbody>
+{% endblock table_body %}
+
+{% block table_footer %}
+  {% include templates.render_footer %}
+{% endblock table_footer %}
+
+

@@ -1,0 +1,11 @@
+{% if table.has_footer %}
+  <tfoot {{ table.attrs.tfoot.as_html }}>
+  <tr>
+    {% for column in table.columns %}
+      {% if column.name in table.columns_visible %}
+        <td {{ column.attrs.tf.as_html }}>{{ column.footer }}</td>
+      {% endif %}
+    {% endfor %}
+  </tr>
+  </tfoot>
+{% endif %}

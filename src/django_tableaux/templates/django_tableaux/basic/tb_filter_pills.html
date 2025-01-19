@@ -1,0 +1,7 @@
+{%  if filters %}
+  {% for filter in filters %}
+    <span class="filter-pill">{{ filter.0|capfirst }}<span class="filter-value">{{ filter.1 }}</span>
+      <span name="clr_{{ filter.0 }}" class="filter-x" hx-get=""> X</span></span>
+  {% endfor %}
+  <span name="clr_all" hx-get="" class="filter-clear"> Clear</span></p>
+{% endif %}

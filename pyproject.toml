@@ -9,7 +9,7 @@ readme = "README.rst"
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
-dependencies = ["Django", "django-tables2", "django-filter", "django-htmx"]
+dependencies = ["Django", "django-tables2", "django-filter", "django-htmx", "tablib", "bootstrap4"]
 
 [project.urls]
 Home = "https://github.com/ianastewart/django_tableaux/"

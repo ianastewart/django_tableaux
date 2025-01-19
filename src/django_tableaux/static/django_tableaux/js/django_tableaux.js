@@ -1,24 +1,19 @@
 // Handle checkboxes in tables, and modal forms
 'use strict';
 let tableaux = (function () {
-        const ClickAction = {
-            NONE: "0",
-            GET: "1",
-            HX_GET: "2",
-            CUSTOM: "3"
-        }
         let tb = {};
         let lastChecked = null
         let selAll = null
         let selAllPage = null
         tb.init = function () {
-            let url = new URL(window.location.href)
-            const w = url.searchParams.get("_width")
-            if (w !== null) {
-                if (parseInt(w) !== window.outerWidth) {
-                    window.location.href = window.location.href.replace(`_width=${w}`, `_width=${window.outerWidth}`)
-                }
-            }
+            request_width()
+            // let url = new URL(window.location.href)
+            // const w = url.searchParams.get("_width")
+            // if (w !== null) {
+            //   if (parseInt(w) !== window.outerWidth) {
+            //     window.location.href = window.location.href.replace(`_width=${w}`, `_width=${window.outerWidth}`)
+            //   }
+            // }
             selAll = document.getElementById('select_all')
             selAllPage = document.getElementById('select_all_page')
             if (selAllPage) {
@@ -29,20 +24,48 @@ let tableaux = (function () {
                 selAll.addEventListener("click", selectAll)
                 selectAll()
             }
-            Array.from(document.querySelectorAll("table")).forEach(e => e.addEventListener("click", tableClick));
-            Array.from(document.querySelectorAll(".auto-submit")).forEach(e => e.addEventListener("change", function () {
+            document.querySelectorAll("table").forEach(e => e.addEventListener("click", tableClick));
+            document.querySelectorAll(".auto-submit").forEach(e => e.addEventListener("change", function () {
                 document.getElementById("id_filter_form").submit()
             }));
-            Array.from(document.querySelectorAll(".filter-clear")).forEach(e => e.addEventListener("click", filterClear))
-            Array.from(document.querySelectorAll(".form-group.hx-get")).forEach(e => e.addEventListener("change", filterChanged))
+            document.querySelectorAll(".filter-clear").forEach(e => e.addEventListener("click", filterClear))
+            document.querySelectorAll(".form-group.hx-get").forEach(e => e.addEventListener("change", filterChanged))
             document.body.addEventListener("trigger", function (evt) {
                 window.htmx.ajax('GET', evt.detail.url, {source: '#table_data', 'target': '#table_data'});
             })
+            document.body.addEventListener("click", selectListClick)
             // When editing a cell inline enter key triggers blur
             if (document.querySelector(".td_editing")) {
                 this.addEventListener("keypress", loseFocus)
             }
             countChecked()
+            // build media queries for the table's breakpoints
+            const bps = JSON.parse(document.getElementById("breakpoints").textContent);
+            let mqls = []
+            for (let i = 0; i < bps.length; i++) {
+                let mq = "(min-width: " + bps[i] + "px)"
+                mqls.push(window.matchMedia(mq))
+            }
+
+            function handleWidthChange(mql) {
+                request_width()
+            }
+
+
+            for (let i = 0; i < mqls.length; i++) {
+                mqls[i].addEventListener("change", handleWidthChange)
+            }
+        }
+
+        function request_width() {
+            let width = window.outerWidth
+            let url = new URL(window.location.href)
+            const w = url.searchParams.get("_width")
+            if (w !== null) {
+                if (parseInt(w) !== width) {
+                    window.location.href = window.location.href.replace(`_width=${w}`, `_width=${width}`)
+                }
+            }
         }
 
         function loseFocus(e) {
@@ -108,20 +131,67 @@ let tableaux = (function () {
         function tableClick(e) {
             // Handle any clicks within the table.
             // This catches clicks on elements that are added dynamically e.g. after infinite scroll
+            const ClickAction = {
+                NONE: "0",
+                GET: "1",
+                HX_GET: "2",
+                CUSTOM: "3"
+            }
+
+            if (e.target.classList.contains("td-editing")) {
+                // click on open drop drop down hx-posts the value and closes the dropdown
+                if (e.target.classList.contains("open")) {
+                    window.htmx.ajax('POST', "", {
+                        source: "#" + e.target.id,
+                        target: "#" + e.target.id,
+                        values: {"id": window.htmx.closest(e.target, "tr").id.split("_")[1]}
+                    })
+                    e.target.classList.remove("open")
+                } else {
+                    // first click flags dropdown as open
+                    e.target.classList.add("open")
+                }
+            } else {
+                let el = document.querySelector(".td-editing")
+                // Clicking table outsoide dropdown posts existing value and closes dropdown
+                if (el) {
+                    window.htmx.ajax('POST', "", {
+                        source: "#" + el.id,
+                        target: "#" + el.id,
+                        values: {
+                            "id": window.htmx.closest(el, "tr").id.split("_")[1],
+                            "column": e.target.name
+                        }
+                    })
+                }
+            }
+
             if (e.target.tagName === 'TD') {
                 // Ignore clicks in td holding select checkbox to handle near misses of checkbox
                 if (e.target.innerHTML.search('select-checkbox') >= 0) {
                     return
-                }
-                let editing = document.getElementsByClassName("td-editing");
-                if (editing.length > 0) {
-                    // clicking on a cell when already editing causes a patch
-                    let el = editing[0].parentNode
-                    window.htmx.ajax('PATCH', "", {
-                        source: "#" + el.id,
-                        target: "#" + el.id,
-                        values: window.htmx.closest(el, 'tr')
-                    })
+                    /*
+                    let editing = document.getElementsByClassName("td-editing");
+                    if (editing.length > 0) {
+                      el = editing[0]
+                      if (el.classList.contains("open")){
+                        el.classList.remove("open")
+                          window.htmx.ajax('PATCH', "", {
+                          source: "#" + el.id,
+                          target: "#" + el.id,
+                          values: window.htmx.closest(el, 'tr')
+                        });
+                      }else{
+                        el.classList.add("open")
+                      }
+                      // clicking on a cell when already editing causes a patch
+                      // let el = editing[0].parentNode
+                      // window.htmx.ajax('PATCH', "", {
+                      //   source: "#" + el.id,
+                      //   target: "#" + el.id,
+                      //   values: window.htmx.closest(el, 'tr')
+                      // })
+                      */
                 } else {
                     let row = e.target.parentNode;
                     let pk = row.id.slice(3);
@@ -190,7 +260,7 @@ let tableaux = (function () {
             }
         }
 
-        // Count the number of checked rows and make sure they are highlighted
+        // Count the number of checked rows and nake sure they are highlighted
         // update hidden input with associated ids
         function countChecked() {
             if (selAll && selAll.checked) {
@@ -220,7 +290,45 @@ let tableaux = (function () {
         }
 
         return tb
+
+        // Handle clicks on a select list drop down as used for row and columns
+        function selectListClick(ev) {
+            let el = ev.target.closest(".select-list")
+
+            if (el) {
+                let elOptions = el.querySelector(".select-options")
+                if (ev.target.classList.contains("select-title")) {
+                    document.querySelectorAll(".select-options").forEach(function (e) {
+                        if (elOptions != e) {
+                            e.classList.remove("opened")
+                        }
+                    });
+                    ev.target.nextElementSibling.classList.toggle("opened");
+                } else {
+                    if (el.classList.contains("multiple")) {
+                        return
+                    } else {
+                        el.querySelector(".select-options").classList.remove("opened")
+                    }
+                }
+            } else {
+                document.querySelectorAll(".select-options").forEach(e => e.classList.remove("opened"));
+            }
+        }
     }
 )
 ();
 window.addEventListener("load", tableaux.init)
+
+function handleClick() {
+    let me = document.querySelector(".editing");
+    if (me.classList.contains("open")) {
+        //alert("Open");
+        me.classList.remove("open");
+    } else {
+        //alert("Adding class")
+        me.classList.add("open");
+    }
+}
+
+

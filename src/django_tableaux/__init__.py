@@ -23,4 +23,4 @@ The project is still in beta but is fully usable.
 Full documentation to follow.
 """
 
-__version__ = "0.6.8"
+__version__ = "0.6.9"

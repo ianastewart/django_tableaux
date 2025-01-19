@@ -1,0 +1,26 @@
+{% load django_tables2 %}
+{% if not table.infinite_scroll and not table.infinite_load %}
+  {% if table.page and table.paginator.num_pages > 1 %}
+    <nav aria-label="Table navigation">
+      <ul class="pagination justify-content-center pb-2" hx-target="#table_container">
+        {% if table.page.has_previous %}
+          {% block pagination.previous %}
+            {% include "django_tableaux/basic/page_link.html" with text="Previous" page_number=table.page.previous_page_number class="previous" %}
+          {% endblock pagination.previous %}
+        {% endif %}
+        {% if table.page.has_previous or table.page.has_next %}
+          {% block pagination.range %}
+            {% for p in table.page|table_page_range:table.paginator %}
+              {% include "django_tableaux/basic/page_link.html" with text=p page_number=p %}
+            {% endfor %}
+          {% endblock pagination.range %}
+        {% endif %}
+        {% if table.page.has_next %}
+          {% block pagination.next %}
+            {% include "django_tableaux/basic/page_link.html" with text="Next" page_number=table.page.next_page_number class="next" %}
+          {% endblock pagination.next %}
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% endif %}

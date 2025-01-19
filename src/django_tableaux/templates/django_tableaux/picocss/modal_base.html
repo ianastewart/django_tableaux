@@ -1,0 +1,17 @@
+<dialog open>
+  <article>
+            {% block modal_content %}
+        {% block modal_header %}
+          <header>
+            {% block modal_title %}<h4>{{ view.title }}</h4>{% endblock %}
+            <button type="button" class="close" name="close_modal" onclick="closeModal()" aria-label="Close"><span
+                aria-hidden="true">&times;</span></button>
+          </header>
+        {% endblock %}
+        {% block modal_body %}
+        {% endblock %}
+        {% block modal_footer %}
+        {% endblock %}
+      {% endblock %}
+   </article>
+</dialog>

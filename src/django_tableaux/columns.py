@@ -1,8 +1,13 @@
 import itertools
 import django_tables2 as tables
 from django.contrib.humanize.templatetags.humanize import intcomma
-from .utils import get_template_prefix
+from .utils import get_template_path
 from django.utils.safestring import mark_safe
+
+
+class EditableColumn(tables.Column):
+    def render(self, value, record):
+        return value
 
 
 class RightAlignedColumn(tables.Column):
@@ -56,13 +61,13 @@ class CurrencyColumn(RightAlignedColumn):
 
 class CheckBoxColumn(tables.TemplateColumn):
     def __init__(self, **kwargs):
-        kwargs["template_name"] = f"{get_template_prefix()}/custom_checkbox.html"
+        kwargs["template_name"] = get_template_path("custom_checkbox.html")
         super().__init__(**kwargs)
 
 
 class SelectionColumn(tables.TemplateColumn):
     def __init__(self, **kwargs):
-        kwargs["template_name"] = f"{get_template_prefix()}/select_checkbox.html"
+        kwargs["template_name"] = get_template_path("select_checkbox.html")
         kwargs["verbose_name"] = ""
         kwargs["accessor"] = "id"
         kwargs["orderable"] = False

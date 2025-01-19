@@ -1,0 +1,11 @@
+{% if view.row_settings %}
+<details class="dropdown" hx-target="#table_data">
+    <summary>{{ per_page }} rows</summary>
+    <ul>
+    {% for row in rows %}
+        <li><a href="#" name="{{ row }}" id="id_row_{{ row }}" hx-get="">{{ row }} rows</a></li>
+    {% endfor %}
+    </ul>
+  </summary>
+</details>
+{% endif %}

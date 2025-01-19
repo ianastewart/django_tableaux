@@ -1,10 +1,6 @@
 import logging
 from enum import IntEnum
-from os import listdir
-from os.path import isfile, join
 
-from django.apps import apps
-from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import QueryDict, HttpResponse
 from django.shortcuts import render, reverse
@@ -50,8 +46,9 @@ class TableauxView(SingleTableMixin, TemplateView):
         CUSTOM = 3
 
     title = ""
+    caption = ""
     template_name = "django_tableaux/bootstrap4/tableaux.html"
-    template_library = "bootstrap4"
+    template_library = None
 
     model = None
     form_class = None
@@ -90,10 +87,10 @@ class TableauxView(SingleTableMixin, TemplateView):
         super().__init__(**kwargs)
         self.table = None
         self.width = 0
-        self.object_list = None
+        # self.object_list = None
         self.selected_objects = None
         self.selected_ids = None
-        self.templates = build_templates_dictionary()
+        self.templates = build_templates_dictionary(self.template_library)
 
     def get(self, request, *args, **kwargs):
         table_class = self.get_table_class()
@@ -104,7 +101,6 @@ class TableauxView(SingleTableMixin, TemplateView):
                 self.width = int(request.GET["_width"])
             else:
                 return render(request, self.templates["width_request"])
-
         if request.htmx:
             return self.get_htmx(request, *args, **kwargs)
 
@@ -125,18 +121,37 @@ class TableauxView(SingleTableMixin, TemplateView):
                 "%(cls)s.get_queryset()." % {"cls": self.__class__.__name__}
             )
 
+    def get_filtered_object_list(self):
+        self.object_list = self.get_table_data()
+        self.filterset = self.get_filterset(self.object_list)
+        if self.filterset is not None:
+            self.object_list = self.filterset.qs
+        self.object_list = self.process_filtered_object_list()
+        return self.object_list
+
+    def process_filtered_object_list(self):
+        """
+        Overide this to do further processing on objects list after filtering
+        """
+        return self.object_list
+
     def render_table(self, template_name=None):
         """
         Use the TemplateResponse Mixin to render the table, optionally using a specific template
         """
-        self.object_list = self.get_queryset()
-        self.filterset = self.get_filterset(self.object_list)
-        if self.filterset is not None:
-            self.object_list = self.filterset.qs
+        self.get_filtered_object_list()
         self.table = self.get_table()
         self.preprocess_table(self.table, self.filterset)
         context = self.get_context_data()
         template_name = template_name or self.template_name
+        return self.render_to_response(template_name, context)
+
+    def render_row(self, id=None, template_name=None):
+        self.object_list = self.get_table_data().filter(id=id)
+        self.table = self.get_table_class()(data=self.object_list)
+        self.preprocess_table(self.table, self.filterset)
+        context = self.get_context_data(oob=True, row=self.table.rows[0])
+        template_name = template_name or self.templates["render_row"]
         return self.render_to_response(template_name, context)
 
     def render_to_response(self, template_name, context, **response_kwargs):
@@ -149,7 +164,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         )
 
     def export_table(self):
-        self.object_list = self.get_queryset()
+        self.get_filtered_object_list()
         subset = self.request.GET.get("_subset", None)
         if subset:
             if subset == "selected":
@@ -179,26 +194,33 @@ class TableauxView(SingleTableMixin, TemplateView):
             filter=self.filterset,
             object_list=self.object_list,
             title=self.title,
+            caption=self.caption,
             filter_button=self.filter_button,
             filter_pills=self.filter_pills,
             filters=[],
             buttons=self.get_buttons(),
             actions=self.get_bulk_actions(),
             rows=self.rows_list(),
-            per_page=self.request.GET.get(
-                "per_page", self.table_pagination.get("per_page", 25)
+            per_page=int(
+                self.request.GET.get(
+                    "per_page", self.table_pagination.get("per_page", 25)
+                )
             ),
             breakpoints=breakpoints(self.table),
             width=self.width,
             templates=self.templates,
         )
-        if "_width" in self.request.GET:
-            context["breakpoints"] = None
 
         for key, value in self.request.GET.items():
             if key not in self.ALLOWED_PARAMS and value:
                 context["filters"].append((key, value))
         return context
+
+    def get_initial_data(self):
+        """Initial values for filter"""
+        if self.table_pagination:
+            return self.table_pagination.copy()
+        return {}
 
     def get_filterset(self, queryset=None):
         filterset_class = self.filterset_class
@@ -209,6 +231,23 @@ class TableauxView(SingleTableMixin, TemplateView):
 
         if filterset_class is None:
             return None
+        filter_data = self.request.GET.copy()
+        per_page = filter_data.pop("per_page", None)
+        if per_page:
+            try:
+                lines = int(per_page[0])
+                self.table_pagination["per_page"] = lines
+            except ValueError:
+                pass
+        initial = self.get_initial_data()
+        for key, value in initial.items():
+            if key == "per_page":
+                lines = value
+            elif key in filterset_class.base_filters and key not in filter_data:
+                filter_data[key] = value
+        # self.filter = self.filterset_class(
+        #     filter_data, queryset=queryset, request=self.request
+        # )
 
         return filterset_class(
             self.request.GET,
@@ -220,7 +259,36 @@ class TableauxView(SingleTableMixin, TemplateView):
         # Some actions depend on trigger_name; others on trigger
         trigger_name = request.htmx.trigger_name
         trigger = request.htmx.trigger
-        if trigger_name:
+
+        if trigger_name is not None:
+            if trigger_name == "page":
+                return self.render_table(self.templates["render_table"])
+
+            if trigger_name == "sort":
+                return self.render_table(self.templates["render_table"])
+
+            if "_row_" in trigger_name:
+                rows = trigger_name[5:]
+                save_per_page(request, rows)
+                url = self._update_parameter(request, "per_page", rows)
+                return HttpResponseClientRedirect(url)
+
+            if "_col_" in trigger_name:
+                table = self.get_table()
+                if "__reset" in trigger_name:
+                    # Reset default columns settings.
+                    # To make sure the column drop down is correctly updated we do a full client refresh,
+                    define_columns(table, self.width)
+                    save_columns(request, table, self.width, table.columns_default)
+                    return HttpResponseClientRefresh()
+                # Click on a checkbox in the column dropdown re-renders the table data with new column settings.
+                # The column dropdown does not need to be rendered because the checkboxes are in the correct state
+                self.object_list = self.get_queryset()
+                col_name = trigger_name[5:]
+                checked = trigger_name in request.GET
+                set_column(request, table, self.width, col_name, checked)
+                return self.render_table(self.templates["render_table_data"])
+
             if trigger_name == "filter" and self.filterset_class:
                 # show filter modal
                 context = {"filter": self.filterset_class(request.GET)}
@@ -243,79 +311,85 @@ class TableauxView(SingleTableMixin, TemplateView):
                     qd.pop(filter)
                 return HttpResponseClientRedirect(f"{request.path}?{qd.urlencode()}")
 
-        if trigger == "table_data":
-            # triggered refresh of table data after create or update
-            return self.render_table(self.templates["render_body"])
+            buttons = self.get_buttons()
+            if buttons:
+                for button in buttons:
+                    if button.name == trigger_name:
+                        result = self.handle_button(request, button.original_name())
+                        if result is not None:
+                            return result
+                        else:
+                            raise ImproperlyConfigured(
+                                f"No handler for trigger_name {trigger_name}"
+                            )
 
-        elif "id_row" in trigger:
-            # change number of rows to display
-            rows = trigger_name
-            save_per_page(request, rows)
-            url = self._update_parameter(request, "per_page", rows)
-            return HttpResponseClientRedirect(url)
+        if trigger is not None:
+            if "editcol" in trigger:
+                # display a form to edit a cell inline
+                bits = trigger.split("_")
+                id = bits[-1]
+                column = "_".join(bits[1:-1])
+                return self.render_cell_form(id, column)
 
-        elif "tr_" in trigger:
-            # infinite scroll/load_more or click on row
-            if "_scroll" in request.GET:
-                return self.render_table(self.templates["render_body"])
+            if trigger == "table_data":
+                # triggered refresh of table data after create or update
+                return self.render_table(self.templates["render_rows"])
 
-            return self.row_clicked(
-                pk=trigger.split("_")[1],
-                target=request.htmx.target,
-                return_url=request.htmx.current_url,
-            )
+            elif "id_row" in trigger:
+                # change number of rows to display
+                rows = trigger_name
+                save_per_page(request, rows)
+                url = self._update_parameter(request, "per_page", rows)
+                return HttpResponseClientRedirect(url)
 
-        elif "cell_" in trigger:
-            # cell clicked
-            bits = trigger.split("_")
-            return self.edit_cell(
-                pk=bits[1],
-                column_name=visible_columns(request, self.table_class, self.width)[
-                    int(bits[2])
-                ],
-                target=request.htmx.target,
-            )
+            elif "tr_" in trigger:
+                # infinite scroll/load_more or click on row
+                if "_scroll" in request.GET:
+                    return self.render_table(self.templates["render_rows"])
 
-        elif "td_" in trigger:
-            # cell clicked
-            bits = trigger.split("_")
-            return self.cell_clicked(
-                pk=bits[1],
-                column_name=visible_columns(request, self.table_class, self.width)[
-                    int(bits[2])
-                ],
-                target=request.htmx.target,
-            )
+                return self.row_clicked(
+                    pk=trigger.split("_")[1],
+                    target=request.htmx.target,
+                    return_url=request.htmx.current_url,
+                )
 
-        # Column handling
-        elif "id_col_reset" in trigger:
-            # Reset default columns settings.
-            # To make sure the column drop down is correctly updated we do a full client refresh,
-            table = self.table_class([])
-            define_columns(table, self.width)
-            save_columns(request, self.width, table.columns_default)
-            return HttpResponseClientRefresh()
+            elif "cell_" in trigger:
+                # cell clicked
+                bits = trigger.split("_")
+                return self.edit_cell(
+                    pk=bits[1],
+                    column_name=visible_columns(request, self.table_class, self.width)[
+                        int(bits[2])
+                    ],
+                    target=request.htmx.target,
+                )
 
-        elif "id_col" in trigger:
-            # Click on a column checkbox in the dropdown re-renders the table data with new column settings.
-            # The column dropdown does not need to be rendered because the checkboxes are in the correct state,
-            col_name = trigger_name[5:]
-            checked = trigger_name in request.GET
-            set_column(request, self.width, col_name, checked)
-            return self.render_table(self.templates["render_table_data"])
+            elif "td_" in trigger:
+                # cell clicked
+                bits = trigger.split("_")
+                return self.cell_clicked(
+                    pk=bits[1],
+                    column_name=visible_columns(request, self.table_class, self.width)[
+                        int(bits[2])
+                    ],
+                    target=request.htmx.target,
+                )
 
-        elif "id_" in trigger:
-            if trigger == request.htmx.target:
-                # Clear filter value triggered by  click on X in input-prepend
-                qd = request.GET.copy()
-                qd.pop(trigger_name)
-                return HttpResponseClientRedirect(f"{request.path}?{qd.urlencode()}")
-            #
-            # Filter value changed
-            url = self._update_parameter(
-                request, trigger_name, request.GET.get(trigger_name, "")
-            )
-            return HttpResponseClientRedirect(url)
+            elif "id_" in trigger:
+                if trigger == request.htmx.target:
+                    # Clear filter value triggered by  click on X in input-prepend
+                    qd = request.GET.copy()
+                    qd.pop(trigger_name)
+                    return HttpResponseClientRedirect(
+                        f"{request.path}?{qd.urlencode()}"
+                    )
+                #
+                # Filter value changed
+                url = self._update_parameter(
+                    request, trigger_name, request.GET.get(trigger_name, "")
+                )
+                return HttpResponseClientRedirect(url)
+
         raise ValueError("Bad htmx get request")
 
     def rows_list(self):
@@ -329,6 +403,12 @@ class TableauxView(SingleTableMixin, TemplateView):
         Return a list or tuple with element in format (action_name, "Action text")
         """
         return []
+
+    def render_cell_form(self, id, column):
+        """
+        Override this method to show a form so user can edit the cell value
+        """
+        return HttpResponse(f"No form for column '{column}'")
 
     def patch(self, request, *args, **kwargs):
         # PATCH is used to update a cell after inline editing
@@ -349,33 +429,58 @@ class TableauxView(SingleTableMixin, TemplateView):
         return HttpResponse("x")
 
     def post(self, request, *args, **kwargs):
-        # Posts are an action performed on a queryset
-        if "select_all" in request.POST:
-            subset = "all"
-            self.selected_ids = []
-            self.selected_objects = self.filtered_query_set(request)
-        else:
-            subset = "selected"
-            self.selected_ids = request.POST["selected_ids"].split(",")
-            self.selected_objects = self.get_queryset().filter(pk__in=self.selected_ids)
+        if request.htmx:
+            # check for inline edit request
+            if request.htmx.trigger and "editcol" in request.htmx.trigger:
+                bits = request.htmx.trigger.split("_")
+                id = bits[-1]
+                column = "_".join(bits[1:-1])
+                value = request.POST[column]
+                return self.handle_cell_changed(id, column, value)
 
-        if request.htmx.trigger_name:
-            if "export" in request.htmx.trigger_name:
-                # Export is a special case. It redirects to a regular GET that returns the file
-                request.session["selected_ids"] = self.selected_ids
-                bits = request.htmx.trigger_name.split("_")
-                export_format = bits[1] if len(bits) > 1 else "csv"
-                path = request.path + request.POST["query"]
-                if len(request.POST["query"]) > 1:
-                    path += "&"
-                return HttpResponseClientRedirect(
-                    f"{path}_export={export_format}&_subset={subset}"
-                )
+            # Assume this is an action performed on a queryset
+            self.selected_ids = None
+            self.selected_objects = None
+            if "select_all" in request.POST:
+                subset = "all"
+                self.selected_ids = []
+                self.selected_objects = self.filtered_query_set(request)
+            else:
+                subset = "selected"
+                if request.POST.get("selected_ids", None):
+                    self.selected_ids = request.POST["selected_ids"].split(",")
+                    self.selected_objects = self.get_queryset().filter(
+                        pk__in=self.selected_ids
+                    )
+            if request.htmx.trigger_name:
+                if "export" in request.htmx.trigger_name:
+                    # Export is a special case. It redirects to a regular GET that returns the file
+                    request.session["selected_ids"] = self.selected_ids
+                    bits = request.htmx.trigger_name.split("_")
+                    export_format = bits[-1] if bits[-1] != "export" else "csv"
+                    path = request.path + request.POST["query"]
+                    if len(request.POST["query"]) > 1:
+                        path += "&"
+                    return HttpResponseClientRedirect(
+                        f"{path}_export={export_format}&_subset={subset}"
+                    )
 
-            response = self.handle_action(request, request.htmx.trigger_name)
-            if response:
-                return response
+                response = self.handle_action(request, request.htmx.trigger_name)
+                if response:
+                    return response
         return HttpResponseClientRefresh()
+
+    def handle_cell_changed(self, id, column, value):
+        """
+        This handles the simple case of updating a field on a record
+        For anything more complex, override this method.
+        """
+        record = self.get_queryset().filter(id=id).first()
+        if hasattr(record, column):
+            setattr(record, column, value)
+            record.save()
+            return self.render_row(id=id)
+        return HttpResponse(f"Missing attribute {column} in handle_cell_edit()")
 
     def get_filterset_kwargs(self, filterset_class):
         kwargs = super().get_filterset_kwargs(filterset_class)
@@ -413,6 +518,9 @@ class TableauxView(SingleTableMixin, TemplateView):
         - None: (default) - reloads the last path
         - HttpResponse to be returned
         """
+        return None
+
+    def handle_button(self, request, button_name):
         return None
 
     def cell_clicked(self, pk, column_name, target, return_url):
@@ -498,11 +606,14 @@ class TableauxView(SingleTableMixin, TemplateView):
         define_columns(table, width=self.width)
 
         # set visible columns according to saved setting
-        table.columns_visible = load_columns(self.request, width=self.width)
+        table.columns_visible = load_columns(self.request, self.table, width=self.width)
         if not table.columns_visible:
             table.columns_visible = table.columns_default
             save_columns(
-                self.request, width=self.width, column_list=table.columns_visible
+                self.request,
+                table,
+                width=self.width,
+                column_list=table.columns_visible,
             )
         else:
             # ensure all fixed columns are in the visible list in case table definitions have been changed
@@ -523,6 +634,11 @@ class TableauxView(SingleTableMixin, TemplateView):
                             table.header_fields.append(table.filter.form[col])
                         else:
                             table.header_fields.append(None)
+        if self.sticky_header:
+            if table.attrs.get("class") is None:
+                table.attrs["class"] = "sticky-header"
+            elif "sticky-header" not in table.attrs["class"]:
+                table.attrs["class"] += " sticky-header"
 
     @staticmethod
     def _update_parameter(request, key, value):

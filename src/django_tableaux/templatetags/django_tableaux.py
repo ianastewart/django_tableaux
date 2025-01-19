@@ -42,3 +42,10 @@ def td_attr(column, table):
 @register.filter
 def has_filter_toolbar(view):
     return view.filterset is not None and view.filterstyle == view.filterstyle.TOOLBAR
+
+
+@register.filter
+def is_selection(column):
+    if column.__class__.__name__ == "BoundColumn":
+        return column.column.__class__.__name__ == "SelectionColumn"
+    return False

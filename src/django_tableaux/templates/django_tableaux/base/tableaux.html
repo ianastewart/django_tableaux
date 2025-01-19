@@ -1,0 +1,19 @@
+{% load static django_tableaux %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% include templates.block_head %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+<div class="container">
+  <h3>{{ view.title }}</h3>
+  {% include templates.block_content %}
+</div>
+{% include templates.block_scripts %}
+</body>
+</html>
+
+
+

@@ -1,0 +1,3 @@
+Make adding a selection column automatic
+Allow row click interaction to be intercepted (might already be)
+Return parameter in get requests

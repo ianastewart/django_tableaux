@@ -1,0 +1,34 @@
+{% load querystring from django_tables2 %}
+{% if actions %}
+    <form id="action_form" hx-target="#modals-here">{% csrf_token %}
+    <ul>
+  <li>
+    <input type="hidden" name="query" value={% querystring without "page" "per_page" %}>
+    <input type="hidden" name="selected_ids">
+    <ul style="display: flex; align-items: center;">
+      <div>
+        <div id="selected" style="margin-left: 0.75em"><span id="count">0</span> of {{ table.rows|length }} rows
+          selected
+        </div>
+        <div style="display: none;">
+          <input type="checkbox" id="select_all" name="select_all" value="Select all" style="margin-left: 0.75em">
+          <label for="select_all">Select all rows</label>
+        </div>
+      </div>
+    </ul>
+  </li>
+  <li>
+      <details class="dropdown" id="selectActionMenu" >
+        <summary role="button">Select action</summary>
+          <ul>
+          {% for action in actions %}
+              <li>
+            <a href="#" name="{{ action.0 }}" hx-post>{{ action.1 }}</a>
+              </li>
+          {% endfor %}
+        </ul>
+      </details>
+  </li>
+    </ul>
+  </form>
+{% endif %}

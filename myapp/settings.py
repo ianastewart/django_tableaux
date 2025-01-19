@@ -1,8 +1,12 @@
 from pathlib import Path
+import sys
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+# sys.path.insert(0, os.path.join(BASE_DIR, "src"))
+# sys.path.insert(0, os.path.join(BASE_DIR, "myapp"))
+# print(BASE_DIR)
 SECRET_KEY = "just-an-insecure-test-key"
 DEBUG = True
 
@@ -78,4 +82,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Django_bootstrap4 settings
 BOOTSTRAP4 = {"error_css_class": "", "success_css_class": ""}
-DJANGO_TABLEAUX_LIBRARY = "bootstrap4"
+DJANGO_TABLEAUX_LIBRARY = "picocss"

@@ -1,0 +1,17 @@
+<div class="flex-display flex-between">
+  {% if actions %}
+    <div class="flex-display flex-start">
+      {% include templates.tb_actions %}
+    </div>
+  {% endif %}
+  <div class="flex-display {% if actions %}justify-content-middle{% else %}justify-content-start{% endif %}">
+    <div class="d-sm-none d-lg-block">
+      {% include templates.tb_buttons %}
+    </div>
+    <div class="flex-display flex-end">
+        {% include templates.tb_filter_button %}
+        {% include templates.tb_columns %}
+        {% include templates.tb_rows %}
+    </div>
+  </div>
+</div>
