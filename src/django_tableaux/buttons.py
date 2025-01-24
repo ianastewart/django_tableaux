@@ -13,7 +13,7 @@ class Button:
         self, content="", name="", typ="button", css="btn btn-primary", **kwargs
     ):
         if content == "" and name == "":
-            raise ValueError("Button content and name are both empty.")
+            raise ValueError("Button content and name cannot both be empty.")
         self.name = (
             f"{self.prefix}{name}"
             if name
