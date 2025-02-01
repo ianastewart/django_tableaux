@@ -10,9 +10,9 @@
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 <div class="container">
 <h3>{{ view.title }}</h3>
-{% include "django_tableaux/block_content.html" %}
+{% include templates.block_content %}
 </div>
-{% include "django_tableaux/bootstrap4/block_scripts.html"%}
+{% include templates.block_scripts %}
 </body>
 </html>
 

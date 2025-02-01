@@ -95,7 +95,7 @@ let tableaux = (function () {
                         selAll.parentElement.style.display = 'none';
                     }
                 }
-                Array.from(document.getElementsByClassName("select-checkbox")).forEach(function (box) {
+                Array.from(document.getElementsByName("select-checkbox")).forEach(function (box) {
                     box.checked = checked
                     //box.disabled = false;
                     // highlightRow(box)
@@ -111,17 +111,14 @@ let tableaux = (function () {
             if (checked) {
                 document.getElementById('count').innerText = 'All';
                 if (selAllPage) {
-                    selAllPage.disabled = true
+                    selAllPage.disabled = true;
                 }
-                ;
             } else {
                 if (selAllPage) {
-                    selAllPage.disabled = false
+                    selAllPage.disabled = false;
                 }
-                ;
-                //sslAllPage.checked = false;
             }
-            Array.from(document.getElementsByClassName("select-checkbox")).forEach(function (box) {
+            Array.from(document.getElementsByName("select-checkbox")).forEach(function (box) {
                 box.disabled = checked;
             })
             countChecked();
@@ -153,7 +150,7 @@ let tableaux = (function () {
                 }
             } else {
                 let el = document.querySelector(".td-editing")
-                // Clicking table outsoide dropdown posts existing value and closes dropdown
+                // Clicking table outside dropdown posts existing value and closes dropdown
                 if (el) {
                     window.htmx.ajax('POST', "", {
                         source: "#" + el.id,
@@ -169,7 +166,7 @@ let tableaux = (function () {
             if (e.target.tagName === 'TD') {
                 // Ignore clicks in td holding select checkbox to handle near misses of checkbox
                 if (e.target.innerHTML.search('select-checkbox') >= 0) {
-                    return
+                    return;
                     /*
                     let editing = document.getElementsByClassName("td-editing");
                     if (editing.length > 0) {
@@ -232,11 +229,10 @@ let tableaux = (function () {
                     selAllPage.checked = false
                 }
                 let chkBox = e.target
-                //highlightRow(chkBox)
                 if (!lastChecked) {
                     lastChecked = chkBox
                 } else if (e.shiftKey) {
-                    let chkBoxes = Array.from(document.getElementsByClassName("select-checkbox"))
+                    let chkBoxes = Array.from(document.getElementsByName("select-checkbox"))
                     let start = chkBoxes.indexOf(chkBox)
                     let end = chkBoxes.indexOf(lastChecked)
                     chkBoxes.slice(Math.min(start, end), Math.max(start, end) + 1).forEach(function (box) {
@@ -250,39 +246,32 @@ let tableaux = (function () {
             }
         }
 
-        function highlightRow(box) {
-            let row = box.parentElement.parentElement;
-            let cls = (("selected" in row.dataset) ? row.dataset.selected : "table-active");
-            if (box.checked) {
-                row.classList.add(cls)
-            } else {
-                row.classList.remove(cls)
-            }
-        }
-
-        // Count the number of checked rows and nake sure they are highlighted
+        // Count the number of checked rows and make sure they are highlighted and others not
         // update hidden input with associated ids
         function countChecked() {
             if (selAll && selAll.checked) {
-                return
+                return;
             }
-            let unchecked = Array.from(document.querySelectorAll(".select-checkbox:not(:checked)"));
-            unchecked.forEach(function (el) {
-                let row = el.parentElement.parentElement
-                row.classList.remove("table-active")
+            let ids = [];
+            let boxes = Array.from(document.querySelectorAll("input[name=select-checkbox]"));
+            boxes.forEach(function (el) {
+                let row = el.parentElement.parentElement;
+                let table = row.parentElement.parentElement;
+                let selected = table.getAttribute("selected");
+                if (el.checked) {
+                    ids.push(el.value)
+                    if (selected) {
+                        row.classList.add(selected)
+                    }
+                } else {
+                    row.classList.remove(selected);
+                }
             })
-            let checked = Array.from(document.querySelectorAll(".select-checkbox:checked"));
-            let ids = []
-            checked.forEach(function (el) {
-                let row = el.parentElement.parentElement
-                row.classList.add((("selected" in row.dataset) ? row.dataset.selected : "table-active"))
-                ids.push(el.value)
-            });
-            let hiddenInput = document.querySelector("input[name='selected_ids']")
+            let hiddenInput = document.querySelector("input[name='selected_ids']");
             if (hiddenInput) {
                 hiddenInput.value = ids.toString();
             }
-            let count = checked.length;
+            let count = ids.length;
             let countField = document.getElementById('count');
             if (countField) {
                 countField.innerText = count.toString();
@@ -293,27 +282,25 @@ let tableaux = (function () {
                 actionMenu.enabled = (count > 0 || selAll.checked);
             }
         }
-
         return tb
 
         // Handle clicks on a select list drop down as used for row and columns
         function selectListClick(ev) {
-            let el = ev.target.closest(".select-list")
-
+            let el = ev.target.closest(".select-list");
             if (el) {
                 let elOptions = el.querySelector(".select-options")
                 if (ev.target.classList.contains("select-title")) {
                     document.querySelectorAll(".select-options").forEach(function (e) {
                         if (elOptions != e) {
-                            e.classList.remove("opened")
+                            e.classList.remove("opened");
                         }
                     });
                     ev.target.nextElementSibling.classList.toggle("opened");
                 } else {
                     if (el.classList.contains("multiple")) {
-                        return
+                        return;
                     } else {
-                        el.querySelector(".select-options").classList.remove("opened")
+                        el.querySelector(".select-options").classList.remove("opened");
                     }
                 }
             } else {

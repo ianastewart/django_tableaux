@@ -19,12 +19,13 @@ class Table1(Table):
             "description",
             "decimal",
         )
-        sequence = ["name", "select", "..."]
+        sequence = ["decimal", "name", "..."]
         attrs = {
-            "class": "table",
+            "class": "table table-hover",
+            "selected": "table-info",
         }
 
-    select = SelectionColumn()
+    selection = SelectionColumn()
 
 
 class View2(TableauxView):
@@ -34,8 +35,8 @@ class View2(TableauxView):
     column_settings = True
 
     def get_queryset(self):
-        if Model1.objects.count() < 10:
-            create_objects(10)
+        if Model1.objects.count() < 30:
+            create_objects(30)
         return Model1.objects.all()
 
     def get_bulk_actions(self):
@@ -54,7 +55,7 @@ class View2(TableauxView):
                 "message": f"Action on {self.selected_objects.count()} rows",
                 "alert_class": "alert-success",
             }
-            response = render(request, "django_tableaux/_alert.html", context)
+            response = render(request, self.templates["alert"], context)
             return retarget(response, "#messages")
 
 

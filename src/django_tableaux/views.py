@@ -47,7 +47,7 @@ class TableauxView(SingleTableMixin, TemplateView):
 
     title = ""
     caption = ""
-    template_name = "django_tableaux/bootstrap4/tableaux.html"
+    template_name = "django_tableaux/tableaux.html"
     template_library = None
 
     model = None
