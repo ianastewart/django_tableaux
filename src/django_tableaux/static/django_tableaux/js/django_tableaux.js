@@ -98,7 +98,7 @@ let tableaux = (function () {
                 Array.from(document.getElementsByClassName("select-checkbox")).forEach(function (box) {
                     box.checked = checked
                     //box.disabled = false;
-                    highlightRow(box)
+                    // highlightRow(box)
                 })
                 countChecked()
                 lastChecked = null
@@ -232,11 +232,11 @@ let tableaux = (function () {
                     selAllPage.checked = false
                 }
                 let chkBox = e.target
-                highlightRow(chkBox)
+                //highlightRow(chkBox)
                 if (!lastChecked) {
                     lastChecked = chkBox
                 } else if (e.shiftKey) {
-                    let chkBoxes = checkBoxes()
+                    let chkBoxes = Array.from(document.getElementsByClassName("select-checkbox"))
                     let start = chkBoxes.indexOf(chkBox)
                     let end = chkBoxes.indexOf(lastChecked)
                     chkBoxes.slice(Math.min(start, end), Math.max(start, end) + 1).forEach(function (box) {
@@ -266,6 +266,11 @@ let tableaux = (function () {
             if (selAll && selAll.checked) {
                 return
             }
+            let unchecked = Array.from(document.querySelectorAll(".select-checkbox:not(:checked)"));
+            unchecked.forEach(function (el) {
+                let row = el.parentElement.parentElement
+                row.classList.remove("table-active")
+            })
             let checked = Array.from(document.querySelectorAll(".select-checkbox:checked"));
             let ids = []
             checked.forEach(function (el) {

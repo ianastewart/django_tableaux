@@ -574,7 +574,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         table.infinite_load = self.infinite_load
         table.sticky_header = self.sticky_header
         # variables that control action when table is clicked
-        table.click_action = self.click_action
+        table.click_action = self.click_action.value
         table.url = ""
         table.pk = False
         if self.click_url_name:

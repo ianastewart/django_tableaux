@@ -9,7 +9,12 @@ readme = "README.rst"
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
-dependencies = ["Django", "django-tables2", "django-filter", "django-htmx", "tablib", "bootstrap4"]
+requires-python = ">=3.12"
+dependencies = [
+    "django-bootstrap4>=24.4",
+    "django>=5.1.5",
+    "django-tableaux>=0.6.11",
+]
 
 [project.urls]
 Home = "https://github.com/ianastewart/django_tableaux/"
@@ -19,3 +24,11 @@ DJANGO_SETTINGS_MODULE = "tests.settings"
 python_files = ["test_*.py", "*_tests.py"]
 django_find_project = false
 pythonpath = [".", "src"]
+
+[tool.uv.sources]
+django-tableaux = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "django-tableaux",
+]

@@ -154,7 +154,7 @@ def load_per_page(request: HttpRequest):
 
 
 DEFAULT_APP = "django_tableaux"
-DEFAULT_LIBRARY = "bootstrap4"
+DEFAULT_LIBRARY = "basic"
 
 
 def get_template_library():
@@ -166,19 +166,19 @@ def get_template_library():
 def template_paths(library=None):
     app_path = apps.get_app_config(DEFAULT_APP).path
     default_path = path.join(app_path, "templates", DEFAULT_APP, "basic")
-    custom_path = path.join(app_path, "templates", DEFAULT_APP, "bootstrap4")
+    #custom_path = path.join(app_path, "templates", DEFAULT_APP, "bootstrap4")
 
-    # custom_path = None
-    # library = library or get_template_library()
-    # if library != DEFAULT_LIBRARY:
-    #     if library[:10] == "templates/":
-    #         custom_path = settings.BASE_DIR / library
-    #     else:
-    #         custom_path = path.join(app_path, "templates", DEFAULT_APP, library)
-    #     if not path.exists(custom_path):
-    #         raise ImproperlyConfigured(
-    #             f"Template library '{library}' does not exist."
-    #         )
+    custom_path = None
+    library = library or get_template_library()
+    if library != DEFAULT_LIBRARY:
+        if library[:10] == "templates/":
+            custom_path = settings.BASE_DIR / library
+        else:
+            custom_path = path.join(app_path, "templates", DEFAULT_APP, library)
+        if not path.exists(custom_path):
+            raise ImproperlyConfigured(
+                f"Template library '{library}' does not exist."
+            )
     return default_path, custom_path
 
 
@@ -200,17 +200,13 @@ def get_template_path(template_name) -> str:
 
 def build_templates_dictionary(library=None):
     """
-    Returns a dictionary with key=template name and value = template path
+    Returns a dictionary with key=template name (without.html) and value = full template path
     """
-    result = {}
     default_path, custom_path = template_paths(library=library)
-    # iterate default library and add entries to result unless file path.exists in custom library
-    for template in listdir(default_path):
-        short_name = template[:-5]
-        if custom_path and path.isfile(path.join(custom_path, template)):
-            result[short_name] = path.join(custom_path, template)
-        else:
-            result[short_name] = path.join(default_path, template)
+    result = {template[:-5]:path.join(default_path, template) for template in listdir(default_path)}
+    if custom_path:
+        for template in listdir(custom_path):
+            result[template[:-5]] = path.join(custom_path, template)
     return result
 
 

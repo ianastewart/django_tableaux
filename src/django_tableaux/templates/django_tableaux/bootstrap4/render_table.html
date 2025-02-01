@@ -1,7 +1,15 @@
 {% load django_tables2 i18n %}
 <div class="table-container dt-table" id="table_container">
   {{ breakpoints|json_script:"breakpoints" }}
-  <table {% render_attrs table.attrs %} id="table_data" data-click="{{ table.click_action }}" data-url="{{ table.url }}"
+  <style>
+      .sticky-header {
+    thead {
+        position: sticky;
+        top: -1px;
+    }
+}
+  </style>
+  <table {% if table.attrs %}{% render_attrs table.attrs %}{% else %}class="table"{% endif %} id="table_data" data-click="{{ table.click_action }}" data-url="{{ table.url }}"
                                         data-pk={{ table.pk }} data-target="{{ table.target }}">
     {% if caption %}
       <caption class="caption.attrs">{{ caption }}</caption>{% endif %}
