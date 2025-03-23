@@ -13,17 +13,20 @@
               hx-target="#table_container" hx-push-url="true"
               hx-get="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}"
               name="sort"
+              title="Click to sort by {{ column.name|capfirst }}"
             {% endif %}>
           {% if column.name == "selection" %}
             <input type="checkbox" id="select_all_page" name="select_all_page">
           {% else %}
-            {{ column.header }}
+
             {% if column.orderable %}
               {% if column.is_ordered %}
-                {% if "-" in column.order_by.0 %}&#9651;{% else %}&#9661;{% endif %}
+                {% if "-" in column.order_by.0 %}{{ column.header }}&nbsp;&#9661;{% else %}{{ column.header }}&nbsp;&#9651;{% endif %}
+              {% else %}
+                {{ column.header }}<span style="color: lightgrey;">&nbsp;&#x25c7;</span>
               {% endif %}
             {% else %}
-              &nbsp;&nbsp;
+              &nbsp;&nbsp;{{ column.header }}
             {% endif %}
           {% endif %}
         </th>

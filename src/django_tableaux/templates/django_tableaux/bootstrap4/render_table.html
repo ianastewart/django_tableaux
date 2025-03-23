@@ -8,6 +8,12 @@
         top: -1px;
     }
 }
+      .orderable {
+          cursor: pointer;
+      }
+      .filter-clear {
+          cursor: pointer;
+      }
   </style>
   <table {% render_attrs table.attrs %} id="table_data" data-click="{{ table.click_action }}" data-url="{{ table.url }}"
                                         data-pk={{ table.pk }} data-target="{{ table.target }}">

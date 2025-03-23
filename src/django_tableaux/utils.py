@@ -2,6 +2,7 @@ from os import listdir, path
 
 from django.apps import apps
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest
 from django.shortcuts import render
 from django.template import loader

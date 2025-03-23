@@ -1,9 +1,9 @@
 import logging
 from enum import IntEnum
-
+from django.utils.http import urlencode
 from django.core.exceptions import ImproperlyConfigured
 from django.http import QueryDict, HttpResponse
-from django.shortcuts import render, reverse
+from django.shortcuts import render, reverse, redirect
 from django.template.response import TemplateResponse
 from django.urls.resolvers import NoReverseMatch
 from django.views.generic import TemplateView
@@ -93,6 +93,15 @@ class TableauxView(SingleTableMixin, TemplateView):
         self.templates = build_templates_dictionary(self.template_library)
 
     def get(self, request, *args, **kwargs):
+        # If we have a filterset and an empty query string but initial data:
+        #   create a query string containing the initial data and redirect
+        if self.filterset_class:
+            uri = request.build_absolute_uri()
+            if "?" not in uri:
+                params = urlencode(self.get_initial_data())
+                if params:
+                    return redirect(f"{request.path}?{params}")
+
         table_class = self.get_table_class()
         # If table is responsive and no width parameter was sent,
         # tell client to repeat request adding the width parameter
@@ -135,7 +144,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         """
         return self.object_list
 
-    def render_table(self, template_name=None):
+    def render_table(self, template_name=None, **response_kwargs):
         """
         Use the TemplateResponse Mixin to render the table, optionally using a specific template
         """
@@ -144,7 +153,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         self.preprocess_table(self.table, self.filterset)
         context = self.get_context_data()
         template_name = template_name or self.template_name
-        return self.render_to_response(template_name, context)
+        return self.render_to_response(template_name, context, **response_kwargs)
 
     def render_row(self, id=None, template_name=None):
         self.object_list = self.get_table_data().filter(id=id)
@@ -265,7 +274,8 @@ class TableauxView(SingleTableMixin, TemplateView):
                 return self.render_table(self.templates["render_table"])
 
             if trigger_name == "sort":
-                return self.render_table(self.templates["render_table"])
+                response = self.render_table(self.templates["render_table"])
+                return trigger_client_event(response, "tableaux_init", after="swap")
 
             if "_row_" in trigger_name:
                 rows = trigger_name[5:]

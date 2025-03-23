@@ -21,6 +21,7 @@ Key features
 The project is still in beta but is fully usable.
 
 Full documentation to follow.
+0.7.4 fix filter initialisation
 """
 
-__version__ = "0.7.2"
+__version__ = "0.7.4"

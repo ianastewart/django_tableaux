@@ -311,6 +311,7 @@ let tableaux = (function () {
 )
 ();
 window.addEventListener("load", tableaux.init)
+document.body.addEventListener("tableaux_init", tableaux.init)
 
 function handleClick() {
     let me = document.querySelector(".editing");
