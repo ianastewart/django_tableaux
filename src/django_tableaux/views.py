@@ -269,6 +269,10 @@ class TableauxView(SingleTableMixin, TemplateView):
         trigger_name = request.htmx.trigger_name
         trigger = request.htmx.trigger
 
+        # Deal with filter clear not working for datepicker
+        if trigger is None and trigger_name is None:
+            return HttpResponseClientRefresh()
+
         if trigger_name is not None:
             if trigger_name == "page":
                 return self.render_table(self.templates["render_table"])
