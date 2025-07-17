@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title></title>
+</head>
+<body>
+{{ breakpoints|json_script:"breakpoints-data" }}
+<script>
+const breakpoints = JSON.parse(document.getElementById('breakpoints-data').textContent);
+
+    // Convert object to sorted array of [name, value] pairs (ascending by value)
+    const breakpointEntries = Object.entries(breakpoints).sort((a, b) => a[1] - b[1]);
+
+    function getCurrentBreakpoint() {
+        const width = window.innerWidth;
+        let current = 'xs'; // default for widths below the smallest breakpoint
+
+        for (const [name, value] of breakpointEntries) {
+            if (width >= value) {
+                current = name;
+            } else {
+                break; // stop once we've gone past the current width
+            }
+        }
+        return current;
+    }
+
+    let url = window.location.href
+    const bp = `_bp=${getCurrentBreakpoint()}`
+    if (url.indexOf("?") > 0) {
+        url += "&" + bp
+    } else {
+        url += "?" + bp
+    }
+    window.location = url
+</script>
+</body>
+</html>

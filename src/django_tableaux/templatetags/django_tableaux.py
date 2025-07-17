@@ -1,5 +1,7 @@
 from django import template
 from django.utils.safestring import mark_safe
+from django.urls import reverse
+
 
 register = template.Library()
 
@@ -15,6 +17,12 @@ def attrs(context):
             result += f' {key}="{value}"'
     return mark_safe(result)
 
+@register.simple_tag(takes_context=False)
+def load_table(table_id, url_name):
+    url = reverse(url_name)
+    hx_vals = "js:{ '_bp': getCurrentBreakpoint() }"
+    code = f'<div id="{table_id}", name="table_load" hx-trigger="load"  hx-get="{url}" hx-vals="{hx_vals}" hx-swap="outerHTML"></div>'
+    return mark_safe(code)
 
 @register.filter
 def render_button(button):

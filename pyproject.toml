@@ -17,6 +17,8 @@ dependencies = [
     "django-htmx>=1.21.0",
     "django-filter>=23.5",
     "tablib>=3.5.0",
+    "pytest>=8.4.1",
+    "pytest-django>=4.11.1",
 ]
 
 [project.urls]

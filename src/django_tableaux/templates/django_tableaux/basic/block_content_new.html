@@ -1,0 +1,18 @@
+{% load static django_tableaux %}
+<div id="block_content">
+  {% if view.has_filter_toolbar %}
+      {% include templates.toolbar_filter %}
+  {% endif %}
+  {% if view.filter_pills and filters %}
+    <div class="{{ css_toolbar }} d-flex">
+      {% include templates.tb_filter_pills %}
+    </div>
+  {% endif %}
+  {% if actions or buttons or table.column_states or view.filterset_class and view.filter_modal %}
+    <div class="{{ css_toolbar }}">
+      {% include templates.toolbar_main %}
+    </div>
+  {% endif %}
+    <div id="table_load" hx-trigger="load"  hx-get="{{ request.path }}" hx-swap="outerHTML"></div>
+  <div id="modals-here"></div>
+</div>

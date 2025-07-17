@@ -1,4 +1,5 @@
 from os import listdir, path
+from symtable import Class
 
 from django.apps import apps
 from django.conf import settings
@@ -7,6 +8,7 @@ from django.http import HttpRequest
 from django.shortcuts import render
 from django.template import loader
 from django.utils.safestring import mark_safe
+from django_tables2 import Table
 
 
 def _view_name(request):
@@ -16,39 +18,62 @@ def _view_name(request):
         return "test"
 
 
-def save_columns(request: HttpRequest, table, width: int, column_list: list):
-    key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{width}"
-    request.session[key] = column_list
+def save_columns_dict(
+    request: HttpRequest, table: Table, bp: str, columns_dict: dict[str, bool]
+):
+    key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
+    request.session[key] = columns_dict
 
 
-def load_columns(request: HttpRequest, table, width: int):
-    key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{width}"
-    return request.session[key] if key in request.session else None
+def load_columns_dict(request: HttpRequest, table: Table, bp: str) -> dict[str, bool]:
+    key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
+    old_dict = request.session.get(key, default_columns_dict(table, bp))
+    # Make sure there is an entry for every defined column, and no entries for columns no longer present
+    columns_dict = {}
+    for col in table.sequence:
+        columns_dict[col] = old_dict.get(col, False)
+    return columns_dict
+
+def new_columns_dict(table: Table) -> dict:
+    return {col: True for col in table.sequence}
+
+def default_columns_dict(table: Table, bp: str) -> dict[str, bool]:
+    columns_dict = new_columns_dict(table)
+    for key in columns_dict.keys():
+        if key not in table.columns_default:
+            columns_dict[key] = False
+    return columns_dict
+
+# def save_columns(request: HttpRequest, table: Table, bp: str, column_list: list):
+#     key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
+#     request.session[key] = column_list
+#
+#
+# def load_columns(request: HttpRequest, table: Table, bp: str) -> list:
+#     key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
+#     return request.session[key] if key in request.session else []
 
 
 def set_column(
-    request: HttpRequest, table, width: int, column_name: str, checked: bool
+    request: HttpRequest, table: Table, bp: str, column_name: str, checked: bool
 ) -> list:
-    columns = load_columns(request, table, width)
-    if checked:
-        if column_name not in columns:
-            columns.append(column_name)
-    elif column_name in columns:
-        columns.remove(column_name)
-    save_columns(request, table, width, columns)
-    return columns
+    column_dict = load_columns_dict(request, table, bp)
+    column_dict[column_name] = checked
+    save_columns_dict(request, table, bp, column_dict)
 
 
-def visible_columns(request: HttpRequest, table_class, width):
+def visible_columns(
+    request: HttpRequest, table_class, bp_dict: dict[str, int], bp: str
+) -> list[str]:
     """
     Return the list of visible column names in correct sequence
     """
     table = table_class(data=[])
-    define_columns(table, width)
-    if not table.responsive:
-        width = 0
-    columns = load_columns(request, table, width)
-    return [col for col in table.sequence if col in columns]
+    define_columns(table, bp_dict, bp)
+    # if not table.responsive:
+    #     bp=None
+    columns_dict = load_columns_dict(request, table, bp)
+    return [col for col in table.sequence if col in columns_dict]
 
 
 def set_select_column(table):
@@ -77,13 +102,13 @@ def set_select_column(table):
             table.sequence.insert(0, table.select_name)
 
 
-def define_columns(table, width):
+def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
     """
-    Add 4 lists of column names to table:
-    columns_fixed = columns that are always visible
-    columns_optional = columns that the user can choose to show
-    columns_default = default visible columns
-    columns_editable = columns that can be edited in situ
+    Add 4 lists of column names to table according to the breakpoint
+      columns_fixed = columns that are always visible
+      columns_optional = columns that the user can choose to show
+      columns_default = default visible columns
+      columns_editable = columns that can be edited in situ
     """
     table.responsive = False
     table.columns_fixed = []
@@ -95,22 +120,29 @@ def define_columns(table, width):
     if table.Meta:
         col_dict = {}
         if hasattr(table.Meta, "editable"):
-            table.columns_editable = table.Meta.editable
+            if type(table.Meta.editable) is list:
+                table.columns_editable = table.Meta.editable
+            else:
+                raise ImproperlyConfigured("Meta.editable must be a list")
         if hasattr(table.Meta, "columns"):
-            if table.Meta.columns is dict:
+            if type(table.Meta.columns) is dict:
                 col_dict = table.Meta.columns
             else:
-                raise ValueError("Meta.columns must be a dictionary")
+                raise ImproperlyConfigured("Meta.columns must be a dictionary")
+        # responsive overides any existing column definition
         if hasattr(table.Meta, "responsive"):
-            table.responsive = True
-            key = 0
-            for break_point in table.Meta.responsive.keys():
-                if width >= break_point:
-                    key = break_point
-            col_dict = table.Meta.responsive.get(key, {})
-            # todo attrs
+            if type(table.Meta.responsive) is dict:
+                table.responsive = True
+                col_dict = resolve_breakpoint(bp_dict, table.Meta.responsive, bp)
+            else:
+                raise ImproperlyConfigured("Meta.responsive must be a dictionary")
+            # # todo attrs
         table.columns_fixed = col_dict.get("fixed", [])
         table.columns_default = col_dict.get("default", table.sequence)
+        # default always includes fixed columns even if they are not specified
+        # so concat the two lists and remove duplicates
+        seen = set()
+        table.columns_default = [x for x in table.columns_fixed + table.columns_default if not (x in seen or seen.add(x))]
         table.mobile = col_dict.get("mobile", False)
     if not table.columns_fixed:
         table.columns_fixed = table.sequence[:1]
@@ -123,6 +155,59 @@ def define_columns(table, width):
         for c in table.sequence
         if c not in table.columns_fixed and c != table.select_name
     ]
+
+
+def select_breakpoint():
+    all_bps = ["sm", "md", "lg", "xl", "xxl"]
+    responsive = {"md": "MD", "xl": "XL"}
+    bp_dict = {key: responsive.get(key) for key in all_bps}
+    entry = "DF"
+    for key in reversed(all_bps):
+        if bp_dict[key] is None:
+            bp_dict[key] = entry
+        else:
+            entry = responsive[key]
+    return bp_dict
+
+
+def resolve_breakpoint(
+    bp_dict: dict[str, int], responsive: dict[str, dict], bp: str
+) -> dict | None:
+    """
+    Finds the most appropriate responsive configuration for a given breakpoint.
+
+    This function implements a "fall-forward" and "fall-back" logic:
+    - If `bp` is defined in `responsive`, its configuration is used.
+    - If `bp` is NOT defined, it uses the configuration of the next SMALLEST defined breakpoint.
+    - If `bp` is smaller than any defined breakpoint, it uses the configuration
+      of the FIRST available (i.e., smallest) defined breakpoint.
+    - If `bp` is not a valid breakpoint key, it also falls back to the first
+      available configuration.
+
+    Args:
+        bp_dict (dict): A dictionary of all possible breakpoint keys.
+        responsive (dict): A dictionary mapping breakpoint keys to their configuration values.
+        bp (str): The current breakpoint key to resolve.
+
+    Returns:
+        The resolved configuration value, or None if no responsive configurations are defined.
+    """
+    # The config of the first defined breakpoint encountered, used as a fallback.
+    fallback_config = None
+    # The config of the most recent defined breakpoint found during iteration.
+    candidate_config = None
+    if responsive is None:
+        return None
+    for key in bp_dict.keys():
+        if key in responsive:
+            candidate_config = responsive[key]
+            if fallback_config is None:
+                fallback_config = candidate_config
+        # If we've reached the target breakpoint, the current candidate is the correct one.
+        if key == bp and candidate_config:
+            return candidate_config
+    # No match so, we return the first defined breakpoint we found.
+    return fallback_config
 
 
 def set_column_states(table):
@@ -167,7 +252,7 @@ def get_template_library():
 def template_paths(library=None):
     app_path = apps.get_app_config(DEFAULT_APP).path
     default_path = path.join(app_path, "templates", DEFAULT_APP, "basic")
-    #custom_path = path.join(app_path, "templates", DEFAULT_APP, "bootstrap4")
+    # custom_path = path.join(app_path, "templates", DEFAULT_APP, "bootstrap4")
 
     custom_path = None
     library = library or get_template_library()
@@ -177,9 +262,7 @@ def template_paths(library=None):
         else:
             custom_path = path.join(app_path, "templates", DEFAULT_APP, library)
         if not path.exists(custom_path):
-            raise ImproperlyConfigured(
-                f"Template library '{library}' does not exist."
-            )
+            raise ImproperlyConfigured(f"Template library '{library}' does not exist.")
     return default_path, custom_path
 
 
@@ -204,7 +287,10 @@ def build_templates_dictionary(library=None):
     Returns a dictionary with key=template name (without.html) and value = full template path
     """
     default_path, custom_path = template_paths(library=library)
-    result = {template[:-5]:path.join(default_path, template) for template in listdir(default_path)}
+    result = {
+        template[:-5]: path.join(default_path, template)
+        for template in listdir(default_path)
+    }
     if custom_path:
         for template in listdir(custom_path):
             result[template[:-5]] = path.join(custom_path, template)

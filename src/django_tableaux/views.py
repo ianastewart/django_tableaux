@@ -1,4 +1,5 @@
 import logging
+import time
 from enum import IntEnum
 from django.utils.http import urlencode
 from django.core.exceptions import ImproperlyConfigured
@@ -21,12 +22,13 @@ from .utils import (
     define_columns,
     set_select_column,
     set_column_states,
-    save_columns,
-    load_columns,
+    save_columns_dict,
+    load_columns_dict,
     set_column,
     visible_columns,
     save_per_page,
     build_templates_dictionary,
+    new_columns_dict,
 )
 
 logger = logging.getLogger(__name__)
@@ -81,6 +83,7 @@ class TableauxView(SingleTableMixin, TemplateView):
     export_class = TableExport
     export_formats = (TableExport.CSV,)
 
+    _bp = ""
     ALLOWED_PARAMS = ["page", "per_page", "sort", "_width"]
 
     def __init__(self, **kwargs):
@@ -103,13 +106,17 @@ class TableauxView(SingleTableMixin, TemplateView):
                     return redirect(f"{request.path}?{params}")
 
         table_class = self.get_table_class()
-        # If table is responsive and no width parameter was sent,
-        # tell client to repeat request adding the width parameter
-        if hasattr(table_class, "Meta") and hasattr(table_class.Meta, "responsive"):
-            if "_width" in request.GET:
-                self.width = int(request.GET["_width"])
-            else:
-                return render(request, self.templates["width_request"])
+        # When called via {% load_table %} using hx-get we always have a breakpoint parameter _bp
+        if "_bp" in request.GET:
+            self._bp = request.GET["_bp"]
+        # If initial Get and table is responsive ask client to repeat the request with the breakpoint parameter
+        elif hasattr(table_class, "Meta") and hasattr(table_class.Meta, "responsive"):
+            return render(
+                request,
+                self.templates["bp_request"],
+                context={"breakpoints": self.get_breakpoint_values()},
+            )
+
         if request.htmx:
             return self.get_htmx(request, *args, **kwargs)
 
@@ -201,7 +208,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         context.update(
             table=self.table,
             filter=self.filterset,
-            object_list=self.object_list,
+            object_list=self.get_filtered_object_list(),
             title=self.title,
             caption=self.caption,
             filter_button=self.filter_button,
@@ -271,9 +278,12 @@ class TableauxView(SingleTableMixin, TemplateView):
 
         # Deal with filter clear not working for datepicker
         if trigger is None and trigger_name is None:
-            return HttpResponseClientRefresh()
+            return self.render_table(self.templates["render_table"])
 
         if trigger_name is not None:
+            if trigger_name == "table_load":
+                return self.render_table(self.templates["render_table"])
+
             if trigger_name == "page":
                 return self.render_table(self.templates["render_table"])
 
@@ -292,15 +302,19 @@ class TableauxView(SingleTableMixin, TemplateView):
                 if "__reset" in trigger_name:
                     # Reset default columns settings.
                     # To make sure the column drop down is correctly updated we do a full client refresh,
-                    define_columns(table, self.width)
-                    save_columns(request, table, self.width, table.columns_default)
+                    define_columns(table, self.get_breakpoint_values(), self.bp)
+                    columns_dict = new_columns_dict(table, self._bp)
+                    for column in columns_dict.keys():
+                        if column not in table.columns_default:
+                            columns_dict[column] = False
+                    save_columns_dict(request, table, self._bp, table.columns_default)
                     return HttpResponseClientRefresh()
                 # Click on a checkbox in the column dropdown re-renders the table data with new column settings.
                 # The column dropdown does not need to be rendered because the checkboxes are in the correct state
                 self.object_list = self.get_queryset()
                 col_name = trigger_name[5:]
                 checked = trigger_name in request.GET
-                set_column(request, table, self.width, col_name, checked)
+                set_column(request, table, self._bp, col_name, checked)
                 return self.render_table(self.templates["render_table_data"])
 
             if trigger_name == "filter" and self.filterset_class:
@@ -372,9 +386,12 @@ class TableauxView(SingleTableMixin, TemplateView):
                 bits = trigger.split("_")
                 return self.edit_cell(
                     pk=bits[1],
-                    column_name=visible_columns(request, self.table_class, self.width)[
-                        int(bits[2])
-                    ],
+                    column_name=visible_columns(
+                        request,
+                        self.table_class,
+                        self.get_breakpoint_values(),
+                        self._bp,
+                    )[int(bits[2])],
                     target=request.htmx.target,
                 )
 
@@ -383,9 +400,12 @@ class TableauxView(SingleTableMixin, TemplateView):
                 bits = trigger.split("_")
                 return self.cell_clicked(
                     pk=bits[1],
-                    column_name=visible_columns(request, self.table_class, self.width)[
-                        int(bits[2])
-                    ],
+                    column_name=visible_columns(
+                        request,
+                        self.table_class,
+                        self.get_breakpoint_values(),
+                        self._bp,
+                    )[int(bits[2])],
                     target=request.htmx.target,
                 )
 
@@ -428,9 +448,10 @@ class TableauxView(SingleTableMixin, TemplateView):
         # PATCH is used to update a cell after inline editing
         params = QueryDict(request.body)
         bits = request.htmx.target.split("_")
-        column_name = visible_columns(request, self.table_class, int(bits[3]))[
-            int(bits[2])
-        ]
+        # todo fix patch if needed
+        column_name = visible_columns(
+            request, self.table_class, self.get_breakpoint_values(), int(bits[3])
+        )[int(bits[2])]
         value = params.get(column_name, None)
         print(bits[1], value)
         if value:
@@ -579,9 +600,12 @@ class TableauxView(SingleTableMixin, TemplateView):
             )
         return HttpResponseClientRefresh()
 
+    def get_breakpoint_values(self):
+        return {"sm": 768, "md": 992, "lg": 1200, "xl": 1400, "xxl": 1600}
+
     def preprocess_table(self, table, _filter=None):
         """
-        Add extra attributes needed for rendering to the table
+        This adds dynamic attributes to the table instance
         """
         table.filter = _filter
         table.infinite_scroll = self.infinite_scroll
@@ -617,17 +641,18 @@ class TableauxView(SingleTableMixin, TemplateView):
             raise ImproperlyConfigured("Selection column without bulk actions")
 
         # define possible columns depending upon the current width
-        define_columns(table, width=self.width)
+        define_columns(table, self.get_breakpoint_values(), self._bp)
 
         # set visible columns according to saved setting
-        table.columns_visible = load_columns(self.request, self.table, width=self.width)
+        columns_dict = load_columns_dict(self.request, self.table, self._bp)
+        table.columns_visible = [col for col in columns_dict if columns_dict[col]]
         if not table.columns_visible:
             table.columns_visible = table.columns_default
-            save_columns(
+            save_columns_dict(
                 self.request,
                 table,
-                width=self.width,
-                column_list=table.columns_visible,
+                self._bp,
+                columns_dict==table.columns_visible,
             )
         else:
             # ensure all fixed columns are in the visible list in case table definitions have been changed

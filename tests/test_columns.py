@@ -1,26 +1,62 @@
-from django.db.models import *
+from django.db import models
+from django.test import RequestFactory
 from django_tables2 import tables
 
-from src.django_tableaux.buttons import Button
+from django_tableaux.utils import new_columns_dict
 from src.django_tableaux.columns import SelectionColumn
-from src.django_tableaux.utils import define_columns, set_select_column
-from myapp.models import TestModel
+from src.django_tableaux.utils import (
+    define_columns,
+    set_select_column,
+    select_breakpoint,
+    resolve_breakpoint,
+    save_columns_dict,
+    load_columns_dict,
+    set_column,
+)
+
+
+class TestModel(models.Model):
+    a = models.CharField(max_length=20)
+    b = models.CharField(max_length=20)
+    c = models.CharField(max_length=20)
+    d = models.CharField(max_length=20)
+
+
+BP_DICT = {"sm": 768, "md": 992, "lg": 1200, "xl": 1400, "xxl": 1600}
 
 
 class TestTable1(tables.Table):
+    """@DynamicAttrs"""
+
     class Meta:
         model = TestModel
 
 
+def test_select_breakpoints():
+    result = select_breakpoint()
+    assert result
+
+
+def test_resolve_breakpoint():
+    responsive = {"md": {"MD": None}, "lg": {"LG": None}, "xl": {"LG": None}}
+    assert resolve_breakpoint(BP_DICT, responsive, "sm") == {"MD": None}
+    assert resolve_breakpoint(BP_DICT, responsive, "md") == {"MD": None}
+    assert resolve_breakpoint(BP_DICT, responsive, "lg") == {"LG": None}
+    assert resolve_breakpoint(BP_DICT, responsive, "xl") == {"LG": None}
+    assert resolve_breakpoint(BP_DICT, responsive, "xxl") == {"LG": None}
+
+
 def test_define_columns_no_fields_means_all_fixed():
     table = TestTable1([])
-    define_columns(table, width=0)
+    define_columns(table, BP_DICT, bp="")
     assert table.columns_fixed == ["id"]
     assert table.columns_optional == ["a", "b", "c", "d"]
     assert table.columns_default == ["id", "a", "b", "c", "d"]
 
 
 class TestTable2(tables.Table):
+    """@DynamicAttrs"""
+
     class Meta:
         model = TestModel
         fields = ["a", "b", "c"]
@@ -28,13 +64,15 @@ class TestTable2(tables.Table):
 
 def test_define_columns_fields():
     table = TestTable2([])
-    define_columns(table, width=0)
+    define_columns(table, BP_DICT)
     assert table.columns_fixed == ["a"]
     assert table.columns_optional == ["b", "c"]
     assert table.columns_default == ["a", "b", "c"]
 
 
 class TestTable3(tables.Table):
+    """@DynamicAttrs"""
+
     class Meta:
         model = TestModel
         fields = ["a", "b", "c"]
@@ -43,73 +81,95 @@ class TestTable3(tables.Table):
 
 def test_define_columns_sequence():
     table = TestTable3([])
-    define_columns(table, width=0)
+    define_columns(table, BP_DICT)
     assert table.columns_fixed == ["c"]
     assert table.columns_optional == ["b", "a"]
     assert table.columns_default == ["c", "b", "a"]
 
 
 class TestTable4(tables.Table):
+    """@DynamicAttrs"""
+
     class Meta:
         model = TestModel
-        fields = ["a", "b", "c"]
+        fields = ["a", "b", "c", "d"]
+        columns = {"fixed": ["a", "b"], "default": ["c"]}
+
+
+def test_define_columns_fixed_and_default_without_fixed_entries():
+    table = TestTable4([])
+    define_columns(table, BP_DICT)
+    assert table.columns_fixed == ["a", "b"]
+    assert table.columns_optional == ["c", "d"]
+    assert table.columns_default == ["a", "b", "c"]
+
+
+class TestTable4A(tables.Table):
+    """@DynamicAttrs"""
+
+    class Meta:
+        model = TestModel
+        fields = ["a", "b", "c", "d"]
         columns = {"fixed": ["a", "b"], "default": ["a", "b", "c"]}
 
 
-def test_define_columns_fixed_and_default():
-    table = TestTable4([])
-    define_columns(table, width=0)
+def test_define_columns_fixed_and_default_without_fixed_entries():
+    table = TestTable4A([])
+    define_columns(table, BP_DICT)
     assert table.columns_fixed == ["a", "b"]
-    assert table.columns_optional == ["c"]
+    assert table.columns_optional == ["c", "d"]
     assert table.columns_default == ["a", "b", "c"]
 
 
 class TestTable5(tables.Table):
+    """@DynamicAttrs"""
+
     class Meta:
         model = TestModel
         fields = ["a", "b", "c", "d"]
         columns = {"fixed": ["a", "b", "c", "d"]}
         responsive = {
-            100: {"fixed": ["a"]},
-            500: {"fixed": ["a", "b"], "default": ["a", "b", "c"]},
-            1000: {"fixed": ["a", "b", "c"], "default": ["a", "b", "c", "d"]},
+            "sm": {"fixed": ["a"]},
+            "md": {"fixed": ["a", "b"], "default": ["a", "b", "c"]},
+            "lg": {"fixed": ["a", "b", "c"], "default": ["a", "b", "c", "d"]},
         }
 
 
 def test_define_columns_responsive():
     table = TestTable5([])
-    define_columns(table, width=100)
+    define_columns(table, BP_DICT, bp="sm")
     assert table.columns_fixed == ["a"]
     assert table.columns_optional == ["b", "c", "d"]
     assert table.columns_default == ["a", "b", "c", "d"]
-    define_columns(table, width=500)
+    define_columns(table, BP_DICT, bp="md")
     assert table.columns_fixed == ["a", "b"]
     assert table.columns_optional == ["c", "d"]
     assert table.columns_default == ["a", "b", "c"]
-    define_columns(table, width=1000)
+    define_columns(table, BP_DICT, bp="lg")
     assert table.columns_fixed == ["a", "b", "c"]
     assert table.columns_optional == ["d"]
-    assert table.columns_default == ["a", "b", "c", "d"]
     assert table.columns_default == ["a", "b", "c", "d"]
 
 
 class TestTable6(tables.Table):
+    """@DynamicAttrs"""
+
     class Meta:
         model = TestModel
         fields = ["a", "b", "c", "d"]
         responsive = {
-            100: {"fixed": ["a"]},
-            1000: {},
+            "sm": {"fixed": ["a"]},
+            "lg": {},
         }
 
 
 def test_define_columns_responsive_no_defaults():
     table = TestTable6([])
-    define_columns(table, width=100)
+    define_columns(table, BP_DICT, bp="sm")
     assert table.columns_fixed == ["a"]
-    ## default=all fields if default not specified
+    # default = all fields if default not specified
     assert table.columns_default == ["a", "b", "c", "d"]
-    define_columns(table, width=1000)
+    define_columns(table, BP_DICT, bp="lg")
     # Only first field is fixed if fixed not specified
     assert table.columns_fixed == ["a"]
     # default is every field if no fixed and no default
@@ -117,6 +177,8 @@ def test_define_columns_responsive_no_defaults():
 
 
 class TestTable7(tables.Table):
+    """@DynamicAttrs"""
+
     class Meta:
         model = TestModel
         fields = ["a", "b", "c", "d"]
@@ -127,11 +189,13 @@ class TestTable7(tables.Table):
 def test_define_columns_with_selection_not_in_sequence():
     table = TestTable7([])
     set_select_column(table)
-    define_columns(table, width=0)
+    define_columns(table, BP_DICT)
     assert table.columns_fixed == ["selection", "a"]
 
 
 class TestTable8(tables.Table):
+    """@DynamicAttrs"""
+
     class Meta:
         model = TestModel
         fields = ["a", "b", "c", "d"]
@@ -143,11 +207,13 @@ class TestTable8(tables.Table):
 def test_define_columns_with_selection_first_in_sequence():
     table = TestTable8([])
     table.select_name = "selection"
-    define_columns(table, width=0)
+    define_columns(table, BP_DICT)
     assert table.columns_fixed == ["selection", "a"]
 
 
 class TestTable9(tables.Table):
+    """@DynamicAttrs"""
+
     class Meta:
         model = TestModel
         fields = ["a", "b", "c", "d"]
@@ -159,43 +225,44 @@ class TestTable9(tables.Table):
 def test_define_columns_with_selection_not_first_in_sequence():
     table = TestTable9([])
     table.select_name = "selection"
-    define_columns(table, width=0)
+    define_columns(table, BP_DICT)
     assert table.columns_fixed == ["a", "selection"]
 
 
-def test_default_button():
-    button = Button("Test button")
-    html = button.render()
-    assert "<button" in html
-    assert 'type="button"' in html
-    assert 'class="btn btn-primary"' in html
-    assert 'name="test-button"' in html
-    assert ">Test button</button" in html
+def test_load_empty_columns_dictionary_returns_default_settings():
+    table = TestTable5([])
+    define_columns(table, BP_DICT)
+    request = RequestFactory().get("/")
+    request.session = {}
+    columns_dict = load_columns_dict(request, table, "sm")
+    assert columns_dict["a"]
+    assert columns_dict["b"]
+    assert columns_dict["c"]
+    assert columns_dict["d"]
+    request.session = {}
+    columns_dict = load_columns_dict(request, table, "md")
+    assert columns_dict["a"]
+    assert columns_dict["b"]
+    assert columns_dict["c"]
+    assert not columns_dict["d"]
 
 
-def test_button_renders_attributes():
-    button = Button(
-        "Test button",
-        css="btn btn-secondary",
-        type="submit",
-        name="test_name",
-        hx_get="/test",
-        hx_target="#target",
-    )
-    html = button.render()
-    assert 'class="btn btn-secondary"' in html
-    assert 'type="submit"' in html
-    assert 'name="test_name"' in html
-    assert 'hx-get="/test"' in html
-    assert 'hx-target="#target"' in html
+def test_save_all_columns():
+    table = TestTable8([])
+    request = RequestFactory().get("/")
+    request.session = {}
+    columns_dict = new_columns_dict(table)
+    save_columns_dict(request, table, bp="", columns_dict=columns_dict)
+    assert load_columns_dict(request, table, bp="") == columns_dict
 
 
-def test_link_button_when_href_present():
-    button = Button("Test button", href="url")
-    html = button.render()
-    assert "<a" in html
-    assert 'href="url"' in html
-    assert "type" not in html
+def test_save_columns_a_and_c():
+    table = TestTable8([])
+    request = RequestFactory().get("/")
+    request.session = {}
+    columns_dict = new_columns_dict(table)
+    save_columns_dict(request, table, bp="", columns_dict=columns_dict)
+    assert load_columns_dict(request, table, bp="") == columns_dict
 
 
 # def test_update_url_empty():

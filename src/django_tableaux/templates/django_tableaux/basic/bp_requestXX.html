@@ -1,0 +1,21 @@
+{% load static django_htmx %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title></title>
+  {% htmx_script %}
+</head>
+<body hx-boost="true">
+<div name="table_breakpoint" hx-trigger="load"  hx-get="" hx-headers='js:{"Tbx-bp": getBreakpoint()}' hx-swap="outerHTML"></div>
+<script src="{% static 'django_tableaux/js/breakpoints.js' %}"></script>
+<script>
+    function getBreakpoint() {
+        bh = new BreakpointHandler()
+        bp =  bh.getCurrentBreakpoint()
+        console.log("Breakpoint: " & bp)
+        return bp
+    }
+</script>
+</body>
+</html>
