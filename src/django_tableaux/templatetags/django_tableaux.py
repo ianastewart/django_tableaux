@@ -18,10 +18,10 @@ def attrs(context):
     return mark_safe(result)
 
 @register.simple_tag(takes_context=False)
-def load_table(table_id, url_name):
+def load_table(url_name):
     url = reverse(url_name)
-    hx_vals = "js:{ '_bp': getCurrentBreakpoint() }"
-    code = f'<div id="{table_id}", name="table_load" hx-trigger="load"  hx-get="{url}" hx-vals="{hx_vals}" hx-swap="outerHTML"></div>'
+    hx_vals = "js:{ '_bp': tableaux.getCurrentBreakpoint() }"
+    code = f'<div name="table_load" hx-trigger="load"  hx-get="{url}" hx-vals="{hx_vals}" hx-swap="outerHTML"></div>'
     return mark_safe(code)
 
 @register.filter

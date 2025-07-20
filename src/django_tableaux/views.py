@@ -607,6 +607,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         """
         This adds dynamic attributes to the table instance
         """
+        table.id = f"tbx_{table.__class__.__name__.lower()}"
         table.filter = _filter
         table.infinite_scroll = self.infinite_scroll
         table.infinite_load = self.infinite_load
@@ -633,32 +634,32 @@ class TableauxView(SingleTableMixin, TemplateView):
         table.target = self.click_target
 
         set_select_column(table)
-        if self.get_bulk_actions() and not table.select_name:
-            raise ImproperlyConfigured(
-                "Bulk actions require a selection column to be defined"
-            )
-        if table.select_name and not self.get_bulk_actions():
-            raise ImproperlyConfigured("Selection column without bulk actions")
+        # if self.get_bulk_actions() and not table.select_name:
+        #     raise ImproperlyConfigured(
+        #         "Bulk actions require a selection column to be defined"
+        #     )
+        # if table.select_name and not self.get_bulk_actions():
+        #     raise ImproperlyConfigured("Selection column without bulk actions")
 
-        # define possible columns depending upon the current width
+        # define possible columns depending upon the current breakpoint
         define_columns(table, self.get_breakpoint_values(), self._bp)
 
         # set visible columns according to saved setting
         columns_dict = load_columns_dict(self.request, self.table, self._bp)
         table.columns_visible = [col for col in columns_dict if columns_dict[col]]
-        if not table.columns_visible:
-            table.columns_visible = table.columns_default
-            save_columns_dict(
-                self.request,
-                table,
-                self._bp,
-                columns_dict==table.columns_visible,
-            )
-        else:
-            # ensure all fixed columns are in the visible list in case table definitions have been changed
-            for entry in table.columns_fixed:
-                if entry not in table.columns_visible:
-                    table.columns_visible.append(entry)
+        # if not table.columns_visible:
+        #     table.columns_visible = table.columns_default
+        #     save_columns_dict(
+        #         self.request,
+        #         table,
+        #         self._bp,
+        #         columns_dict==table.columns_visible,
+        #     )
+        # else:
+        #     # ensure all fixed columns are in the visible list in case table definitions have been changed
+        #     for entry in table.columns_fixed:
+        #         if entry not in table.columns_visible:
+        #             table.columns_visible.append(entry)
 
         set_column_states(table)
 

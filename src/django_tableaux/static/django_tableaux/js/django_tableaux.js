@@ -6,9 +6,91 @@ let tableaux = (function () {
     let selAll = null;
     let selAllPage = null;
 
-    tb.init = function () {
-        // request_width();
+    // Define breakpoints once at the top level
+    const BREAKPOINTS = {
+        sm: 480,
+        md: 768,
+        lg: 1024,
+        xl: 1280
+    };
+    let currentBreakpoint = null;
 
+    /**
+     * A utility to delay the execution of a function until after a certain time has passed
+     * without it being called again. This is useful for performance-heavy events like 'resize'.
+     * @param {Function} func The function to debounce.
+     * @param {number} delay The delay in milliseconds.
+     * @returns {Function} The debounced function.
+     */
+    function debounce(func, delay) {
+        let timeoutId;
+        return function (...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    tb.getCurrentBreakpoint = function () {
+        const width = window.innerWidth;
+        let current = 'xs'; // Default for widths below the smallest breakpoint
+
+        const breakpointEntries = Object.entries(BREAKPOINTS).sort((a, b) => a[1] - b[1]);
+
+        for (const [name, value] of breakpointEntries) {
+            if (width >= value) {
+                current = name;
+            } else {
+                break; // Stop once we've gone past the current width
+            }
+        }
+        return current;
+    };
+
+    /**
+     * Sets up a debounced event listener for window resize to handle breakpoint changes efficiently.
+     */
+    function setupResizeListener() {
+        // Set the initial breakpoint on load
+        currentBreakpoint = tb.getCurrentBreakpoint();
+        let active = true;
+        const handleResize = () => {
+            const newBreakpoint = tb.getCurrentBreakpoint();
+            if (active) {
+                if (newBreakpoint !== currentBreakpoint) {
+                    console.log(`Breakpoint changed from ${currentBreakpoint} to ${newBreakpoint}`);
+
+                    active = false;
+                    currentBreakpoint = newBreakpoint;
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('_bp', newBreakpoint);
+                    let count = 0;
+                    // Find all tableaux tables and reload them with the new breakpoint
+                    document.querySelectorAll(".tableaux").forEach(tableaux => {
+                        count++;
+                        htmx.ajax('GET', url.toString(), {
+                            target: `#${tableaux.id}`,
+                            swap: "outerHTML",
+                            values: {_bp: newBreakpoint}
+                        }).then(() => {
+                                count--;
+                            // If all tables reloaded but the breakpoint has further changed, trigger a resize
+                            if (count === 0) {
+                                    active = true
+                                    if (tb.getCurrentBreakpoint() !== currentBreakpoint) {
+                                        window.dispatchEvent(new Event('resize'))
+                                    }
+                                }
+                            }
+                        );
+                    });
+                }
+            }
+        };
+        window.addEventListener('resize', handleResize)
+    }
+
+
+    tb.init = function () {
         selAll = document.getElementById('select_all');
         selAllPage = document.getElementById('select_all_page');
 
@@ -23,7 +105,6 @@ let tableaux = (function () {
 
         document.querySelectorAll("table").forEach(e => e.addEventListener("click", tableClick));
         document.querySelectorAll(".auto-submit").forEach(e => e.addEventListener("change", function () {
-            // Use a null check in case the form isn't on the page
             document.getElementById("id_filter_form")?.submit();
         }));
         document.querySelectorAll(".filter-clear").forEach(e => e.addEventListener("click", filterClear));
@@ -33,94 +114,15 @@ let tableaux = (function () {
             window.htmx.ajax('GET', evt.detail.url, {source: '#table_data', target: '#table_data'});
         });
 
-        // FIX: Moved selectListClick inside the IIFE so it's defined correctly
         document.body.addEventListener("click", selectListClick);
 
-        // When editing a cell inline enter key triggers blur
         if (document.querySelector(".td_editing")) {
-            // FIX: Changed `this` to `document` for correct event binding
             document.addEventListener("keypress", loseFocus);
         }
         countChecked();
 
-        const breakpoints = {
-            sm: 480,
-            md: 768,
-            lg: 1024,
-            xl: 1280
-        };
-
-        // Convert object to sorted array of [name, value] pairs (ascending by value)
-        const breakpointEntries = Object.entries(breakpoints).sort((a, b) => a[1] - b[1]);
-
-        function getCurrentBreakpoint() {
-            const width = window.innerWidth;
-            let current = 'xs'; // default for widths below the smallest breakpoint
-
-            for (const [name, value] of breakpointEntries) {
-                if (width >= value) {
-                    current = name;
-                } else {
-                    break; // stop once we've gone past the current width
-                }
-            }
-            return current;
-        }
-
-        // Extract existing breakpoint from URL (if any)
-        function getBreakpointFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            return params.get('breakpoint');
-        }
-
-        let currentBreakpoint = getCurrentBreakpoint();
-        let urlBreakpoint = getBreakpointFromURL();
-
-        window.addEventListener('resize', () => {
-            const newBreakpoint = getCurrentBreakpoint();
-            if (newBreakpoint !== currentBreakpoint) {
-                const url = new URL(window.location.href);
-                url.searchParams.set('_bp', newBreakpoint);
-                window.location.href = url.toString(); // Reload with updated breakpoint param
-            }
-            currentBreakpoint = newBreakpoint;
-        });
-    };
-
-
-    //
-    // const bp = new BreakpointHandler()
-
-
-    // build media queries for the table's breakpoints
-    // FIX: Added a null check to prevent errors if #breakpoints doesn't exist
-    // const breakpointsEl = document.getElementById("breakpoints");
-    // if (breakpointsEl) {
-    //     const bps = JSON.parse(breakpointsEl.textContent);
-    //     const mqls = [];
-    //     for (let i = 0; i < bps.length; i++) {
-    //         let mq = `(min-width: ${bps[i]}px)`;
-    //         mqls.push(window.matchMedia(mq));
-    //     }
-    //
-    //     function handleWidthChange(mql) {
-    //         request_width();
-    //     }
-    //
-    //     for (let i = 0; i < mqls.length; i++) {
-    //         mqls[i].addEventListener("change", handleWidthChange);
-    //     }
-    // }
-// }
-
-    function request_width() {
-        const width = window.outerWidth;
-        const url = new URL(window.location.href);
-        const w = url.searchParams.get("_width");
-        if (w !== null && parseInt(w) !== width) {
-            url.searchParams.set("_width", width);
-            window.location.href = url.toString();
-        }
+        // Set up the responsive breakpoint handler
+        setupResizeListener();
     }
 
     function loseFocus(e) {
@@ -130,7 +132,6 @@ let tableaux = (function () {
     }
 
     function filterChanged() {
-        // filter within header changed
         const input = this.querySelector('input, select');
         if (input) {
             window.htmx.ajax('GET', '', {source: `#${input.id}`, target: '#table_data'});
@@ -148,7 +149,6 @@ let tableaux = (function () {
     }
 
     function selectAllPage() {
-        // Click on 'Select all on page' highlights all rows
         if (!selAllPage) return;
 
         const checked = selAllPage.checked;
@@ -192,7 +192,6 @@ let tableaux = (function () {
 
         const target = e.target;
 
-        // Handle inline editing dropdowns
         if (target.classList.contains("td-editing")) {
             if (target.classList.contains("open")) {
                 const row = target.closest("tr");
@@ -207,10 +206,9 @@ let tableaux = (function () {
             } else {
                 target.classList.add("open");
             }
-            return; // Exit after handling this specific case
+            return;
         }
 
-        // Close any open dropdowns when clicking elsewhere
         const openEditingEl = document.querySelector(".td-editing.open");
         if (openEditingEl) {
             const row = openEditingEl.closest("tr");
@@ -227,9 +225,7 @@ let tableaux = (function () {
             openEditingEl.classList.remove("open");
         }
 
-        // Handle clicks on table cells (TD)
         if (target.tagName === 'TD') {
-            // IMPROVEMENT: More robust check for the checkbox cell
             if (target.querySelector('[name="select-checkbox"]')) {
                 return;
             }
@@ -239,7 +235,6 @@ let tableaux = (function () {
             if (!row || !table || !row.id) return;
 
             const pk = row.id.slice(3);
-            // IMPROVEMENT: More robust way to get column index
             const col = Array.from(row.children).indexOf(target);
             const idSuffix = `_${pk}_${col}_${window.outerWidth}`;
 
@@ -263,9 +258,7 @@ let tableaux = (function () {
                     target: `#${target.id}`,
                 });
             }
-        }
-        // Handle clicks on checkboxes for shift-selection
-        else if (target.name === 'select-checkbox') {
+        } else if (target.name === 'select-checkbox') {
             if (selAllPage) {
                 selAllPage.checked = false;
             }
@@ -323,16 +316,13 @@ let tableaux = (function () {
 
         const actionMenu = document.getElementById('selectActionMenu');
         if (actionMenu) {
-            // FIX: Removed invalid `.enabled` property and simplified logic
             actionMenu.disabled = (count === 0 && (!selAll || !selAll.checked));
         }
     }
 
-// Handle clicks on a select list drop down as used for row and columns
     function selectListClick(ev) {
         const selectList = ev.target.closest(".select-list");
 
-        // Close all other dropdowns first
         document.querySelectorAll(".select-options.opened").forEach(openedEl => {
             if (!selectList || !openedEl.parentElement.isEqualNode(selectList)) {
                 openedEl.classList.remove("opened");
@@ -348,19 +338,7 @@ let tableaux = (function () {
         }
     }
 
-// FIX: Moved return statement to the end of the IIFE
     return tb;
-})
-();
+})();
 
 window.addEventListener("load", tableaux.init);
-document.body.addEventListener("tableaux_init", tableaux.init);
-
-// This function is in the global scope. If it's unused, it can be removed.
-// If it is used, consider moving it inside the `tableaux` module for better encapsulation.
-function handleClick() {
-    let me = document.querySelector(".editing"); // Note: class is 'editing', not 'td-editing'
-    if (me) {
-        me.classList.toggle("open");
-    }
-}

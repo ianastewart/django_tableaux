@@ -1,5 +1,5 @@
 {% load django_tables2 i18n %}
-<div class="table-container dt-table" id="table_container">
+<div class="table-container dt-table" style="overflow: auto" id="table_container">
   {{ breakpoints|json_script:"breakpoints" }}
   <style>
       .sticky-header {
@@ -21,5 +21,6 @@
       <caption class="caption.attrs">{{ caption }}</caption>{% endif %}
     {% include templates.render_table_data %}
   </table>
-{% include templates.render_paginator %}
+
 </div>
+{% include templates.render_paginator %}

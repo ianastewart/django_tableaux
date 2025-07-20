@@ -1,6 +1,6 @@
 {% load django_tables2 i18n %}
-<div class="table-container dt-table" id="table_container">
-  {{ breakpoints|json_script:"breakpoints" }}
+{{ breakpoints|json_script:"breakpoints" }}
+<div class="tableaux" id="{{ table.id }}">
   <table {% render_attrs table.attrs %} id="table_data" data-click="{{ table.click_action }}" data-url="{{ table.url }}"
                                         data-pk={{ table.pk }} data-target="{{ table.target }}">
     {% if caption %}
@@ -8,4 +8,7 @@
     {% include templates.render_table_data %}
   </table>
 {% include templates.render_paginator %}
+<script>
+  tableaux.init();
+</script>
 </div>

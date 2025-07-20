@@ -7,7 +7,6 @@ from src.django_tableaux.columns import SelectionColumn
 from src.django_tableaux.utils import (
     define_columns,
     set_select_column,
-    select_breakpoint,
     resolve_breakpoint,
     save_columns_dict,
     load_columns_dict,
@@ -30,11 +29,6 @@ class TestTable1(tables.Table):
 
     class Meta:
         model = TestModel
-
-
-def test_select_breakpoints():
-    result = select_breakpoint()
-    assert result
 
 
 def test_resolve_breakpoint():
@@ -127,7 +121,6 @@ class TestTable5(tables.Table):
     class Meta:
         model = TestModel
         fields = ["a", "b", "c", "d"]
-        columns = {"fixed": ["a", "b", "c", "d"]}
         responsive = {
             "sm": {"fixed": ["a"]},
             "md": {"fixed": ["a", "b"], "default": ["a", "b", "c"]},
@@ -229,23 +222,42 @@ def test_define_columns_with_selection_not_first_in_sequence():
     assert table.columns_fixed == ["a", "selection"]
 
 
-def test_load_empty_columns_dictionary_returns_default_settings():
-    table = TestTable5([])
+def test_load_empty_columns_dictionary_returns_default_settings_no_bp():
+    table = TestTable4([])
     define_columns(table, BP_DICT)
     request = RequestFactory().get("/")
     request.session = {}
-    columns_dict = load_columns_dict(request, table, "sm")
-    assert columns_dict["a"]
-    assert columns_dict["b"]
-    assert columns_dict["c"]
-    assert columns_dict["d"]
-    request.session = {}
-    columns_dict = load_columns_dict(request, table, "md")
+    columns_dict = load_columns_dict(request, table, bp="")
     assert columns_dict["a"]
     assert columns_dict["b"]
     assert columns_dict["c"]
     assert not columns_dict["d"]
 
+
+def test_load_empty_columns_dictionary_returns_default_settings_for_bp():
+    table = TestTable5([])
+    request = RequestFactory().get("/")
+    request.session = {}
+    define_columns(table, BP_DICT, bp="sm")
+    columns_dict = load_columns_dict(request, table, bp="sm")
+    assert columns_dict["a"]
+    assert columns_dict["b"]
+    assert columns_dict["c"]
+    assert columns_dict["d"]
+    request.session = {}
+    define_columns(table, BP_DICT, "md")
+    columns_dict = load_columns_dict(request, table, "md")
+    assert columns_dict["a"]
+    assert columns_dict["b"]
+    assert columns_dict["c"]
+    assert not columns_dict["d"]
+    request.session = {}
+    define_columns(table, BP_DICT, "lg")
+    columns_dict = load_columns_dict(request, table, "lg")
+    assert columns_dict["a"]
+    assert columns_dict["b"]
+    assert columns_dict["c"]
+    assert columns_dict["d"]
 
 def test_save_all_columns():
     table = TestTable8([])

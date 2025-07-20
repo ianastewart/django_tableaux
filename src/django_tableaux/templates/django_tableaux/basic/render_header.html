@@ -5,7 +5,7 @@
   <tr>
     {% for column in table.columns %}
       {% if column.name in table.columns_visible %}
-        <th {{ column.attrs.th.as_html }}
+        <th scope="row" {{ column.attrs.th.as_html }}
             {% if table.mobile %}
               {% if column.name != "selection" and column.name in table.columns_fixed %}colspan="2" {% endif %}
             {% endif %}
