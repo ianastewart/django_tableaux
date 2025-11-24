@@ -1,0 +1,8 @@
+{# page number and text #}
+{% load i18n django_tables2 %}
+<li class="page-item {{ class }} {% if table.page.number == page_number %}active{% endif %}">
+  <div class="page-link" name="page" {% if text != '...' %}
+       hx-get="{% querystring table.prefixed_page_field=page_number %}" hx-push-url="true" {% endif %}>
+    {% if text != page_number %}{% trans text %}{% else %}{{ page_number }}{% endif %}
+  </div>
+</li>

@@ -1,26 +1,34 @@
 {% load django_tables2 %}
-{% if not table.infinite_scroll and not table.infinite_load %}
-  {% if table.page and table.paginator.num_pages > 1 %}
-    <nav aria-label="Table navigation">
-      <ul class="pagination justify-content-center pb-2" hx-target="#table_container">
-        {% if table.page.has_previous %}
-          {% block pagination.previous %}
-            {% include "django_tableaux/basic/page_link.html" with text="Previous" page_number=table.page.previous_page_number class="previous" %}
-          {% endblock pagination.previous %}
-        {% endif %}
-        {% if table.page.has_previous or table.page.has_next %}
-          {% block pagination.range %}
-            {% for p in table.page|table_page_range:table.paginator %}
-              {% include "django_tableaux/basic/page_link.html" with text=p page_number=p %}
-            {% endfor %}
-          {% endblock pagination.range %}
-        {% endif %}
-        {% if table.page.has_next %}
-          {% block pagination.next %}
-            {% include "django_tableaux/basic/page_link.html" with text="Next" page_number=table.page.next_page_number class="next" %}
-          {% endblock pagination.next %}
-        {% endif %}
-      </ul>
-    </nav>
+<section id="{{ table.prefix }}_pagination" hx-target="#{{ table.prefix }}_tableaux">
+  {% if not table.infinite_scroll and not table.infinite_load %}
+    {% if table.page and table.paginator.num_pages > 1 %}
+      <nav aria-label="Table navigation">
+        <ul class="pagination">
+          {% if table.page.number > 1 %}
+            {% include templates.page_link with text="<<" page_number=1 label="First page" disabled=False %}
+          {% else %}
+            {% include templates.page_link with text="<<" label="First page" disabled=True %}
+          {% endif %}
+          {% if table.page.previous_page_number > 0 %}
+            {% include templates.page_link with text="<" page_number=table.page.previous_page_number label="Previous page" disabled=False %}
+          {% else %}
+            {% include templates.page_link with text="<" label="Previous page" disabled=True %}
+          {% endif %}
+          {% for p in table.page|table_page_range:table.paginator %}
+            {% include templates.page_link with text=p page_number=p label="Page {{p}}" %}
+          {% endfor %}
+          {% if table.page.has_next %}
+            {% include templates.page_link with text=">" page_number=table.page.next_page_number label="Next page" disabled=False %}
+          {% else %}
+            {% include templates.page_link with text=">" label="Next page" disabled=True %}
+          {% endif %}
+          {% if table.page.number < table.paginator.num_pages %}
+            {% include templates.page_link with text=">>" page_number=table.paginator.num_pages label="Last page" disabled=False %}
+          {% else %}
+            {% include templates.page_link with text=">>" label="Last page" disabled=True %}
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
   {% endif %}
-{% endif %}
+</section>

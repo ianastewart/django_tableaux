@@ -1,13 +1,16 @@
 {% if view.row_settings %}
-<div class="dropdown">
-  <button class="btn btn-sm btn-outline-primary dropdown-toggle mr-1" type="button" id="dropdownRowsButton"
-          data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-    {{ per_page }} rows
-  </button>
-  <div class="dropdown-menu" aria-labelledby="dropdownRowsButton"  hx-target="#table_data">
-    {% for row in rows %}
-    <div class="dropdown-item pl-2" name="{{ row }}" id="id_row_{{ row }}" hx-get="">{{ row }} rows</div>
-    {% endfor %}
+  <div class="dropdown">
+    <button class="btn btn-sm btn-outline-primary dropdown-toggle mx-1" type="button" id="dropdownRowsButton"
+            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      {{ per_page }} rows
+    </button>
+    <div class="dropdown-menu" aria-labelledby="dropdownRowsButton">
+      {% for row in rows %}
+        <div class="dropdown-item" id="{{ table.prefix }}_row_{{ row }}"
+             hx-target="#{{ table.prefix }}_table_wrapper" hx-get="" hx-swap="outerHTML">
+          {{ row }} rows
+        </div>
+      {% endfor %}
+    </div>
   </div>
-</div>
 {% endif %}

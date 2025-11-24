@@ -1,0 +1,19 @@
+{% load django_tables2 i18n %}
+{{ breakpoints|json_script:"breakpoints" }}
+<div class="tableaux" id="{{ table.prefix }}_tableaux" style="background-color: white;">
+  {% if view.has_filter_toolbar %}
+    {% include templates.toolbar_filter %}
+  {% endif %}
+  {% if view.filter_pills and filters %}
+    <div class="{{ css_toolbar }} d-flex">
+      {% include templates.tb_filter_pills %}
+    </div>
+  {% endif %}
+  {% if main_toolbar %}
+    <div class="{{ css_toolbar }}">
+      {% include templates.toolbar_main %}
+    </div>
+  {% endif %}
+  {% include templates.render_table %}
+  {% include templates.render_paginator %}
+</div>

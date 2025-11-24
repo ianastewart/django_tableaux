@@ -1,50 +1,131 @@
 :root {
-    --background: whitesmoke;
+    --table-background: whitesmoke;
     --header-background: aquamarine;
     --header-color: darkgreen;
     --border-color: grey;
+    --text-color: black;
+    --tool-hover-color: #e8e8e8;
+    --tool-background: #c9ddc9;
+    --tool-active-background: #efefef;
+    --tool-active-color: white;
+    --tool-disabled-background: #d9f4d9;
+    --tool-disabled-color: #8a8a8a;
+}
+.table-fixed tbody td,
+.table-fixed thead>tr>th {
+    float: left;
 }
 
-.tableaux {
+.table-fixed tbody{
+    display: block;
+    height: 300px;
+    overflow-y: auto
+}
+
+.table-fixed tr{
+    display: block;
+}
+
+.tableaux .table-wrapper {
     overflow: auto;
 }
 
-.tableaux table {
+.tableaux .table {
     border-collapse: collapse;
     width: 100%
 }
 
-.tableaux table th, td {
+.tableaux th.orderable:hover {
+    cursor: pointer;
+    background-color: #eafcf8; /* Optional: A slightly lighter shade of the header for feedback */
+}
+
+/*.tableaux .sticky-header {*/
+    th {
+        position: sticky;
+        top: 0;
+    }
+
+
+.tableaux th, .tableaux td {
     padding: 5px;
     text-align: left;
     border: 1px solid;
     border-color: var(--border-color);
 }
 
-.tableaux table th {
+.tableaux th {
     background-color: var(--header-background);
     color: #111;
 }
 
 
-.tableaux table td {
-    background-color: var(--background);
+
+.tableaux td {
+    background-color: var(--table-background);
     color: var(--header-color);
 }
 
-.tableaux table td.odd {
+.tableaux td.odd {
     background-color: yellow;
 }
 
-.tableaux table td.even {
+.tableaux td.even {
     background-color: orange;
 }
 
-.tableaux table caption {
+.tableaux caption {
     caption-side: bottom;
     text-align: left;
 }
 
+.tableaux .pagination {
+    text-align: center;
+    margin: 10px 0;
+}
+
+.tableaux .pagination li {
+    color: black;
+    text-decoration: none;
+    padding: 5px 10px;
+    display: inline-block;
+    margin: 2px 2px;
+    cursor: pointer;
+}
+
+.tableaux .pagination li.active {
+    background-color: var(--tool-active-background);
+    color: var(--tool-active-color);
+    cursor: default;
+}
+
+.tableaux .pagination li.inactive {
+    cursor: default;
+}
+
+.tableaux .pagination li.disabled {
+    cursor: default;
+    color: var(--tool-disabled-color)
+}
+
+.tableaux .pagination li:hover:not(.active):not(.disabled):not(.inactive) {
+    background-color: var(--tool-background);
+    text-decoration: none;
+    border-color: black;
+    border: black;
+}
+
+.tableaux .td-edit {
+    cursor: pointer;
+}
+
+.tableaux .td-edit:hover {
+    background-color: floralwhite;
+}
+
+.tableaux tr:hover {
+    background-color: floralwhite;
+}
 
 .container {
     width: 100%;
@@ -86,12 +167,6 @@
     margin-left: auto;
 }
 
-.sticky-header {
-    thead {
-        position: sticky;
-        top: -1px;
-    }
-}
 
 .fixed_headers {
     width: 100px;
@@ -182,34 +257,40 @@ th.desc:after {
     cursor: pointer;
 }
 
+.tableaux .dropdown {
+    position: relative;
+    display: inline-block;
+}
 
-.td-edit {
+.tableaux .dropdown select {
+    background-color: var(--tool-background);
+    color: var(--text-color);
+    border: none;
+    padding: 0.4rem;
+    font-size: 1rem;
+    border-radius: 3px;
     cursor: pointer;
 }
 
-.td-edit:hover {
-    background-color: floralwhite;
+.tableaux .dropdown select:hover {
+    background-color:var(--tool-active-background);
 }
 
-tr:hover {
-    cursor: pointer;
-    background-color: floralwhite;
-}
-
-.select-list {
+.tableaux .select-list {
     .select-title {
         display: inline-block;
         cursor: pointer;
         background: #fff;
-        border: 1px solid #eaeaea;
-        border-radius: 5px;
+        border: 1px solid #808080;
+        border-radius: 3px;
         padding: 5px 10px 5px 10px;
+        margin-left: 5px;
 
         &::after {
             display: inline-block;
             content: '>';
             margin-left: 15px;
-            font-size: 11px;
+            font-size: 9px;
             transform: rotate(90deg) scale(1.5, 2) translate(-2px, 0);
         }
 
@@ -275,51 +356,3 @@ tr:hover {
     justify-content: space-between;
 }
 
-.pagination {
-    display: flex;
-    justify-content: center;
-    padding-left: 0;
-    list-style: none;
-    border-radius: 0.25rem;
-}
-
-.page-link {
-    position: relative;
-    display: block;
-    padding: 0.5rem 0.75rem;
-    margin-left: -1px;
-    line-height: 1.25;
-    text-decoration: none;
-    color: #5156ff;
-    background-color: var(--background);
-    border: 1px solid var(--border-color);
-}
-
-.page-link:hover {
-    z-index: 2;
-    color: #050cff;
-    text-decoration: none;
-    background-color: var(--background);
-    border-color: var(--border-color);
-}
-
-.page-link:focus {
-    z-index: 2;
-    outline: 0;
-    box-shadow: none;
-}
-
-.page-item.active .page-link {
-    z-index: 1;
-    color: #FFF;
-    background-color: #1C685A;
-    border-color: #1C685A;
-}
-
-.page-item.disabled .page-link {
-    color: #6c757d;
-    pointer-events: none;
-    cursor: auto;
-    background-color: #FFF;
-    border-color: #dee2e6;
-}

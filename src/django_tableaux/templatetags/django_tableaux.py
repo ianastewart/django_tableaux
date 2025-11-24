@@ -6,6 +6,13 @@ from django.urls import reverse
 register = template.Library()
 
 
+@register.simple_tag(takes_context=False)
+def django_tableaux_script():
+    return mark_safe(
+        '<script src="/static/django_tableaux/js/django_tableaux.js"></script>'
+    )
+
+
 @register.simple_tag(takes_context=True)
 def attrs(context):
     """Convert context into a string of html attributes, converting '_' to '-'"""
@@ -17,12 +24,14 @@ def attrs(context):
             result += f' {key}="{value}"'
     return mark_safe(result)
 
+
 @register.simple_tag(takes_context=False)
 def load_table(url_name):
     url = reverse(url_name)
     hx_vals = "js:{ '_bp': tableaux.getCurrentBreakpoint() }"
     code = f'<div name="table_load" hx-trigger="load"  hx-get="{url}" hx-vals="{hx_vals}" hx-swap="outerHTML"></div>'
     return mark_safe(code)
+
 
 @register.filter
 def render_button(button):

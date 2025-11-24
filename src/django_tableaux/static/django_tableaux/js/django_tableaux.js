@@ -8,27 +8,24 @@ let tableaux = (function () {
 
     // Define breakpoints once at the top level
     const BREAKPOINTS = {
-        sm: 480,
-        md: 768,
-        lg: 1024,
-        xl: 1280
+        sm: 480, md: 768, lg: 1024, xl: 1280
     };
     let currentBreakpoint = null;
 
-    /**
-     * A utility to delay the execution of a function until after a certain time has passed
-     * without it being called again. This is useful for performance-heavy events like 'resize'.
-     * @param {Function} func The function to debounce.
-     * @param {number} delay The delay in milliseconds.
-     * @returns {Function} The debounced function.
-     */
-    function debounce(func, delay) {
-        let timeoutId;
-        return function (...args) {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => func.apply(this, args), delay);
-        };
-    }
+    // /**
+    //  * A utility to delay the execution of a function until after a certain time has passed
+    //  * without it being called again. This is useful for performance-heavy events like 'resize'.
+    //  * @param {Function} func The function to debounce.
+    //  * @param {number} delay The delay in milliseconds.
+    //  * @returns {Function} The debounced function.
+    //  */
+    // function debounce(func, delay) {
+    //     let timeoutId;
+    //     return function (...args) {
+    //         clearTimeout(timeoutId);
+    //         timeoutId = setTimeout(() => func.apply(this, args), delay);
+    //     };
+    // }
 
     tb.getCurrentBreakpoint = function () {
         const width = window.innerWidth;
@@ -57,32 +54,31 @@ let tableaux = (function () {
             const newBreakpoint = tb.getCurrentBreakpoint();
             if (active) {
                 if (newBreakpoint !== currentBreakpoint) {
-                    console.log(`Breakpoint changed from ${currentBreakpoint} to ${newBreakpoint}`);
-
                     active = false;
                     currentBreakpoint = newBreakpoint;
                     const url = new URL(window.location.href);
-                    url.searchParams.set('_bp', newBreakpoint);
+                    url.searchParams.delete('_bp');
+                    window.location.href = url.toString()
                     let count = 0;
                     // Find all tableaux tables and reload them with the new breakpoint
-                    document.querySelectorAll(".tableaux").forEach(tableaux => {
-                        count++;
-                        htmx.ajax('GET', url.toString(), {
-                            target: `#${tableaux.id}`,
-                            swap: "outerHTML",
-                            values: {_bp: newBreakpoint}
-                        }).then(() => {
-                                count--;
-                            // If all tables reloaded but the breakpoint has further changed, trigger a resize
-                            if (count === 0) {
-                                    active = true
-                                    if (tb.getCurrentBreakpoint() !== currentBreakpoint) {
-                                        window.dispatchEvent(new Event('resize'))
-                                    }
-                                }
-                            }
-                        );
-                    });
+                    // document.querySelectorAll(".tableaux").forEach(tableaux => {
+                    //     count++;
+                    //     htmx.ajax('GET', url.toString(), {
+                    //         target: `#${tableaux.id}`,
+                    //         swap: "outerHTML",
+                    //         values: {_bp: newBreakpoint},
+                    //         handler: tb.init(),
+                    //     }).then(() => {
+                    //         count--;
+                    //         // If all tables reloaded but the breakpoint has further changed, trigger a resize
+                    //         if (count === 0) {
+                    //             active = true
+                    //             if (tb.getCurrentBreakpoint() !== currentBreakpoint) {
+                    //                 window.dispatchEvent(new Event('resize'))
+                    //             }
+                    //         }
+                    //     });
+                    // });
                 }
             }
         };
@@ -91,6 +87,7 @@ let tableaux = (function () {
 
 
     tb.init = function () {
+        console.log("INIT")
         selAll = document.getElementById('select_all');
         selAllPage = document.getElementById('select_all_page');
 
@@ -114,16 +111,48 @@ let tableaux = (function () {
             window.htmx.ajax('GET', evt.detail.url, {source: '#table_data', target: '#table_data'});
         });
 
-        document.body.addEventListener("click", selectListClick);
+        // document.body.addEventListener("click", selectListClick);
 
         if (document.querySelector(".td_editing")) {
             document.addEventListener("keypress", loseFocus);
         }
+
+        const option = document.querySelector('.select-option');
+
+        if (option) {
+            option.addEventListener('click', function (e) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('page_size', e.target.value);
+                url.searchParams.set('page', 1);
+
+                htmx.ajax('GET', url.toString(), {
+                    target: '#table_data',
+                    swap: 'outerHTML'
+                });
+            });
+        }
+
         countChecked();
 
         // Set up the responsive breakpoint handler
         setupResizeListener();
     }
+
+    tb.set_page_size = function (per_page, target) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('per_page', per_page);
+        const old_page = url.searchParams.get('page')
+        if (old_page != 1) {
+            url.searchParams.set('page', 1);
+        }
+        window.htmx.ajax('GET', url.toString(), {
+            target: target,
+            swap: 'outerHTML',
+            headers: {'HX-Trigger-Name': '_rows',
+            'HX-Trigger': per_page.toString()}
+            });
+    };
+
 
     function loseFocus(e) {
         if (e.key === "Enter") {
@@ -184,10 +213,7 @@ let tableaux = (function () {
 
     function tableClick(e) {
         const ClickAction = {
-            NONE: "0",
-            GET: "1",
-            HX_GET: "2",
-            CUSTOM: "3"
+            NONE: "0", GET: "1", HX_GET: "2", CUSTOM: "3"
         };
 
         const target = e.target;
@@ -197,9 +223,7 @@ let tableaux = (function () {
                 const row = target.closest("tr");
                 if (row && row.id) {
                     window.htmx.ajax('POST', "", {
-                        source: `#${target.id}`,
-                        target: `#${target.id}`,
-                        values: {"id": row.id.split("_")[1]}
+                        source: `#${target.id}`, target: `#${target.id}`, values: {"id": row.id.split("_")[1]}
                     });
                 }
                 target.classList.remove("open");
@@ -214,11 +238,8 @@ let tableaux = (function () {
             const row = openEditingEl.closest("tr");
             if (row && row.id) {
                 window.htmx.ajax('POST', "", {
-                    source: `#${openEditingEl.id}`,
-                    target: `#${openEditingEl.id}`,
-                    values: {
-                        "id": row.id.split("_")[1],
-                        "column": target.name
+                    source: `#${openEditingEl.id}`, target: `#${openEditingEl.id}`, values: {
+                        "id": row.id.split("_")[1], "column": target.name
                     }
                 });
             }
@@ -254,8 +275,7 @@ let tableaux = (function () {
             } else if (table.dataset.click === ClickAction.CUSTOM) {
                 target.id = "td" + idSuffix;
                 window.htmx.ajax('GET', "", {
-                    source: `#${target.id}`,
-                    target: `#${target.id}`,
+                    source: `#${target.id}`, target: `#${target.id}`,
                 });
             }
         } else if (target.name === 'select-checkbox') {
@@ -342,3 +362,5 @@ let tableaux = (function () {
 })();
 
 window.addEventListener("load", tableaux.init);
+document.body.addEventListener("tableaux_init", tableaux.init);
+document.body.addEventListener("row_change", tableaux.row_change);

@@ -15,15 +15,14 @@
       </div>
 
       <div class="dropdown float-right">
-        <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="selectActionMenu" data-toggle="dropdown">
+        <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="selectActionMenu" data-bs-toggle="dropdown">
           Select action
         </button>
         <div class="dropdown-menu">
           {% for action in actions %}
-            <button class="dropdown-item" name="{{ action.0 }}" hx-post hx-target="#modals-here">{{ action.1 }}</button>
+            <button class="dropdown-item" name="{{ action.0 }}" hx-post  hx-target="#modals-here">{{ action.1 }}</button>
           {% endfor %}
         </div>
-
       </div>
     </div>
   </form>

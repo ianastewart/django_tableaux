@@ -1,14 +1,21 @@
 {% load django_tables2 i18n %}
-{{ breakpoints|json_script:"breakpoints" }}
-<div class="tableaux" id="{{ table.id }}">
-  <table {% render_attrs table.attrs %} id="table_data" data-click="{{ table.click_action }}" data-url="{{ table.url }}"
-                                        data-pk={{ table.pk }} data-target="{{ table.target }}">
-    {% if caption %}
-      <caption class="caption.attrs">{{ caption }}</caption>{% endif %}
-    {% include templates.render_table_data %}
+<div id="{{ table.prefix }}_table_wrapper" {% if view.fixed_height > 0 %}style="overflow-y: scroll; max-height: {{ view.fixed_height }}px;"{% endif %}>
+<table {% if table.attrs.class %}{% render_attrs table.attrs %}{% else %}class="table" {% endif %}
+         id="{{ table.prefix }}_table" data-click="{{ table.click_action }}"
+         data-url="{{ table.url }}"
+         data-pk={{ table.pk }} data-target="{{ table.target }}">
+    {% if view.caption %}
+      <caption class="caption.attrs">{{ caption }}</caption>
+    {% endif %}
+    {% include templates.render_header %}
+    <tbody {{ table.attrs.tbody.as_html }} id="{{ table.prefix }}_tbody">
+    {% include templates.render_rows %}
+    </tbody>
+    {% include templates.render_footer %}
   </table>
-{% include templates.render_paginator %}
-<script>
-  tableaux.init();
-</script>
 </div>
+{% if view.row_settings %}
+  <div style="display: none;">
+<span id="rowsCount" hx-swap-oob="innerHTML">{{ view.paginate_by }} rows</span>
+  </div>
+{% endif %}

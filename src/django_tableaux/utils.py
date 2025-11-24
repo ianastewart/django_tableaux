@@ -30,7 +30,7 @@ def load_columns_dict(request: HttpRequest, table: Table, bp: str) -> dict[str, 
     stored_dict = request.session.get(key)
     # Early versions stored visible columns as a list
     if not isinstance(stored_dict, dict):
-        request.session[key]= {}
+        request.session[key] = {}
         stored_dict = None
     if stored_dict is None:
         stored_dict = default_columns_dict(table, bp)
@@ -39,8 +39,10 @@ def load_columns_dict(request: HttpRequest, table: Table, bp: str) -> dict[str, 
     save_columns_dict(request, table, bp, columns_dict)
     return columns_dict
 
+
 def new_columns_dict(table: Table) -> dict:
     return {col: True for col in table.sequence}
+
 
 def default_columns_dict(table: Table, bp: str) -> dict[str, bool]:
     columns_dict = new_columns_dict(table)
@@ -48,6 +50,7 @@ def default_columns_dict(table: Table, bp: str) -> dict[str, bool]:
         if key not in table.columns_default:
             columns_dict[key] = False
     return columns_dict
+
 
 # def save_columns(request: HttpRequest, table: Table, bp: str, column_list: list):
 #     key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
@@ -85,8 +88,12 @@ def set_select_column(table):
     and update sequence if necessary.
     """
     table.select_name = next(
-        (col.name for col in table.columns if col.column.__class__.__name__ == "SelectionColumn"),
-        ""
+        (
+            col.name
+            for col in table.columns
+            if col.column.__class__.__name__ == "SelectionColumn"
+        ),
+        "",
     )
 
     if table.select_name:
@@ -141,7 +148,9 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
         table.columns_default = col_dict.get("default", table.sequence)
         # Default columns always include fixed columns, but they may not have been specified.
         # Combine lists and remove duplicates, preserving order (requires Python 3.7+).
-        table.columns_default = list(dict.fromkeys(table.columns_fixed + table.columns_default))
+        table.columns_default = list(
+            dict.fromkeys(table.columns_fixed + table.columns_default)
+        )
         table.mobile = col_dict.get("mobile", False)
     if not table.columns_fixed:
         table.columns_fixed = table.sequence[:1]
@@ -215,7 +224,7 @@ def breakpoints(table):
     return {"breakpoints": bps}
 
 
-def save_per_page(request: HttpRequest, value: str):
+def save_per_page(request: HttpRequest, value: int):
     key = f"per_page:{request.resolver_match.view_name}"
     request.session[key] = value
 
@@ -241,6 +250,16 @@ def template_paths(library=None):
 
     custom_path = None
     library = library or get_template_library()
+    if library == "bootstrap4":
+        try:
+            from bootstrap4 import forms
+        except ImportError:
+            raise ImproperlyConfigured("django-bootstrap4 is not installed")
+    if library == "bootstrap5":
+        try:
+            from django_bootstrap5 import forms
+        except ImportError:
+            raise ImproperlyConfigured("django-bootstrap5 is not installed")
     if library != DEFAULT_LIBRARY:
         if library.startswith("templates/"):
             custom_path = Path(settings.BASE_DIR) / library

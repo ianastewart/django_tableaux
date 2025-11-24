@@ -11,13 +11,12 @@ classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
 requires-python = ">=3.10"
 dependencies = [
-    "django-bootstrap4>=22.2",
+    "django-bootstrap4==25.2",
     "django>=4.2",
     "django-tables2>=2.4.1",
-    "django-htmx>=1.21.0",
-    "django-filter>=23.5",
+    "django-htmx==1.26.0",
+    "django-filter==25.2",
     "tablib>=3.5.0",
-    "pytest>=8.4.1",
     "pytest-django>=4.11.1",
 ]
 

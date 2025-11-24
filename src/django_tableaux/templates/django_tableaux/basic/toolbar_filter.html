@@ -1,24 +1,3 @@
-{#{% load bootstrap4 %}#}
-{#<form id="id_filter_form" hx-target="#table_data">#}
-{#  {{ filter.form.media }}#}
-{#  <input type="hidden" name="per_page" value="{{ per_page }}">#}
-{#  {% if filter.form.visible_fields %}#}
-{#    <div class="display-flex flex-row flex-start">#}
-{#      {{ filter.form.as_div }}#}
-{#    </div>#}
-{#    {% if filter_button %}#}
-{#      <div class="form-group pl-2 pt-2">#}
-{#        <label for="id_filter_button"></label>#}
-{#        <button type="submit" class="form-control btn btn-primary" style="width:150px; display: block;"#}
-{#                id="id_filter_button">#}
-{#          Filter#}
-{#        </button>#}
-{#      </div>#}
-{#    {% endif %}#}
-{#    <span name="clr_all" hx-get="" class="filter-clear mt-3 p-3"> Clear</span></p>#}
-{#  {% endif %}#}
-{#</form>#}
-
 {% load bootstrap4 %}
 <form id="id_filter_form" hx-target="#table_data">
   {{ filter.form.media }}
@@ -26,9 +5,9 @@
   {% if filter.form.visible_fields %}
     <div class="d-flex">
     {% for field in filter.form.visible_fields %}
-      {% include templates.tb_filter_field with toolbar=True field=field filter_button=filter_button %}
+      {% include templates.tb_filter_field with toolbar=True field=field filter_button=view.filter_button %}
     {% endfor %}
-    {% if filter_button %}
+    {% if view.filter_button %}
       <div class="form-group pl-2 pt-2">
         <label for="id_filter_button"></label>
         <button type="submit" class="form-control btn btn-primary" style="width:150px; display: block;"
@@ -38,6 +17,6 @@
       </div>
     {% endif %}
     <span name="clr_all" hx-get="" class="filter-clear mt-3 p-3"> Clear</span></p>
-  {% endif %}
   </div>
+  {% endif %}
 </form>

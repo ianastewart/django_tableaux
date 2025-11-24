@@ -1,0 +1,104 @@
+<style>
+  .dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-toggle {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dropdown-toggle:focus {
+  outline: 2px solid #0056b3;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px;
+  margin-top: 4px;
+  min-width: 180px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  z-index: 10;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.dropdown-item input {
+  margin-right: 8px;
+}
+
+.apply-btn {
+  margin-top: 8px;
+  width: 100%;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.apply-btn:hover {
+  background-color: #0056b3;
+}
+</style>
+<div class="dropdown">
+  <button class="dropdown-toggle" id="dropdownButton" aria-haspopup="true" aria-expanded="false">
+    Select Options ▼
+  </button>
+
+  <div class="dropdown-menu" role="menu" aria-labelledby="dropdownButton">
+    <label class="dropdown-item">
+      <input type="checkbox" value="option1"> Option 1
+    </label>
+    <label class="dropdown-item">
+      <input type="checkbox" value="option2"> Option 2
+    </label>
+    <label class="dropdown-item">
+      <input type="checkbox" value="option3"> Option 3
+    </label>
+
+    <button class="apply-btn">Apply</button>
+  </div>
+</div>
+
+<script>
+  const dropdownButton = document.getElementById('dropdownButton');
+  const dropdownMenu = document.querySelector('.dropdown-menu');
+
+  dropdownButton.addEventListener('click', (e) => {
+    const expanded = dropdownButton.getAttribute('aria-expanded') === 'true';
+    dropdownButton.setAttribute('aria-expanded', String(!expanded));
+    dropdownMenu.style.display = expanded ? 'none' : 'block';
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.dropdown')) {
+      dropdownMenu.style.display = 'none';
+      dropdownButton.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  // Example "Apply" button behavior
+  document.querySelector('.apply-btn').addEventListener('click', () => {
+    const checked = [...dropdownMenu.querySelectorAll('input:checked')].map(i => i.value);
+    alert('Selected: ' + checked.join(', '));
+    dropdownMenu.style.display = 'none';
+    dropdownButton.setAttribute('aria-expanded', 'false');
+  });
+</script>

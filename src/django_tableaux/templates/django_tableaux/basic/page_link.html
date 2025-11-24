@@ -1,7 +1,6 @@
-{# page number and text #}
 {% load i18n django_tables2 %}
-<li class="page-item {{ class }} {% if table.page.number == page_number %}active{% endif %}">
-  <div class="page-link" name="page" {% if text != '...' %} hx-get="{% querystring table.prefixed_page_field=page_number %}" hx-push-url="true" {% endif %}>
+<li class="page-item {{ class }} {% if text == '...' %}inactive %}{% elif disabled %}disabled{% elif table.page.number == page_number  %}active{% endif %}"
+   name="page"  aria-label="{{ label }}" {% if disabled %}aria-disabled="true"{% endif %}
+    {% if text != '...' and not disabled %}role="link" hx-get="{% querystring table.prefixed_page_field=page_number %}" hx-push-url="true" {% endif %}>
     {% if text != page_number %}{% trans text %}{% else %}{{ page_number }}{% endif %}
-  </div>
 </li>

@@ -1,17 +1,17 @@
 {% if view.column_settings %}
   <div class="select-list multiple">
     <div class="select-title">Columns</div>
-    <div class="select-options">
-{#      {% if default %}#}
+    <div class="select-options" hx-target="#{{ table.prefix }}_table_wrapper">
+      {#      {% if default %}#}
       <div class="select-option">
-      <button type="button" hx-get="" name="_col__reset">Reset columns</button>
+        <button type="button" hx-get="" name="_col__reset">Reset columns</button>
       </div>
-{#      {% endif %}#}
+      {#      {% endif %}#}
       {% for column in table.column_states %}
         <div class="select-option">
           <input type="checkbox" name="_col_{{ column.0 }}" id="id_col_{{ column.0 }}"
                  hx-get="" {% if column.2 %} checked {% endif %}
-                 hx-target="#table_data">
+          >
           <label for="id_col_{{ column.0 }}">{{ column.1 }}</label>
         </div>
       {% endfor %}

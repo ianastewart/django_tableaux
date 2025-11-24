@@ -5,29 +5,33 @@
   <tr>
     {% for column in table.columns %}
       {% if column.name in table.columns_visible %}
-        <th scope="row" {{ column.attrs.th.as_html }}
+        <th scope="col" {{ column.attrs.th.as_html }}
             {% if table.mobile %}
-              {% if column.name != "selection" and column.name in table.columns_fixed %}colspan="2" {% endif %}
+            {% if column.name != "selection" and column.name in table.columns_fixed %}colspan="2" {% endif %}
+            {% else %}
+            {% if column.name == "selection" %}style="width: 30px;" {% endif %}
             {% endif %}
             {% if column.orderable %}
-              hx-target="#table_container" hx-push-url="true"
-              hx-get="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}"
-              name="sort"
-              title="Click to sort by {{ column.name|capfirst }}"
+            hx-target="#{{ table.prefix }}_table_wrapper" hx-push-url="true"
+            hx-get="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}"
+            name="sort_{{ table.order_by }}"
+            title="Click to sort by {{ column.name|capfirst }}"
             {% endif %}>
           {% if column.name == "selection" %}
             <input type="checkbox" id="select_all_page" name="select_all_page">
           {% else %}
-
+            <span style="display: inline-block;">
             {% if column.orderable %}
               {% if column.is_ordered %}
-                {% if "-" in column.order_by.0 %}{{ column.header }}&nbsp;&#9661;{% else %}{{ column.header }}&nbsp;&#9651;{% endif %}
+                {% if "-" in column.order_by.0 %}{{ column.header }}&nbsp;&#9661;{% else %}{{ column.header }}&nbsp;
+                  &#9651;{% endif %}
               {% else %}
                 {{ column.header }}<span style="color: lightgrey;">&nbsp;&#x25c7;</span>
               {% endif %}
             {% else %}
               &nbsp;&nbsp;{{ column.header }}
             {% endif %}
+            </span>
           {% endif %}
         </th>
       {% endif %}
@@ -36,11 +40,11 @@
   {% if table.filter.style == table.filter.style.HEADER %}
     <tr>
       {% for field in table.header_fields %}
-        <th>
+        <td>
           {% if field %}
             {% include templates.tb_filter_field with field=field header=True %}
           {% endif %}
-        </th>
+        </td>
       {% endfor %}
     </tr>
   {% endif %}

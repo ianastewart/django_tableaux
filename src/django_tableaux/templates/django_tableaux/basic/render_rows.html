@@ -1,8 +1,6 @@
 {% load django_tables2 django_tableaux %}
 {% load i18n %}
-
 {% for row in table.paginated_rows %}
-  {% block table.tbody.row %}
     {% if table.mobile %}
     {% include templates.render_row_mobile %}
     {% else %}
@@ -15,11 +13,10 @@
         </td>
       </tr>
     {% endif %}
-  {% endblock table.tbody.row %}
   {% if forloop.last and table.infinite_load %}
     {% if table.page.number < table.page.paginator.num_pages %}
-      <tr id="tr_last"
-          hx-target="#tr_last"
+      <tr id="{{ table.prefix }}_tr_last"
+          hx-target="#{{ table.prefix }}_tr_last"
           hx-swap="outerHTML"
           hx-get="{% querystring table.prefixed_page_field=table.page.next_page_number without "_scroll" %}"
           hx-vals='{"_scroll": "true"}'>
@@ -44,4 +41,3 @@
     {% endblock table.tbody.empty_text %}
   {% endif %}
 {% endfor %}
-  </tbody>
