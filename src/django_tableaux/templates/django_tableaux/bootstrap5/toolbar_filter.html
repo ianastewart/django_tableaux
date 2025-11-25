@@ -1,7 +1,7 @@
 {% load bootstrap4 %}
-<form id="id_filter_form" hx-target="#table_data" hx-post="">
+<form id="{{ table.prefix }}_filter_form" hx-target="#{{ table.prefix }}_table_wrapper" hx-swap="outerHTML">
   {{ filter.form.media }}
-  <input type="hidden" name="per_page" value="{{ per_page }}">
+{#  <input type="hidden" name="per_page" value="{{ per_page }}">#}
   {% if filter.form.visible_fields %}
     <div class="d-flex">
     {% for field in filter.form.visible_fields %}

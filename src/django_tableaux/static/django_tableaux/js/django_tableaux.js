@@ -57,28 +57,25 @@ let tableaux = (function () {
                     active = false;
                     currentBreakpoint = newBreakpoint;
                     const url = new URL(window.location.href);
-                    url.searchParams.delete('_bp');
-                    window.location.href = url.toString()
                     let count = 0;
                     // Find all tableaux tables and reload them with the new breakpoint
-                    // document.querySelectorAll(".tableaux").forEach(tableaux => {
-                    //     count++;
-                    //     htmx.ajax('GET', url.toString(), {
-                    //         target: `#${tableaux.id}`,
-                    //         swap: "outerHTML",
-                    //         values: {_bp: newBreakpoint},
-                    //         handler: tb.init(),
-                    //     }).then(() => {
-                    //         count--;
-                    //         // If all tables reloaded but the breakpoint has further changed, trigger a resize
-                    //         if (count === 0) {
-                    //             active = true
-                    //             if (tb.getCurrentBreakpoint() !== currentBreakpoint) {
-                    //                 window.dispatchEvent(new Event('resize'))
-                    //             }
-                    //         }
-                    //     });
-                    // });
+                    document.querySelectorAll(".tableaux").forEach(tableaux => {
+                        count++;
+                        htmx.ajax('GET', url.toString(), {
+                            target: `#${tableaux.id}`,
+                            swap: "outerHTML",
+                            values: {_bp: newBreakpoint},
+                        }).then(() => {
+                            count--;
+                            // If all tables reloaded but the breakpoint has further changed, trigger a resize
+                            if (count === 0) {
+                                active = true
+                                if (tb.getCurrentBreakpoint() !== currentBreakpoint) {
+                                    window.dispatchEvent(new Event('resize'))
+                                }
+                            }
+                        });
+                    });
                 }
             }
         };
@@ -87,7 +84,6 @@ let tableaux = (function () {
 
 
     tb.init = function () {
-        console.log("INIT")
         selAll = document.getElementById('select_all');
         selAllPage = document.getElementById('select_all_page');
 
@@ -101,9 +97,28 @@ let tableaux = (function () {
         }
 
         document.querySelectorAll("table").forEach(e => e.addEventListener("click", tableClick));
-        document.querySelectorAll(".auto-submit").forEach(e => e.addEventListener("change", function () {
-            document.getElementById("id_filter_form")?.submit();
-        }));
+        document.querySelectorAll(".auto-submit").forEach(el =>
+            el.addEventListener("change", function (e) {
+
+                const form = e.target.closest("form");
+                if (!form) return;
+
+                // Start with current page URL
+                const url = new URL(window.location.href);
+
+                // Replace or add only the form's fields
+                const formData = new FormData(form);
+                for (const [key, value] of formData.entries()) {
+                    url.searchParams.set(key, value);
+                }
+                url.searchParams.set("_filter", "");
+                // Send hx-get request
+                htmx.ajax("GET", url.toString(), {
+                    target: form.getAttribute("hx-target"),
+                    swap: form.getAttribute("hx-swap")
+                });
+            })
+        );
         document.querySelectorAll(".filter-clear").forEach(e => e.addEventListener("click", filterClear));
         document.querySelectorAll(".form-group.hx-get").forEach(e => e.addEventListener("change", filterChanged));
 
@@ -148,9 +163,11 @@ let tableaux = (function () {
         window.htmx.ajax('GET', url.toString(), {
             target: target,
             swap: 'outerHTML',
-            headers: {'HX-Trigger-Name': '_rows',
-            'HX-Trigger': per_page.toString()}
-            });
+            headers: {
+                'HX-Trigger-Name': '_rows',
+                'HX-Trigger': per_page.toString()
+            }
+        });
     };
 
 

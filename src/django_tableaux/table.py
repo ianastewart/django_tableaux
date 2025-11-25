@@ -25,7 +25,7 @@ def build_table(view, **kwargs):
     # This allows us to control pagination when sorting and add extra properties to the table
     # to manage column visibility
     table_class = view.get_table_class()
-    table = table_class(data=view.get_table_data(), **kwargs)
+    table = table_class(data=view.get_filtered_object_list(), **kwargs)
     paginate = view.get_table_pagination(table)
 
     table.request = view.request

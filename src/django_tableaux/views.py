@@ -106,6 +106,9 @@ class TableauxView(SingleTableMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         # If we have a filterset and an empty query string but initial data:
         #   create a query string containing the initial data and redirect
+        if request.htmx:
+            return self.get_htmx(request, *args, **kwargs)
+
         if self.filterset_class:
             uri = request.build_absolute_uri()
             if "?" not in uri:
@@ -114,20 +117,16 @@ class TableauxView(SingleTableMixin, TemplateView):
                     return redirect(f"{request.path}?{params}")
 
         table_class = self.get_table_class()
-        # When called via {% load_table %} using hx-get we always have a breakpoint parameter _bp
-        if "_bp" in request.GET:
-            self._bp = request.GET["_bp"]
 
         # If initial Get and table is responsive ask client to repeat the request with the breakpoint parameter
+        if "_bp" in request.GET:
+            self._bp = request.GET["_bp"]
         elif hasattr(table_class, "Meta") and hasattr(table_class.Meta, "responsive"):
             return render(
                 request,
                 self.templates["bp_request"],
                 context={"breakpoints": self.get_breakpoint_values()},
             )
-
-        if request.htmx:
-            return self.get_htmx(request, *args, **kwargs)
 
         if "_export" in request.GET:
             return self.export_table()
@@ -164,10 +163,11 @@ class TableauxView(SingleTableMixin, TemplateView):
         """
         Use the TemplateResponse Mixin to render the table, optionally using a specific template
         """
+        # template_name = self.templates["render_tableaux"]
         self.table = build_table(self, prefix=self.id)
         context = self.get_context_data(**kwargs)
         template_name = template_name or self.template_name
-        response =  self.render_to_response(template_name, context)
+        response = self.render_to_response(template_name, context)
         return trigger_client_event(response, "tableaux_init", after="swap")
 
     def render_row(self, id=None, template_name=None):
@@ -220,6 +220,14 @@ class TableauxView(SingleTableMixin, TemplateView):
             context.update(self.extra_context)
         buttons = self.get_buttons()
         actions = self.get_bulk_actions()
+        toolbar_visible = (
+            len(buttons) > 0
+            or len(actions) > 0
+            or self.row_settings
+            or self.column_settings
+            or self.filterset_class
+            and self.filter_style == TableauxView.FilterStyle.MODAL
+        )
         context.update(
             table=self.table,
             filter=self.filterset,
@@ -231,14 +239,9 @@ class TableauxView(SingleTableMixin, TemplateView):
             per_page=self.table_pagination["per_page"],
             breakpoints=breakpoints(self.table),
             templates=self.templates,
-            main_toolbar=buttons
-            or actions
-            or self.row_settings
-            or self.column_settings
-            or self.filterset_class
-            and self.filter_style == TableauxView.FilterStyle.MODAL,
+            toolbar_visible=toolbar_visible,
         )
-
+        context["filter"] = self.filterset
         for key, value in self.request.GET.items():
             if key not in self.ALLOWED_PARAMS and value:
                 context["filters"].append((key, value))
@@ -276,15 +279,21 @@ class TableauxView(SingleTableMixin, TemplateView):
         # self.filter = self.filterset_class(
         #     filter_data, queryset=queryset, request=self.request
         # )
+        # return self.filter
 
         return filterset_class(
-            self.request.GET,
+            filter_data,
             queryset=queryset,
             request=self.request,
         )
 
     def get_htmx(self, request, *args, **kwargs):
         # Some actions depend on trigger_name; others on trigger
+        if "_bp" in request.GET:
+            self._bp = request.GET["_bp"]
+        if "_filter" in request.GET:
+            return self.render_table(self.templates["render_table"])
+
         trigger_name = request.htmx.trigger_name
         trigger = request.htmx.trigger
 
@@ -310,9 +319,9 @@ class TableauxView(SingleTableMixin, TemplateView):
                     context = {"filter": self.filterset_class(request.GET)}
                     return render(request, self.templates["modal_filter"], context)
 
-                case "filter_form":
-                    # a filter value was changed
-                    return self.render_table(self.templates["render_table_data"])
+                # case "filter_form":
+                #     # a filter value was changed
+                #     return self.render_table(self.templates["render_table_data"])
 
                 case name if "clr_" in name:
                     # cancel a filter
