@@ -1,21 +1,21 @@
 {% load django_tables2 i18n %}
-<div id="{{ table.prefix }}_table_wrapper" {% if view.fixed_height > 0 %}style="overflow-y: scroll; max-height: {{ view.fixed_height }}px;"{% endif %}>
+<div id="{{ table.prefix }}table_wrapper" {% if view.fixed_height > 0 %}style="overflow-y: scroll; max-height: {{ view.fixed_height }}px;"{% endif %}>
 <table {% if table.attrs.class %}{% render_attrs table.attrs %}{% else %}class="table" {% endif %}
-         id="{{ table.prefix }}_table" data-click="{{ table.click_action }}"
+         id="{{ table.prefix }}table" data-click="{{ table.click_action }}"
          data-url="{{ table.url }}"
          data-pk={{ table.pk }} data-target="{{ table.target }}">
     {% if view.caption %}
       <caption class="caption.attrs">{{ caption }}</caption>
     {% endif %}
     {% include templates.render_header %}
-    <tbody {{ table.attrs.tbody.as_html }} id="{{ table.prefix }}_tbody">
+    <tbody {{ table.attrs.tbody.as_html }} id="{{ table.prefix }}tbody">
     {% include templates.render_rows %}
     </tbody>
     {% include templates.render_footer %}
   </table>
 </div>
-{% if view.row_settings %}
-  <div style="display: none;">
-<span id="rowsCount" hx-swap-oob="innerHTML">{{ view.paginate_by }} rows</span>
-  </div>
-{% endif %}
+{#{% if view.row_settings %}#}
+{#  <div style="display: none;">#}
+{#<span id="rowsCount" hx-swap-oob="innerHTML">{{ view.paginate_by }} rows</span>#}
+{#  </div>#}
+{#{% endif %}#}

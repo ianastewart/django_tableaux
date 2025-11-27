@@ -1,5 +1,5 @@
-{% extends "django_tableaux/bootstrap4/modal_base.html" %}
-{% load bootstrap4 %}
+{% extends "django_tableaux/bootstrap5/modal_base.html" %}
+{% load django_bootstrap5 %}
 {% block modal_title %}<span class="h4">Filter</span>{% endblock %}
 {% block modal_content %}
   <form method="get" action="">
@@ -7,17 +7,18 @@
   </form>
 {% endblock %}
 {% block modal_body %}
-  <div class="modal-body">
+  <div class="modal-body tableaux">
     {{ filter.form.media }}
     <div class="d-flex-column">
       {% for field in filter.form.visible_fields %}
-        {% bootstrap_field field form_group_class="form-group auto-submit" placeholder="" layout="horizontal" %}
+        {% bootstrap_field field wrapper_class="form-group auto-submit mb-2" placeholder="" %}
       {% endfor %}
     </div>
   </div>
 {% endblock %}
 {% block modal_footer %}
   <div class="modal-footer">
-    <button type="submit" class="btn btn-primary" name="">Filter</button>
+    <button type="submit" onclick="closeModal()" class="btn btn-primary" hx-get="" name="filter_clear">Clear filters</button>
+    <button type="submit"  class="btn btn-primary" hx-get="" name="filter_now">Filter</button>
   </div>
 {% endblock %}

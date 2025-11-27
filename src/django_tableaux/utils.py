@@ -1,5 +1,6 @@
 from pathlib import Path
 from symtable import Class
+from urllib.parse import parse_qs, urlunparse, urlparse, urlencode
 
 from django.apps import apps
 from django.conf import settings
@@ -328,3 +329,30 @@ def render_editable_form(
     form = form_class(initial={"value": value})
     context = {"id": record_id, "column": column, "value": value, "form": form}
     return render(request, template_name, context)
+
+def set_query_parameter(url, key: str, value: str) -> str:
+    parsed = urlparse(url)
+    queries = parse_qs(parsed.query)
+    queries[key] = value
+    new_query = urlencode(queries, doseq=True)
+    return urlunparse((parsed._replace(query=new_query)))
+
+def clear_query_parameters(url, keys: list[str]):
+    parsed = urlparse(url)
+    queries = parse_qs(parsed.query)
+    for key in keys:
+        queries.pop(key, None)
+    new_query = urlencode(queries, doseq=True)
+    return urlunparse((parsed._replace(query=new_query)))
+
+def handle_sort_parameter(url: str, key: str, sort_field: str):
+    parsed = urlparse(url)
+    queries = parse_qs(parsed.query)
+    values = queries.pop(key, [])
+    if len(values) > 0:
+        value = values[0]
+        if value == sort_field:
+            sort_field = value[1:] if value[0] == "-" else "-" + value
+    queries[key] = sort_field
+    new_query = urlencode(queries, doseq=True)
+    return urlunparse((parsed._replace(query=new_query)))

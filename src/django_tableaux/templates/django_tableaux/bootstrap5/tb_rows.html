@@ -2,12 +2,12 @@
 <div class="dropdown">
   <button class="btn btn-sm btn-outline-primary dropdown-toggle mx-1" type="button" id="dropdownRowsButton"
           data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-    <span id="rowsCount">{{ view.paginate_by }} rows</span>
+    <span id="rowsCount">{{ view.per_page }} rows</span>
   </button>
   <div class="dropdown-menu" aria-labelledby="dropdownRowsButton">
     {% for row in rows %}
-      <div class="dropdown-item" id="_row_{{ row }}"
-           hx-target="#{{ table.prefix }}_table_wrapper" hx-get="" hx-swap="outerHTML">
+      <div class="dropdown-item" id="{{ table.prefix }}~row~{{ row }}"
+           hx-target="#{{ table.prefix }}table_wrapper" hx-get="" hx-swap="outerHTML">
         {{ row }} rows
       </div>
     {% endfor %}

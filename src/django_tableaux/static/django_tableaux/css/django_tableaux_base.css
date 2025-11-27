@@ -16,10 +16,19 @@
 
 .tableaux .sticky th {
     position: sticky;
-    top: 0px;
+    top: 0;
     background-color: white;
 }
 
+.tableaux .form-control.is-valid {
+    background-image: none;
+    border-color: #cfd4da;
+}
+button.close {
+    border: none;
+    background: none;
+    font-size: xx-large;
+}
 /*.tableaux th {*/
 /*    position: sticky;*/
 /*    top: 0px;*/

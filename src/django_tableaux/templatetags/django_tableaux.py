@@ -29,7 +29,7 @@ def attrs(context):
 def load_table(url_name):
     url = reverse(url_name)
     hx_vals = "js:{ '_bp': tableaux.getCurrentBreakpoint() }"
-    code = f'<div name="table_load" hx-trigger="load"  hx-get="{url}" hx-vals="{hx_vals}" hx-swap="outerHTML"></div>'
+    code = f'<div id=load_{url_name} name="table_load" hx-trigger="load" hx-get="{url}" hx-vals="{hx_vals}" hx-swap="outerHTML" hx-target="#load_{url_name}"></div>'
     return mark_safe(code)
 
 

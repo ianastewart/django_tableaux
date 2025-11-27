@@ -1,9 +1,9 @@
 {% include templates.render_header %}
-<tbody {{ table.attrs.tbody.as_html }} id="{{ table.prefix }}_tbody">
+<tbody {{ table.attrs.tbody.as_html }} id="{{ table.prefix }}tbody">
 {% include templates.render_rows %}
 </tbody>
 {% include templates.render_footer %}
-<div id="{{ table.prefix }}_pagination" hx-swap-oob="true">
+<div id="{{ table.prefix }}pagination" hx-swap-oob="true">
 </div>
 
 

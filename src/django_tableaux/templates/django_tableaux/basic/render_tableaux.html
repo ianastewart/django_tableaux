@@ -1,6 +1,6 @@
 {% load django_tables2 i18n %}
 {{ breakpoints|json_script:"breakpoints" }}
-<div class="tableaux" id="{{ table.prefix }}_tableaux" style="background-color: white;">
+<div class="tableaux" id="{{ table.prefix }}tableaux" style="background-color: white;">
   {% if view.has_filter_toolbar %}
     {% include templates.toolbar_filter %}
   {% endif %}

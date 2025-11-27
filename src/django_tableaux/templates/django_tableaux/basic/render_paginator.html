@@ -1,5 +1,5 @@
 {% load django_tables2 %}
-<section id="{{ table.prefix }}_pagination" hx-target="#{{ table.prefix }}_tableaux">
+<section id="{{ table.prefix }}pagination" hx-target="#{{ table.prefix }}tableaux">
   {% if not table.infinite_scroll and not table.infinite_load %}
     {% if table.page and table.paginator.num_pages > 1 %}
       <nav aria-label="Table navigation">

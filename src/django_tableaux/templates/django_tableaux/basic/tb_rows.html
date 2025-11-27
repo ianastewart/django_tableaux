@@ -3,7 +3,7 @@
   <select id="rowsDropdown"
           name="rows"
           aria-describedby="dropdownHelp"
-          onchange="tableaux.set_page_size(this.value, '#{{ table.prefix }}_tableaux')">
+          onchange="tableaux.set_page_size(this.value, '#{{ table.prefix }}tableaux')">
     {% for row in rows %}
       <option value="{{ row }}" {% if row == per_page %}selected{% endif %}>{{ row }} rows</option>
     {% endfor %}

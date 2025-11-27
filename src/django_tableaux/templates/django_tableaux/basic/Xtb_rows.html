@@ -4,7 +4,7 @@
     <div class="select-options">
       {% for row in rows %}
         <div class="select-option {% if row == per_page %}selected{% endif %}"
-             onclick="tableaux.set_page_size({{ row }}, '#{{ table.prefix }}_table_wrapper');">{{ row }} rows
+             onclick="tableaux.set_page_size({{ row }}, '#{{ table.prefix }}table_wrapper');">{{ row }} rows
         </div>
       {% endfor %}
     </div>

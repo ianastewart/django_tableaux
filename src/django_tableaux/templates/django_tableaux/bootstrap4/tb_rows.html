@@ -6,8 +6,8 @@
     </button>
     <div class="dropdown-menu" aria-labelledby="dropdownRowsButton">
       {% for row in rows %}
-        <div class="dropdown-item" id="{{ table.prefix }}_row_{{ row }}"
-             hx-target="#{{ table.prefix }}_table_wrapper" hx-get="" hx-swap="outerHTML">
+        <div class="dropdown-item" id="{{ table.prefix }}row_{{ row }}"
+             hx-target="#{{ table.prefix }}table_wrapper" hx-get="" hx-swap="outerHTML">
           {{ row }} rows
         </div>
       {% endfor %}

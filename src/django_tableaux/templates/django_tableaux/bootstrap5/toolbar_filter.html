@@ -1,5 +1,5 @@
 {% load bootstrap4 %}
-<form id="{{ table.prefix }}_filter_form" hx-target="#{{ table.prefix }}_table_wrapper" hx-swap="outerHTML">
+<form id="{{ table.prefix }}filter_form" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML" novalidate="true">
   {{ filter.form.media }}
 {#  <input type="hidden" name="per_page" value="{{ per_page }}">#}
   {% if filter.form.visible_fields %}

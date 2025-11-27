@@ -1,7 +1,7 @@
 {% if view.column_settings %}
   <div class="select-list multiple">
     <div class="select-title">Columns</div>
-    <div class="select-options" hx-target="#{{ table.prefix }}_table_wrapper">
+    <div class="select-options" hx-target="#{{ table.prefix }}table_wrapper">
       {#      {% if default %}#}
       <div class="select-option">
         <button type="button" hx-get="" name="_col__reset">Reset columns</button>

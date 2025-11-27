@@ -15,9 +15,11 @@ from django_htmx.http import (
     HttpResponseClientRedirect,
     trigger_client_event,
     push_url,
+    retarget,
+    replace_url,
 )
 from django_tables2 import tables
-from django_tables2.views import SingleTableMixin
+from django_tables2.views import TableMixinBase, SingleTableMixin
 from django_tables2.export.export import TableExport
 from django_tableaux.table import build_table
 from .utils import (
@@ -32,6 +34,8 @@ from .utils import (
     save_per_page,
     build_templates_dictionary,
     new_columns_dict,
+    set_query_parameter,
+    handle_sort_parameter,
 )
 
 logger = logging.getLogger(__name__)
@@ -76,6 +80,7 @@ class TableauxView(SingleTableMixin, TemplateView):
     column_settings = False
     column_reset = True
     row_settings = False
+    per_page = 15
 
     click_action = ClickAction.NONE
     click_url_name = ""
@@ -91,7 +96,7 @@ class TableauxView(SingleTableMixin, TemplateView):
     export_class = TableExport
     export_formats = (TableExport.CSV,)
 
-    id = "tbx"
+    prefix = "tb_"
     _bp = ""
     last_order_by = None
     ALLOWED_PARAMS = ["page", "per_page", "sort", "_bp"]
@@ -131,7 +136,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         if "_export" in request.GET:
             return self.export_table()
 
-        return self.render_table()
+        return self.render_template(self.template_name)
 
     def get_queryset(self):
         if hasattr(self, "queryset"):
@@ -159,16 +164,41 @@ class TableauxView(SingleTableMixin, TemplateView):
         """
         return self.object_list
 
-    def render_table(self, template_name=None, **kwargs):
-        """
-        Use the TemplateResponse Mixin to render the table, optionally using a specific template
-        """
-        # template_name = self.templates["render_tableaux"]
-        self.table = build_table(self, prefix=self.id)
+    def render_template(
+        self,
+        template_name=None,
+        hx_target=None,
+        trigger_client=True,
+        update_url="",
+        **kwargs,
+    ):
+        self.get_filtered_object_list()
+        self.table = build_table(self, prefix=self.prefix, **kwargs)
         context = self.get_context_data(**kwargs)
         template_name = template_name or self.template_name
         response = self.render_to_response(template_name, context)
-        return trigger_client_event(response, "tableaux_init", after="swap")
+        if hx_target:
+            response = retarget(response, f"#{self.table.prefix}{hx_target}")
+        if trigger_client:
+            response = trigger_client_event(response, "tableaux_init", after="swap")
+        if update_url:
+            response = replace_url(response, update_url)
+            response = push_url(response, update_url)
+        return response
+
+    def render_table(self, update_url=""):
+        return self.render_template(
+            template_name=self.templates["render_table"],
+            hx_target="table_wrapper",
+            update_url=update_url,
+        )
+
+    def render_tableaux(self, update_url=""):
+        return self.render_template(
+            template_name=self.templates["render_tableaux"],
+            hx_target="tableaux",
+            update_url=update_url,
+        )
 
     def render_row(self, id=None, template_name=None):
         # self.object_list = self.get_table_data().filter(id=id)
@@ -203,7 +233,8 @@ class TableauxView(SingleTableMixin, TemplateView):
         export_format = self.request.GET.get("_export", self.export_format)
         # Use tablib to export in desired format
         table = self.get_table()
-        self.preprocess_table(table)
+        # todo build table
+        # self.preprocess_table(table)
         exclude_columns = [k for k, v in table.columns.columns.items() if not v.visible]
         exclude_columns.append("selection")
         exporter = self.export_class(
@@ -276,10 +307,6 @@ class TableauxView(SingleTableMixin, TemplateView):
                 lines = value
             elif key in filterset_class.base_filters and key not in filter_data:
                 filter_data[key] = value
-        # self.filter = self.filterset_class(
-        #     filter_data, queryset=queryset, request=self.request
-        # )
-        # return self.filter
 
         return filterset_class(
             filter_data,
@@ -292,7 +319,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         if "_bp" in request.GET:
             self._bp = request.GET["_bp"]
         if "_filter" in request.GET:
-            return self.render_table(self.templates["render_table"])
+            return self.render_table()
 
         trigger_name = request.htmx.trigger_name
         trigger = request.htmx.trigger
@@ -305,23 +332,21 @@ class TableauxView(SingleTableMixin, TemplateView):
         if trigger_name is not None:
             match trigger_name:
                 case "table_load":
-                    return self.render_table(self.templates["render_table"])
+                    return self.render_tableaux()
 
                 case "page":
-                    return self.render_table(self.templates["render_tableaux"])
+                    return self.render_tableaux()
 
-                case name if "sort_" in name:
-                    self.last_order_by = trigger_name[5:]
-                    return self.render_table(self.templates["render_table"])
-
-                case "filter" if self.filterset_class:
+                case "filter_modal" if self.filterset_class:
                     # show filter modal
                     context = {"filter": self.filterset_class(request.GET)}
-                    return render(request, self.templates["modal_filter"], context)
+                    return render(
+                        request, self.templates["modal_filter"], context=context
+                    )
 
-                # case "filter_form":
-                #     # a filter value was changed
-                #     return self.render_table(self.templates["render_table_data"])
+                case "filter_now":
+                    # filter button pressed
+                    return self.render_table()
 
                 case name if "clr_" in name:
                     # cancel a filter
@@ -355,13 +380,16 @@ class TableauxView(SingleTableMixin, TemplateView):
                                     )
 
         if trigger is not None:
+            bits = trigger.split("~")
+            self.prefix = bits[0]
             match trigger:
-                case trigger if "_col_" in trigger:
-                    bits = trigger.split("_")
+                case trigger if "~col~" in trigger:
+                    # Switch column visibility on or off
+                    col_name = bits[2]
                     table = self.get_table()
-                    if "__reset" in trigger:
+                    if col_name == "_reset" in trigger:
                         # Reset default columns settings.
-                        # To make sure the column drop down is correctly updated we do a full client refresh,
+                        # To make sure the column drop down is correct we update the tableaux
                         define_columns(table, self.get_breakpoint_values(), self._bp)
                         columns_dict = new_columns_dict(table)
                         for column in columns_dict.keys():
@@ -370,13 +398,29 @@ class TableauxView(SingleTableMixin, TemplateView):
                         save_columns_dict(
                             request, table, self._bp, table.columns_default
                         )
-                        return self.render_table(self.templates["render_tableaux"])
+                        return self.render_table()
                     # Click on a checkbox in the column dropdown re-renders the table data with new column settings.
-                    # The column dropdown does not need to be rendered because the checkboxes are in the correct state
-                    col_name = bits[2]
-                    checked = "_col_" + col_name in request.GET
+                    # The column dropdown remains open
+                    checked = f"{self.prefix}~col~{col_name}" in request.GET
                     set_column(request, table, self._bp, col_name, checked)
-                    return self.render_table(self.templates["render_table"])
+                    return self.render_table()
+
+                case trigger if "~row~" in trigger:
+                    # Change number of rows to display
+                    rows = bits[2]
+                    save_per_page(request, rows)
+                    self.per_page = rows
+                    new_url = set_query_parameter(
+                        request.htmx.current_url, f"{bits[0]}per_page", rows
+                    )
+                    return self.render_tableaux(update_url=new_url)
+
+                case name if "~sort~" in name:
+                    new_url = handle_sort_parameter(
+                        request.htmx.current_url, self.prefix + "sort", bits[2]
+                    )
+                    self.last_order_by = bits[2]
+                    return self.render_table(update_url=new_url)
 
                 case trigger if "editcol" in trigger:
                     # display a form to edit a cell inline
@@ -387,17 +431,7 @@ class TableauxView(SingleTableMixin, TemplateView):
 
                 case "table_data":
                     # triggered refresh of table data after create or update
-                    return self.render_table(self.templates["render_rows"])
-
-                case trigger if "_row_" in trigger:
-                    # change number of rows to display
-                    bits = trigger.split("_")
-                    rows = int(bits[2])
-                    save_per_page(request, rows)
-                    self.table_pagination["per_page"] = rows
-                    self.paginate_by = rows
-                    response = self.render_table(self.templates["render_table"])
-                    return trigger_client_event(response, "tableaux_init", after="swap")
+                    return self.render_table()
 
                 case trigger if "tr_" in trigger:
                     # infinite scroll/load_more or click on row
@@ -633,73 +667,9 @@ class TableauxView(SingleTableMixin, TemplateView):
         return HttpResponseClientRefresh()
 
     def get_breakpoint_values(self):
-        # This dictioary specifies the upper limit for each category
+        # This dictionary specifies the upper limit for each category
         # e.g. md >= 768
         return {"xs": 576, "sm": 768, "md": 992, "lg": 1200, "xl": 1400, "xxl": 1600}
-
-    def preprocess_table(self, table, _filter=None):
-        """
-        This adds dynamic attributes to the table instance
-        """
-        table.id = self.id  # f"tbx_{table.__class__.__name__.lower()}"
-        table.last_sort = self.request.GET.get("sort", None)
-        table.filter = _filter
-        table.infinite_scroll = self.infinite_scroll
-        table.infinite_load = self.infinite_load
-        table.sticky_header = self.sticky_header
-        # variables that control action when table is clicked
-        table.click_action = self.click_action.value
-        table.url = ""
-        table.pk = False
-        if self.click_url_name:
-            # handle case when there is no PK passed (create)
-            try:
-                table.url = reverse(self.click_url_name)
-            except NoReverseMatch:
-                # Detail or update views have a pk
-                try:
-                    table.url = reverse(self.click_url_name, kwargs={"pk": 0})[:-2]
-                    table.pk = True
-                except NoReverseMatch:
-                    raise (
-                        ImproperlyConfigured(
-                            f"Cannot resolve click_url_name: '{self.click_url_name}'"
-                        )
-                    )
-        table.target = self.click_target
-
-        set_select_column(table)
-        # if self.get_bulk_actions() and not table.select_name:
-        #     raise ImproperlyConfigured(
-        #         "Bulk actions require a selection column to be defined"
-        #     )
-        # if table.select_name and not self.get_bulk_actions():
-        #     raise ImproperlyConfigured("Selection column without bulk actions")
-
-        # define possible columns depending upon the current breakpoint
-        define_columns(table, self.get_breakpoint_values(), self._bp)
-
-        # set visible columns according to saved setting
-        columns_dict = load_columns_dict(self.request, self.table, self._bp)
-        table.columns_visible = [col for col in columns_dict if columns_dict[col]]
-        set_column_states(table)
-
-        if table.filter:
-            table.filter.style = self.filter_style
-            # If filter is in header, build list of filters in same sequence as columns
-            if self.filter_style == self.FilterStyle.HEADER:
-                table.header_fields = []
-                for col in table.sequence:
-                    if table.columns.columns[col].visible:
-                        if col in table.filter.base_filters.keys():
-                            table.header_fields.append(table.filter.form[col])
-                        else:
-                            table.header_fields.append(None)
-        if self.sticky_header:
-            if table.attrs.get("class") is None:
-                table.attrs["class"] = "sticky-header"
-            elif "sticky-header" not in table.attrs["class"]:
-                table.attrs["class"] += " sticky-header"
 
     @staticmethod
     def _update_parameter(request, key, value):

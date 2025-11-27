@@ -8,6 +8,8 @@ from django.http import QueryDict, HttpResponse
 from django.shortcuts import render, reverse, redirect
 from django.template.response import TemplateResponse
 from django.urls.resolvers import NoReverseMatch
+from django.core.paginator import Paginator
+
 from typing import Any, Optional
 
 from .utils import (
@@ -25,43 +27,42 @@ def build_table(view, **kwargs):
     # This allows us to control pagination when sorting and add extra properties to the table
     # to manage column visibility
     table_class = view.get_table_class()
-    table = table_class(data=view.get_filtered_object_list(), **kwargs)
-    paginate = view.get_table_pagination(table)
+    table = table_class(data=view.object_list, **kwargs)
 
     table.request = view.request
-
+    # Sorting
     order_by = view.request.GET.getlist(table.prefixed_order_by_field)
     if order_by:
         table.order_by = order_by
         table.last_order_by = view.last_order_by
-    if paginate:
-        if hasattr(paginate, "items"):
-            kwargs = dict(paginate)
-        else:
-            kwargs = {}
-        # extract some options from the request
-        for arg in ("page", "per_page"):
-            name = getattr(table, f"prefixed_{arg}_field")
-            try:
-                kwargs[arg] = int(view.request.GET[name])
-            except (ValueError, KeyError):
-                pass
-        if view.last_order_by and "page" in kwargs:
-            if order_by[0] != view.last_order_by:
-                kwargs["page"] = 1
-        silent = kwargs.pop("silent", True)
-        if not silent:
+    # Pagination
+    kwargs = {"per_page": view.per_page,
+              "page":  1}
+    if hasattr(view, "paginator_class"):
+        kwargs["paginator_class"] = view.paginator_class
+    # update from the request
+    for arg in ("per_page", "page"):
+        name = getattr(table, f"prefixed_{arg}_field")
+        value = view.request.GET.get(name)
+        if value:
+            kwargs[arg] = int(value)
+
+    if view.last_order_by and "page" in kwargs:
+        if order_by != view.last_order_by:
+            kwargs["page"] = 1
+    silent = kwargs.pop("silent", True)
+    if not silent:
+        table.paginate(**kwargs)
+    else:
+        try:
             table.paginate(**kwargs)
-        else:
-            try:
-                table.paginate(**kwargs)
-            except PageNotAnInteger:
-                table.page = table.paginator.page(1)
-            except EmptyPage:
-                table.page = table.paginator.page(table.paginator.num_pages)
+        except PageNotAnInteger:
+            table.page = table.paginator.page(1)
+        except EmptyPage:
+            table.page = table.paginator.page(table.paginator.num_pages)
 
     # This adds dynamic attributes to the table instance
-    table.id = view.id  # f"tbx_{table.__class__.__name__.lower()}"
+    table.prefix = view.prefix
     table.last_sort = view.request.GET.get("sort", None)
     table.filter = view.filterset
     table.infinite_scroll = view.infinite_scroll
@@ -122,54 +123,3 @@ def build_table(view, **kwargs):
             table.attrs["thead"]["class"] += " sticky"
     return table
 
-
-def get_table_pagination(view, table):
-    """
-    Return pagination options passed to `.RequestConfig`:
-        - True for standard pagination (default),
-        - False for no pagination,
-        - a dictionary for custom pagination.
-
-    `ListView`s pagination attributes are taken into account, if `table_pagination` does not
-    define the corresponding value.
-
-    Override this method to further customize pagination for a `View`.
-    """
-    paginate = view.table_pagination
-    if paginate is False:
-        return False
-
-    paginate = {}
-
-    # Obtains and set page size from get_paginate_by
-    paginate_by = view.paginate_by
-    paginate["per_page"] = paginate_by
-
-    if hasattr(view, "paginator_class"):
-        paginate["paginator_class"] = view.paginator_class
-
-    if getattr(view, "paginate_orphans", 0) != 0:
-        paginate["orphans"] = view.paginate_orphans
-
-    # table_pagination overrides any MultipleObjectMixin attributes
-    if view.table_pagination:
-        paginate.update(view.table_pagination)
-
-    # we have no custom pagination settings, so just use the default.
-    if not paginate and view.table_pagination is None:
-        return True
-
-    return paginate
-
-
-def get_paginate_by(view) -> Optional[int]:
-    """
-    Determines the number of items per page, or ``None`` for no pagination.
-
-    Args:
-        table_data: The table's data.
-
-    Returns:
-        Optional[int]: Items per page or ``None`` for no pagination.
-    """
-    return getattr(view, "paginate_by", None)
