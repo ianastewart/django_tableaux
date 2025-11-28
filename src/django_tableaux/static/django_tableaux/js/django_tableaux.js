@@ -12,21 +12,6 @@ let tableaux = (function () {
     };
     let currentBreakpoint = null;
 
-    // /**
-    //  * A utility to delay the execution of a function until after a certain time has passed
-    //  * without it being called again. This is useful for performance-heavy events like 'resize'.
-    //  * @param {Function} func The function to debounce.
-    //  * @param {number} delay The delay in milliseconds.
-    //  * @returns {Function} The debounced function.
-    //  */
-    // function debounce(func, delay) {
-    //     let timeoutId;
-    //     return function (...args) {
-    //         clearTimeout(timeoutId);
-    //         timeoutId = setTimeout(() => func.apply(this, args), delay);
-    //     };
-    // }
-
     tb.getCurrentBreakpoint = function () {
         const width = window.innerWidth;
         let current = 'xs'; // Default for widths below the smallest breakpoint
@@ -272,7 +257,7 @@ let tableaux = (function () {
             const table = target.closest("table");
             if (!row || !table || !row.id) return;
 
-            const pk = row.id.slice(3);
+            const pk = row.id.split("~")[2]
             const col = Array.from(row.children).indexOf(target);
             const idSuffix = `_${pk}_${col}_${window.outerWidth}`;
 

@@ -472,14 +472,19 @@ class TableauxView(SingleTableMixin, TemplateView):
                 case trigger if "td_" in trigger:
                     # cell clicked
                     bits = trigger.split("_")
-                    return self.cell_clicked(
-                        pk=bits[1],
-                        column_name=visible_columns(
+                    visible = visible_columns(
                             request,
                             self.table_class,
                             self.get_breakpoint_values(),
                             self._bp,
-                        )[int(bits[2])],
+                        )
+                    index = int(bits[2])
+                    #todo this is a bit of a hack here
+                    if "selection" in visible and visible[0] != "selection":
+                        index -= 1
+                    return self.cell_clicked(
+                        pk=bits[1],
+                        column_name=visible[index],
                         target=request.htmx.target,
                     )
 
