@@ -12,9 +12,9 @@
             {% if column.name == "selection" %}style="width: 30px;" {% endif %}
             {% endif %}
             {% if column.orderable %}
-{#            hx-target="#{{ table.prefix }}table_wrapper"#}
+            hx-target="#{{ table.prefix }}table_wrapper"
 {#            hx-push-url="true"#}
-            hx-get=""
+            hx-get="" hx-swap="outerHTML"
             id="{{ table.prefix }}~sort~{{ column.name|lower }}"
             title="Click to sort by {{ column.name|capfirst }}"
             {% endif %}>

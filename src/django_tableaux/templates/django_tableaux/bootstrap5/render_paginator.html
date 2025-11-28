@@ -6,35 +6,33 @@
       <ul class="pagination justify-content-center pb-2">
         {% if table.page.has_previous %}
           {% block pagination.previous %}
-            <li class="previous page-item">
-              <a href="{% querystring table.prefixed_page_field=table.page.previous_page_number without "_width" without "_height" %}"
-                 class="page-link">
+            <li class="previous page-item page-link"
+              hx-get="" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML"
+              {% if table.indicator %}hx-indicator="#{{ table.prefix }}tableaux_overlay"{% endif %} id="{{ table.prefix }}~page~{{ table.page.previous_page_number }}">
                 <span aria-hidden="true">&laquo;</span>
                 {% trans 'Previous' %}
-              </a>
             </li>
           {% endblock pagination.previous %}
         {% endif %}
         {% if table.page.has_previous or table.page.has_next %}
           {% block pagination.range %}
             {% for p in table.page|table_page_range:table.paginator %}
-              <li class="page-item{% if table.page.number == p %} active{% endif %}">
-                <a class="page-link"
-                   {% if p != '...' %}href="{% querystring table.prefixed_page_field=p without "_width" without "_height" %}"{% endif %}>
+              <li class="page-item page-link{% if table.page.number == p %} active{% endif %}"
+                   {% if p != '...' %} hx-get="" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML"
+                   {% if table.indicator %}hx-indicator="#{{ table.prefix }}tableaux_overlay"{% endif %} id="{{ table.prefix }}~page~{{ p }}"{% endif %}>
                   {{ p }}
-                </a>
               </li>
             {% endfor %}
           {% endblock pagination.range %}
         {% endif %}
         {% if table.page.has_next %}
           {% block pagination.next %}
-            <li class="next page-item">
-              <a href="{% querystring table.prefixed_page_field=table.page.next_page_number without "_width" without "_height" %}"
-                 class="page-link">
+            <li class="next page-item page-link"
+            hx-get="" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML"
+                {% if table.indicator %}hx-indicator="#{{ table.prefix }}tableaux_overlay"{% endif %}
+                id="{{ table.prefix }}~page~{{ table.page.next_page_number }}">
                 {% trans 'Next' %}
                 <span aria-hidden="true">&raquo;</span>
-              </a>
             </li>
           {% endblock pagination.next %}
         {% endif %}

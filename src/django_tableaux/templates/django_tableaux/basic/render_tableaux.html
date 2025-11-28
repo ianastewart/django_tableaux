@@ -1,6 +1,6 @@
-{% load django_tables2 i18n %}
-{{ breakpoints|json_script:"breakpoints" }}
+{% load static %}
 <div class="tableaux" id="{{ table.prefix }}tableaux" style="background-color: white;">
+{{ breakpoints|json_script:"breakpoints" }}
   {% if view.has_filter_toolbar %}
     {% include templates.toolbar_filter %}
   {% endif %}
@@ -16,4 +16,9 @@
   {% endif %}
   {% include templates.render_table %}
   {% include templates.render_paginator %}
+
+  <div class="tableaux-overlay htmx-indicator" id="{{ table.prefix }}tableaux_overlay">
+    <img src="{% static "django_tableaux/svg/grid.svg" %}">
+  </div>
 </div>
+

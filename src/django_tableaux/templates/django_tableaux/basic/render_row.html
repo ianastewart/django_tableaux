@@ -1,5 +1,5 @@
 {% load django_tables2 django_tableaux %}
-<tr {{ row.attrs.as_html }} id="{{ table.prefix }}tr_{{ row.record.id }}" {% if oob %}hx-swap-oob="true" {% endif %}
+<tr {{ row.attrs.as_html }} id="{{ table.prefix }}~tr~{{ row.record.id }}" {% if oob %}hx-swap-oob="true" {% endif %}
     {% if forloop.last and table.infinite_scroll and table.page.number < table.page.paginator.num_pages %}
 hx-get="{% querystring table.prefixed_page_field=table.page.next_page_number without "_scroll" %}"
 hx-target="#{{ table.prefix }}tr_{{ row.record.id }}"

@@ -46,7 +46,8 @@ def build_table(view, **kwargs):
         value = view.request.GET.get(name)
         if value:
             kwargs[arg] = int(value)
-
+    if view._page is not None:
+        kwargs["page"] = view._page
     if view.last_order_by and "page" in kwargs:
         if order_by != view.last_order_by:
             kwargs["page"] = 1
@@ -63,6 +64,7 @@ def build_table(view, **kwargs):
 
     # This adds dynamic attributes to the table instance
     table.prefix = view.prefix
+    table.indicator = view.indicator
     table.last_sort = view.request.GET.get("sort", None)
     table.filter = view.filterset
     table.infinite_scroll = view.infinite_scroll

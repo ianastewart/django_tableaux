@@ -1,5 +1,5 @@
 {% load bootstrap4 %}
-<form id="id_filter_form" hx-target="#table_data">
+{#<form id="id_filter_form" hx-target="#table_data">#}
   {{ filter.form.media }}
   <input type="hidden" name="per_page" value="{{ per_page }}">
   {% if filter.form.visible_fields %}
@@ -19,4 +19,4 @@
     <span name="clr_all" hx-get="" class="filter-clear mt-3 p-3"> Clear</span></p>
   </div>
   {% endif %}
-</form>
+{#</form>#}

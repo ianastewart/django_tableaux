@@ -95,9 +95,11 @@ class TableauxView(SingleTableMixin, TemplateView):
     export_format = "csv"
     export_class = TableExport
     export_formats = (TableExport.CSV,)
-
-    prefix = "tb_"
+    #
+    indicator = True
+    prefix = ""
     _bp = ""
+    _page = None
     last_order_by = None
     ALLOWED_PARAMS = ["page", "per_page", "sort", "_bp"]
 
@@ -111,6 +113,7 @@ class TableauxView(SingleTableMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         # If we have a filterset and an empty query string but initial data:
         #   create a query string containing the initial data and redirect
+
         if request.htmx:
             return self.get_htmx(request, *args, **kwargs)
 
@@ -420,7 +423,15 @@ class TableauxView(SingleTableMixin, TemplateView):
                         request.htmx.current_url, self.prefix + "sort", bits[2]
                     )
                     self.last_order_by = bits[2]
-                    return self.render_table(update_url=new_url)
+                    return self.render_tableaux(update_url=new_url)
+
+                case name if "~page~" in name:
+                    page = bits[2]
+                    new_url = set_query_parameter(
+                        request.htmx.current_url, f"{bits[0]}page", page
+                    )
+                    self._page = page
+                    return self.render_tableaux(update_url=new_url)
 
                 case trigger if "editcol" in trigger:
                     # display a form to edit a cell inline

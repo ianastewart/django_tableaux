@@ -1,3 +1,7 @@
+.tableaux {
+    position: relative;
+}
+
 .tableaux .table-wrapper {
     overflow-y: scroll;
     max-height: 300px;
@@ -24,65 +28,75 @@
     background-image: none;
     border-color: #cfd4da;
 }
+
 button.close {
     border: none;
     background: none;
     font-size: xx-large;
 }
-/*.tableaux th {*/
-/*    position: sticky;*/
-/*    top: 0px;*/
-/*    background-color: white;*/
+
+.tableaux-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.4);
+  z-index: 20;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.htmx-request.tableaux-overlay {
+    display: flex;
+}
+
+/*!* optional dimming *!*/
+/*.htmx-request ~ .my-table {*/
+/*    opacity: 0.5;*/
+/*    pointer-events: none;*/
 /*}*/
 
-/*.table-wrapper {*/
-/*    max-height: 300px;*/
-/*    overflow-y: scroll;*/
+/*.container {*/
+/*    width: 100%;*/
+/*    padding-right: 15px;*/
+/*    padding-left: 15px;*/
+/*    margin-right: auto;*/
+/*    margin-left: auto;*/
 /*}*/
 
-/*th, td {*/
-/*    border: 1px solid black;*/
-/*    padding: 5px 5px 5px 5px;*/
+/*@media (min-width: 576px) {*/
+/*    .container {*/
+/*        max-width: 540px;*/
+/*    }*/
 /*}*/
 
-.container {
-    width: 100%;
-    padding-right: 15px;
-    padding-left: 15px;
-    margin-right: auto;
-    margin-left: auto;
-}
+/*@media (min-width: 768px) {*/
+/*    .container {*/
+/*        max-width: 720px;*/
+/*    }*/
+/*}*/
 
-@media (min-width: 576px) {
-    .container {
-        max-width: 540px;
-    }
-}
+/*@media (min-width: 992px) {*/
+/*    .container {*/
+/*        max-width: 960px;*/
+/*    }*/
+/*}*/
 
-@media (min-width: 768px) {
-    .container {
-        max-width: 720px;
-    }
-}
+/*@media (min-width: 1200px) {*/
+/*    .container {*/
+/*        max-width: 1140px;*/
+/*    }*/
+/*}*/
 
-@media (min-width: 992px) {
-    .container {
-        max-width: 960px;
-    }
-}
-
-@media (min-width: 1200px) {
-    .container {
-        max-width: 1140px;
-    }
-}
-
-.container-fluid {
-    width: 100%;
-    padding-right: 15px;
-    padding-left: 15px;
-    margin-right: auto;
-    margin-left: auto;
-}
+/*.container-fluid {*/
+/*    width: 100%;*/
+/*    padding-right: 15px;*/
+/*    padding-left: 15px;*/
+/*    margin-right: auto;*/
+/*    margin-left: auto;*/
+/*}*/
 
 
