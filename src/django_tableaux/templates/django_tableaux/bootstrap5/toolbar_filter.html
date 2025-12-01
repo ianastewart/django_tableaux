@@ -1,11 +1,11 @@
 {% load bootstrap4 %}
-<form id="{{ table.prefix }}filter_form" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML" novalidate="true">
+{#<form id="{{ table.prefix }}filter_form" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML" novalidate="true">#}
   {{ filter.form.media }}
 {#  <input type="hidden" name="per_page" value="{{ per_page }}">#}
   {% if filter.form.visible_fields %}
     <div class="d-flex">
     {% for field in filter.form.visible_fields %}
-      {% include templates.tb_filter_field with toolbar=True field=field filter_button=filter_button %}
+      {% include templates.tb_filter_field with toolbar=True %}
     {% endfor %}
     {% if filter_button %}
       <div class="form-group pl-2 pt-2">
@@ -19,4 +19,4 @@
     <span name="clr_all" hx-get="" class="filter-clear mt-3 p-3"> Clear</span></p>
   {% endif %}
   </div>
-</form>
+{#</form>#}

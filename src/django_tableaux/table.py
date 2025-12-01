@@ -31,23 +31,15 @@ def build_table(view, **kwargs):
 
     table.request = view.request
     # Sorting
-    order_by = view.request.GET.getlist(table.prefixed_order_by_field)
+    order_by = view._query_dict.get("order_by", "")
     if order_by:
         table.order_by = order_by
         table.last_order_by = view.last_order_by
     # Pagination
-    kwargs = {"per_page": view.per_page,
-              "page":  1}
+    kwargs = {"per_page": view._query_dict.get("per_page", 10),
+              "page": view._query_dict.get("page", 1)}
     if hasattr(view, "paginator_class"):
         kwargs["paginator_class"] = view.paginator_class
-    # update from the request
-    for arg in ("per_page", "page"):
-        name = getattr(table, f"prefixed_{arg}_field")
-        value = view.request.GET.get(name)
-        if value:
-            kwargs[arg] = int(value)
-    if view._page is not None:
-        kwargs["page"] = view._page
     if view.last_order_by and "page" in kwargs:
         if order_by != view.last_order_by:
             kwargs["page"] = 1

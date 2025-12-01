@@ -82,55 +82,56 @@ let tableaux = (function () {
         }
 
         document.querySelectorAll("table").forEach(e => e.addEventListener("click", tableClick));
-        document.querySelectorAll(".auto-submit").forEach(el =>
-            el.addEventListener("change", function (e) {
-
-                const form = e.target.closest("form");
-                if (!form) return;
-
-                // Start with current page URL
-                const url = new URL(window.location.href);
-
-                // Replace or add only the form's fields
-                const formData = new FormData(form);
-                for (const [key, value] of formData.entries()) {
-                    url.searchParams.set(key, value);
-                }
-                url.searchParams.set("_filter", "");
-                // Send hx-get request
-                htmx.ajax("GET", url.toString(), {
-                    target: form.getAttribute("hx-target"),
-                    swap: form.getAttribute("hx-swap")
-                });
-            })
-        );
+        // document.querySelectorAll(".auto-submit").forEach(el =>
+        //     el.addEventListener("change", function (e) {
+        //
+        //         const form = e.target.closest("form");
+        //         if (!form) return;
+        //
+        //         // // Start with current page URL
+        //         // const url = new URL(window.location.href);
+        //         //
+        //         // // Replace or add only the form's fields
+        //         // const formData = new FormData(form);
+        //         // for (const [key, value] of formData.entries()) {
+        //         //     url.searchParams.set(key, value);
+        //         // }
+        //         // url.searchParams.set("_filter", "");
+        //         // Send hx-get request
+        //         htmx.ajax("GET", url.toString(), {
+        //             target: form.getAttribute("hx-target"),
+        //             swap: form.getAttribute("hx-swap"),
+        //             include: "#fdor"
+        //         });
+        //     })
+        // );
         document.querySelectorAll(".filter-clear").forEach(e => e.addEventListener("click", filterClear));
-        document.querySelectorAll(".form-group.hx-get").forEach(e => e.addEventListener("change", filterChanged));
+        document.querySelectorAll(".filter-submit").forEach(e => e.addEventListener("change", filterChanged));
 
         document.body.addEventListener("trigger", function (evt) {
             window.htmx.ajax('GET', evt.detail.url, {source: '#table_data', target: '#table_data'});
         });
 
-        // document.body.addEventListener("click", selectListClick);
+        document.body.addEventListener("click", selectListClick);
 
         if (document.querySelector(".td_editing")) {
             document.addEventListener("keypress", loseFocus);
         }
 
-        const option = document.querySelector('.select-option');
-
-        if (option) {
-            option.addEventListener('click', function (e) {
-                const url = new URL(window.location.href);
-                url.searchParams.set('page_size', e.target.value);
-                url.searchParams.set('page', 1);
-
-                htmx.ajax('GET', url.toString(), {
-                    target: '#table_data',
-                    swap: 'outerHTML'
-                });
-            });
-        }
+        // const option = document.querySelector('.select-option');
+        //
+        // if (option) {
+        //     option.addEventListener('click', function (e) {
+        //         const url = new URL(window.location.href);
+        //         url.searchParams.set('page_size', e.target.value);
+        //         url.searchParams.set('page', 1);
+        //
+        //         htmx.ajax('GET', url.toString(), {
+        //             target: '#table_data',
+        //             swap: 'outerHTML'
+        //         });
+        //     });
+        // }
 
         countChecked();
 
@@ -165,7 +166,7 @@ let tableaux = (function () {
     function filterChanged() {
         const input = this.querySelector('input, select');
         if (input) {
-            window.htmx.ajax('GET', '', {source: `#${input.id}`, target: '#table_data'});
+            window.htmx.ajax('GET', '', {source: `#${input.id}`});
         }
     }
 
@@ -219,6 +220,15 @@ let tableaux = (function () {
         };
 
         const target = e.target;
+        const row = target.closest("tr");
+        const bits = row.id.split("_");
+        const prefix = bits[0];
+        const pk = bits[2];
+        const table = row.closest("table");
+        const form = document.getElementById(`${prefix}filter_form`)
+        if (!row || !table || !form || !row.id) return;
+        const formData = new FormData(form);
+        const formObject = Object.fromEntries(formData.entries());
 
         if (target.classList.contains("td-editing")) {
             if (target.classList.contains("open")) {
@@ -253,11 +263,8 @@ let tableaux = (function () {
                 return;
             }
 
-            const row = target.closest("tr");
-            const table = target.closest("table");
-            if (!row || !table || !row.id) return;
 
-            const pk = row.id.split("~")[2]
+
             const col = Array.from(row.children).indexOf(target);
             const idSuffix = `_${pk}_${col}_${window.outerWidth}`;
 
@@ -272,12 +279,12 @@ let tableaux = (function () {
                 if (table.dataset.click === ClickAction.GET) {
                     window.document.location.assign(url);
                 } else if (table.dataset.click === ClickAction.HX_GET) {
-                    window.htmx.ajax('GET', url, {source: `#${row.id}`, target: table.dataset.target});
+                    window.htmx.ajax('GET', url, {source: `#${row.id}`, target: table.dataset.target, values: formObject});
                 }
             } else if (table.dataset.click === ClickAction.CUSTOM) {
                 target.id = "td" + idSuffix;
                 window.htmx.ajax('GET', "", {
-                    source: `#${target.id}`, target: `#${target.id}`,
+                    source: `#${target.id}`, target: `#${target.id}`, values: formObject
                 });
             }
         } else if (target.name === 'select-checkbox') {

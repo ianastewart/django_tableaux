@@ -15,10 +15,10 @@
     {% endif %}
   {% if forloop.last and table.infinite_load %}
     {% if table.page.number < table.page.paginator.num_pages %}
-      <tr id="{{ table.prefix }}tr_last"
-          hx-target="#{{ table.prefix }}tr_last"
+      <tr id="{{ table.prefix }}_tr_last"
+          hx-target="#{{ table.prefix }}_tr_last"
           hx-swap="outerHTML"
-          hx-get="{% querystring table.prefixed_page_field=table.page.next_page_number without "_scroll" %}"
+          hx-get=""
           hx-vals='{"_scroll": "true"}'>
         <td colspan="{{ table.columns|length }}" style="text-align: center">
           {% include templates.load_more %}

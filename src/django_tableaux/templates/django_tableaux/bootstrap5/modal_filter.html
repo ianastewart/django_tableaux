@@ -7,18 +7,24 @@
   </form>
 {% endblock %}
 {% block modal_body %}
-  <div class="modal-body tableaux">
+  <div class="modal-body tableaux bg-light">
     {{ filter.form.media }}
     <div class="d-flex-column">
       {% for field in filter.form.visible_fields %}
+        {% if filter_button %}
+        {% bootstrap_field field wrapper_class="form-group mb-2" placeholder="" %}
+        {% else %}
         {% bootstrap_field field wrapper_class="form-group auto-submit mb-2" placeholder="" %}
+        {% endif %}
       {% endfor %}
     </div>
   </div>
 {% endblock %}
 {% block modal_footer %}
   <div class="modal-footer">
-    <button type="submit" onclick="closeModal()" class="btn btn-primary" hx-get="" name="filter_clear">Clear filters</button>
+    <button type="button" class="btn btn-primary" hx-get="" name="filter_clear">Clear filters</button>
+    {% if filter_button %}
     <button type="submit"  class="btn btn-primary" hx-get="" name="filter_now">Filter</button>
+    {% endif %}
   </div>
 {% endblock %}

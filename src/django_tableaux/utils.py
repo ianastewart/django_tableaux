@@ -29,38 +29,26 @@ def save_columns_dict(
 def load_columns_dict(request: HttpRequest, table: Table, bp: str) -> dict[str, bool]:
     key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
     stored_dict = request.session.get(key)
-    # Early versions stored visible columns as a list
-    if not isinstance(stored_dict, dict):
-        request.session[key] = {}
-        stored_dict = None
     if stored_dict is None:
-        stored_dict = default_columns_dict(table, bp)
+        stored_dict = default_columns_dict(table)
     # Sync with table's current columns, adding new ones as False (not visible).
     columns_dict = {col: stored_dict.get(col, False) for col in table.sequence}
     save_columns_dict(request, table, bp, columns_dict)
     return columns_dict
 
 
-def new_columns_dict(table: Table) -> dict:
+def new_columns_dict(table: Table) -> dict[str, bool]:
+    # Every column is visible
     return {col: True for col in table.sequence}
 
 
-def default_columns_dict(table: Table, bp: str) -> dict[str, bool]:
+def default_columns_dict(table: Table) -> dict[str, bool]:
+    # Only default columns are visible
     columns_dict = new_columns_dict(table)
     for key in columns_dict.keys():
         if key not in table.columns_default:
             columns_dict[key] = False
     return columns_dict
-
-
-# def save_columns(request: HttpRequest, table: Table, bp: str, column_list: list):
-#     key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
-#     request.session[key] = column_list
-#
-#
-# def load_columns(request: HttpRequest, table: Table, bp: str) -> list:
-#     key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
-#     return request.session[key] if key in request.session else []
 
 
 def set_column(
@@ -345,14 +333,14 @@ def clear_query_parameters(url, keys: list[str]):
     new_query = urlencode(queries, doseq=True)
     return urlunparse((parsed._replace(query=new_query)))
 
-def handle_sort_parameter(url: str, key: str, sort_field: str):
-    parsed = urlparse(url)
-    queries = parse_qs(parsed.query)
-    values = queries.pop(key, [])
-    if len(values) > 0:
-        value = values[0]
-        if value == sort_field:
-            sort_field = value[1:] if value[0] == "-" else "-" + value
-    queries[key] = sort_field
-    new_query = urlencode(queries, doseq=True)
-    return urlunparse((parsed._replace(query=new_query)))
+
+def strip_prefix_from_keys(data: dict, prefix: str) -> dict:
+    plen = len(prefix)
+    return {
+        (key[plen:] if key.startswith(prefix) else key): value
+        for key, value in data.items()
+    }
+
+def add_prefix_to_keys(data: dict, prefix: str, exclude: list[str]|None=None) -> dict:
+    exclude = exclude or []
+    return {(key if key in exclude else prefix + key) : value for key, value in data.items()}
