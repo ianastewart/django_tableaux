@@ -23,6 +23,7 @@ The project is still in beta but is fully usable.
 Full documentation to follow.
 0.7.4 Fix filter initialisation
 0.7.5 Ignore datepicker filter-clear
+0.7.6 Extensive rework to support multiple tables and component-like table handling
 """
 
-__version__ = "0.7.5"
+__version__ = "0.7.6"

@@ -11,14 +11,11 @@ classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
 requires-python = ">=3.10"
 dependencies = [
-    "django-bootstrap4==25.2",
-    "django-bootstrap5",
     "django>=4.2",
     "django-tables2>=2.4.1",
-    "django-htmx==1.26.0",
-    "django-filter==25.2",
+    "django-htmx>=1.26.0",
+    "django-filter>=24.3",
     "tablib>=3.5.0",
-    "pytest-django>=4.11.1",
 ]
 
 [project.urls]
@@ -33,10 +30,11 @@ pythonpath = [".", "src"]
 #[tool.uv.sources]
 #django-tableaux = { workspace = true }
 #
-#[dependency-groups]
-#dev = [
-#    "django-tableaux",
-#]
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-django",
+]
 #[[tool.uv.index]]
 #name = "testpypi"
 #url = "https://test.pypi.org/simple/"
