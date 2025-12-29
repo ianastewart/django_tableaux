@@ -1,22 +1,36 @@
 {% load bootstrap4 %}
-{#<form id="{{ table.prefix }}filter_form" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML" novalidate="true">#}
+<input type="hidden" name="{{ table.prefix }}page" value="{{ page }}">
+<input type="hidden" name="{{ table.prefix }}per_page" value="{{ per_page }}">
+<input type="hidden" name="{{ table.prefix }}order_by" value="{{ order_by }}">
+<input type="hidden" name="query_string" value="{{ query_string }}">
+{% if view.has_filter_toolbar %}
   {{ filter.form.media }}
-{#  <input type="hidden" name="per_page" value="{{ per_page }}">#}
   {% if filter.form.visible_fields %}
-    <div class="d-flex">
-    {% for field in filter.form.visible_fields %}
-      {% include templates.tb_filter_field with toolbar=True %}
-    {% endfor %}
-    {% if filter_button %}
-      <div class="form-group pl-2 pt-2">
-        <label for="id_filter_button"></label>
-        <button type="submit" class="form-control btn btn-primary" style="width:150px; display: block;"
-                id="id_filter_button">
-          Filter
-        </button>
-      </div>
-    {% endif %}
-    <span name="clr_all" hx-get="" class="filter-clear mt-3 p-3"> Clear</span></p>
+    <div class="d-flex flex-wrap gap-2 ms-2">
+      {% for field in filter.form.visible_fields %}
+        {% bootstrap_field field label_class="small mb-0" size="small" placeholder="" %}
+{#        <button type="button" class="btn-close" style="position: relative; left:-34px; top:30px;"#}
+{#                aria-label="Clear"></button>#}
+      {% endfor %}
+      {# add labels to buttons to get even alignment #}
+      {% if view.filter_button %}
+        <div class="form-group">
+          <label for="{{ table.prefix }}id_filter_button"></label>
+          <button type="button" name="filter_button" class="form-control btn btn-primary btn-sm "
+                  id="{{ table.prefix }}id_filter_button" hx-get hx-include="closest form">
+            Filter
+          </button>
+        </div>
+      {% endif %}
+      {% if view.filter_clear_button %}
+        <div class="form-group">
+          <label for="{{ table.prefix }}id_filter_reset"></label>
+          <button type="button" name="filter_reset" class="form-control btn btn-outline-primary btn-sm"
+                  id="{{ table.prefix }}id_filter_reset" hx-get>
+            Clear filters
+          </button>
+        </div>
+      {% endif %}
+    </div>
   {% endif %}
-  </div>
-{#</form>#}
+{% endif %}

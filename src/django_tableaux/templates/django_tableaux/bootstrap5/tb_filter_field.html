@@ -1,12 +1,13 @@
 {% load django_bootstrap5 %}
-{% if header %}
-  <div hx-get="" hx-trigger="change from:#id_{{ field.name }}" hx-include="closest form" id="{{ table.prefix }}_f_{{ field.name }}">
-    {% bootstrap_field field show_label=False form_group_class="m-0 p-0 filter-submit" addon_after='<span class="filter-clear">X</span>' %}
-  </div>
-{% elif toolbar %}
-  {% if not filter_button %}
-    <div hx-get="" hx-trigger="change from:#id_{{ field.name }}" hx-include="closest form" id="{{ table.prefix }}_f_{{ field.name }}">
-  {% endif %}
-  {% bootstrap_field field wrapper_class="ps-2 pt-2" label_class="small mb-0" placeholder="" addon_after='<span class="filter-clear">X</span>' %}
-  {% if not filter_button %}</div>{% endif %}
-{% endif %}
+{#{% if header %}#}
+{#  <div hx-get="" hx-trigger="change from:#id_{{ field.name }}" hx-include="closest form" id="{{ table.prefix }}_f_{{ field.name }}">#}
+{#    {% bootstrap_field field show_label=False form_group_class="m-0 p-0 filter-submit" %}#}
+{#  </div>#}
+{#{% elif toolbar %}#}
+{#  {% if not view.filter_button %}#}
+{#    <div hx-get="" hx-trigger="change from:#id_{{ field.name }}" hx-include="closest form" id="{{ table.prefix }}_f_{{ field.name }}">#}
+{#  {% endif %}#}
+{#  {% bootstrap_field field wrapper_class="" label_class="small mb-0" placeholder="" %}#}
+{#  {% if not view.filter_button %}</div>{% endif %}#}
+{#{% endif %}#}
+{% bootstrap_field field wrapper_class="" label_class="small mb-0" placeholder="" %}

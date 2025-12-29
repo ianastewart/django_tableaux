@@ -1,0 +1,12 @@
+{% if view.filter_pills and filters %}
+  <div class="d-flex flex-wrap gap-2">
+    {% for filter in filters %}
+      <span class="filter-pill badge rounded-pill border text-primary d-inline-flex align-items-center px-2 py-1">
+    {{ filter.0|capfirst }}: {{ filter.1 }}
+    <button type="button" class="btn-close ms-2" aria-label="Remove {{ filter.0 }} filter"
+            id="~remove~{{ filter.0 }}" hx-get hx-include="#{{ table.prefix }}filter_form">
+    </button>
+      </span>
+    {% endfor %}
+  </div>
+{% endif %}

@@ -1,7 +1,9 @@
-{%  if filters %}
+{% if view.filter_pills and filters %}
+      <div class="d-flex">
   {% for filter in filters %}
     <span class="filter-pill">{{ filter.0|capfirst }}<span class="filter-value">{{ filter.1 }}</span>
-      <span name="clr_{{ filter.0 }}" class="filter-x" hx-get=""> X</span></span>
+      <button id="remove_{{ filter.0 }}" class="btn btn-close" hx-get=""></button></span>
   {% endfor %}
   <span name="clr_all" hx-get="" class="filter-clear"> Clear</span></p>
+      </div>
 {% endif %}

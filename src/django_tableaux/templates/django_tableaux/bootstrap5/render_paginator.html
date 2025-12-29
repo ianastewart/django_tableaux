@@ -21,7 +21,7 @@
             {% for p in table.page|table_page_range:table.paginator %}
               <li class="page-item{% if table.page.number == p %} active{% endif %}">
                   <span class="page-link"
-                   {% if p != '...' %} hx-get="" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML"
+                   {% if p != '...' %} hx-get="" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML" hx-include="#{{ table.prefix }}filter_form"
                    {% if table.indicator %}hx-indicator="#{{ table.prefix }}tableaux_overlay"{% endif %} id="{{ table.prefix }}~page~{{ p }}"{% endif %}>
                   {{ p }}
                   </span>

@@ -3,7 +3,8 @@
     {% if forloop.last and table.infinite_scroll and table.page.number < table.page.paginator.num_pages %}
                             hx-get=""
                             hx-target="#{{ table.prefix }}_tr_{{ row.record.id }}"
-                            hx-trigger="intersect once" hx-swap="afterend" hx-vals='{"_scroll": "true"}'
+                            hx-trigger="intersect once" hx-swap="afterend"
+                            hx-vals='{"_scroll": "true", "_pagex": "{{ table.page.number }}"}'
                             {% if table.indicator %}hx-indicator="#{{ table.prefix }}tableaux_overlay"{% endif %}
     {% endif %}
 >

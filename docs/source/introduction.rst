@@ -13,23 +13,23 @@ It supports sorting and pagination and when used with django_filters, another
 great package, supports easy custom filtering. But many desirable features are
 missing.
 
-User configurable column selection
+User-configurable column selection
 ----------------------------------
 
-If you want to view your table on an iPad or, worse still, on a mobile,
-chances are it won't fit properly and won't be friendly to use. If your
-data has more than a few columns you will have
-to scroll horizontally to view the rightmost columns, losing the leftmost
-columns in the process. Similarly as you scroll down, you lose the headers.
+If your user wants to view your table on a smaller device such as a phone, the
+chances are it won't fit properly and it won't be easy to use. If your
+data has more than a few columns the user will have to scroll horizontally
+to view the rightmost columns, losing sight of the leftmost columns in the
+process. Similarly as you scroll down, you lose the headers.
 
-Django tableaux gives the user full control over which columns are visible.
+Django tableaux gives the user control over which columns should be visible.
 The selected column layouts are stored in session variables so that they
-persist when the user leaves then returns to a sepcific view.
+persist when the user leaves then returns to a specific view.
 
 Responsive column layouts
 -------------------------
 As a developer you can define different default column combinations for
-different viewport sizes and have the table automatially reformat to match the
+different viewport sizes and have the table automatically reformat to match the
 user's current device.
 
 Pagination

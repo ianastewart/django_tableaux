@@ -1,21 +1,21 @@
 {% load querystring from django_tables2 %}
 {% if actions %}
-  <form id="action_form">{% csrf_token %}
-    <input type="hidden" name="query" value={% querystring without "page" "per_page" %}>
+  <form id="action_form" class="action-form">{% csrf_token %}
+    <input type="hidden" name="return_url" value="{{ return_url }}">
     <input type="hidden" name="selected_ids">
     <div style="display: flex; align-items: center;">
-      <div style="width:200px;">
-        <div id="selected" style="margin-left: 0.75em"><span id="count">0</span> of {{ table.rows|length }} rows
+      <div style="width:200px; height:1.5em">
+        <div id="selected" class="mt-0 small" style="margin-left: 0.75em"><span class="count">0</span> of {{ table.rows|length }} rows
           selected
         </div>
         <div style="display: none;">
-          <input type="checkbox" id="select_all" name="select_all" value="Select all" style="margin-left: 0.75em">
-          <label class=" ml-2 py-0" for="select_all">Select all rows</label>
+          <input type="checkbox" id="select_all" name="select_all" value="Select all" class="select-checkbox mb-2" style="margin-left: 0.5em">
+          <label class="ms-2 py-0" for="select_all">Select all rows</label>
         </div>
       </div>
 
       <div class="dropdown float-right">
-        <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="selectActionMenu" data-bs-toggle="dropdown">
+        <button class="btn btn-sm btn-primary dropdown-toggle mt-3" type="button" id="selectActionMenu" data-bs-toggle="dropdown">
           Select action
         </button>
         <div class="dropdown-menu">

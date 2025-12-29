@@ -1,22 +1,31 @@
 {% load bootstrap4 %}
-{#<form id="id_filter_form" hx-target="#table_data">#}
-  {{ filter.form.media }}
-  <input type="hidden" name="per_page" value="{{ per_page }}">
-  {% if filter.form.visible_fields %}
-    <div class="d-flex">
-    {% for field in filter.form.visible_fields %}
-      {% include templates.tb_filter_field with toolbar=True field=field filter_button=view.filter_button %}
-    {% endfor %}
-    {% if view.filter_button %}
-      <div class="form-group pl-2 pt-2">
-        <label for="id_filter_button"></label>
-        <button type="submit" class="form-control btn btn-primary" style="width:150px; display: block;"
-                id="id_filter_button">
-          Filter
-        </button>
+
+  <input type="hidden" name="{{ table.prefix }}page" value="{{ page }}">
+  <input type="hidden" name="{{ table.prefix }}per_page" value="{{ per_page }}">
+  <input type="hidden" name="{{ table.prefix }}order_by" value="{{ order_by }}">
+  {% if view.has_filter_toolbar %}
+    {{ filter.form.media }}
+    {% if filter.form.visible_fields %}
+      <div class="d-flex">
+        {% for field in filter.form.visible_fields %}
+          {% include templates.tb_filter_field with toolbar=True field=field filter_button=view.filter_button %}
+        {% endfor %}
+        {% if view.filter_button %}
+          <div class="form-group pl-2 pt-2">
+            <label for="id_filter_button"></label>
+            <button type="submit" class="form-control btn btn-primary" style="width:150px; display: block;"
+                    id="id_filter_button">
+              Filter
+            </button>
+          </div>
+        {% endif %}
+        <span name="clr_all" hx-get="" class="filter-clear mt-3 p-3"> Clear</span></p>
       </div>
     {% endif %}
-    <span name="clr_all" hx-get="" class="filter-clear mt-3 p-3"> Clear</span></p>
-  </div>
   {% endif %}
-{#</form>#}
+  {% if view.filter_pills and filters %}
+    <div class="d-flex">
+      {% include templates.tb_filter_pills %}
+    </div>
+  {% endif %}
+</form>

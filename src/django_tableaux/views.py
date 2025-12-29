@@ -1,14 +1,12 @@
 import logging
-import time
-import urllib
 from enum import IntEnum
-from django.utils.http import urlencode
+from urllib.parse import parse_qs
+
 from django.core.exceptions import ImproperlyConfigured
-from django.core.paginator import EmptyPage, PageNotAnInteger
-from django.http import QueryDict, HttpResponse, HttpResponseRedirect
-from django.shortcuts import render, reverse, redirect
+from django.http import QueryDict, HttpResponse
+from django.shortcuts import render
 from django.template.response import TemplateResponse
-from django.urls.resolvers import NoReverseMatch
+from django.utils.http import urlencode
 from django.views.generic import TemplateView
 from django_filters.filterset import filterset_factory
 from django_htmx.http import (
@@ -19,26 +17,22 @@ from django_htmx.http import (
     retarget,
     replace_url,
 )
-from django_tables2 import tables
-from django_tables2.views import TableMixinBase, SingleTableMixin
 from django_tables2.export.export import TableExport
+from django_tables2.views import SingleTableMixin
+
 from django_tableaux.table import build_table
 from .utils import (
     breakpoints,
     define_columns,
-    set_select_column,
-    set_column_states,
     save_columns_dict,
-    load_columns_dict,
     set_column,
     visible_columns,
     save_per_page,
     build_templates_dictionary,
     default_columns_dict,
-    strip_prefix_from_keys,
-    add_prefix_to_keys,
+    strip_prefix_from_keys, parse_query_dict,
 )
-
+from django_tableaux.get_htmx import get_htmx
 logger = logging.getLogger(__name__)
 
 
@@ -64,6 +58,7 @@ class TableauxView(SingleTableMixin, TemplateView):
     table_class = None
     model = None
     form_class = None
+    #
     filterset_class = None
     filterset_fields = None
     filterset = None
@@ -76,7 +71,8 @@ class TableauxView(SingleTableMixin, TemplateView):
     context_filter_name = "filter"
     filter_style = FilterStyle.NONE
     filter_pills = False
-    filter_button = False  # only relevant for TOOLBAR style
+    filter_button = False
+    filter_clear_button = True
     #
     column_settings = False
     column_reset = True
@@ -99,14 +95,17 @@ class TableauxView(SingleTableMixin, TemplateView):
     #
     update_url = True
     indicator = True
-    prefix = "aa"
+    prefix = ""
     _bp = ""
     _page = None
     _per_page = None
     _sort = None
-    _query_dict = None
+    _order_by_changed = False
+    _filter_changed = False
+    query_dict = None
     last_order_by = None
-    ALLOWED_PARAMS = ["page", "per_page", "sort", "_bp"]
+
+    LOCAL_PARAMS = ["page", "per_page", "order_by"]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -114,35 +113,28 @@ class TableauxView(SingleTableMixin, TemplateView):
         self.selected_objects = None
         self.selected_ids = None
         self.templates = build_templates_dictionary(self.template_library)
-
+        self.query_dict = {}
 
     def get(self, request, *args, **kwargs):
         # parse the request.GET query dictionary into a regular dictionary
-        # stored in self._query_dict
+        # stored in self.query_dict
         if request.htmx:
+            #TODO remove debug code
+            print("request.htmx", request.htmx.trigger, request.htmx.trigger_name)
             # htmx appends a form's values so the query string contains lists
             # Take the latest version from the list, and eliminate empty values
-            latest = {}
-            for key, values in request.GET.lists():
-                seen = set()
-                for v in reversed(values):
-                    if v not in seen:
-                        seen.add(v)
-                        latest[key] = v
-                        break  # keep only the last unique value
-            query_dict = {k: v for k, v in latest.items() if v and v.strip()}
-            self._query_dict = strip_prefix_from_keys(data=query_dict, prefix=self.prefix)
-            return self.get_htmx(request, *args, **kwargs)
+            if "query_string" in request.GET:
+                qd = QueryDict(request.GET["query_string"], mutable=True)
+                if "prefix" in qd.keys():
+                    self.prefix = qd["prefix"]
+                parse_query_dict(self, qd)
+            parse_query_dict(self, request.GET)
+            return get_htmx(self, request, *args, **kwargs)
         else:
+            print("GET request")
+            self.prefix = request.GET.get("prefix", "")
             query_dict = request.GET.copy().dict()
-            self._query_dict = strip_prefix_from_keys(data=query_dict, prefix=self.prefix)
-
-        # if self.filterset_class:
-        #     uri = request.build_absolute_uri()
-        #     if "?" not in uri:
-        #         params = urlencode(self.get_initial_data())
-        #         if params:
-        #             return redirect(f"{request.path}?{params}")
+            self.query_dict = strip_prefix_from_keys(data=query_dict, prefix=self.prefix)
 
         table_class = self.get_table_class()
 
@@ -160,6 +152,12 @@ class TableauxView(SingleTableMixin, TemplateView):
             return self.export_table()
 
         return self.render_template(self.template_name)
+
+
+    def is_filter_name(self, name: str) -> bool:
+        if self.filterset_class is not None:
+            return name in self.filterset_class.declared_filters.keys()
+        return False
 
     def get_queryset(self):
         if hasattr(self, "queryset"):
@@ -188,16 +186,27 @@ class TableauxView(SingleTableMixin, TemplateView):
         return self.object_list
 
     def render_template(
-        self,
-        template_name=None,
-        hx_target=None,
-        trigger_client=True,
-        update_url=True,
-        **kwargs,
+            self,
+            template_name=None,
+            hx_target=None,
+            trigger_client=True,
+            update_url=True,
+            **kwargs,
     ):
         self.get_filtered_object_list()
         self.table = build_table(self, prefix=self.prefix, **kwargs)
-        context = self.get_context_data(**kwargs)
+        # Build the query string
+        prefixed = {}
+        for key, value in self.query_dict.items():
+            if key != "query_string":
+                if self.prefix and (self.is_filter_name(key) or key in self.LOCAL_PARAMS):
+                    prefixed[self.prefix + key] = value
+                else:
+                    prefixed[key] = value
+        query_string = urlencode(prefixed, doseq=True)
+        return_url = self.request.path + "?" + query_string if query_string else self.request.path
+
+        context = self.get_context_data(return_url=return_url, query_string=query_string)
         template_name = template_name or self.template_name
         response = TemplateResponse(
             request=self.request,
@@ -207,13 +216,10 @@ class TableauxView(SingleTableMixin, TemplateView):
         if hx_target:
             response = retarget(response, f"#{self.table.prefix}{hx_target}")
         if trigger_client:
-            response = trigger_client_event(response, "tableaux_init", after="swap")
+            response = trigger_client_event(response, "init_tableaux", after="swap")
         if self.update_url and update_url:
-            prefixed = add_prefix_to_keys(data=self._query_dict, prefix=self.prefix, exclude=["_bp"])
-            parameters = urlencode(prefixed,doseq=True)
-            new_url = self.request.path + "?" + parameters if parameters else self.request.path
-            response = replace_url(response, new_url)
-            response = push_url(response, new_url)
+            response = replace_url(response, return_url)
+            response = push_url(response, return_url)
         return response
 
     def render_table(self):
@@ -222,10 +228,10 @@ class TableauxView(SingleTableMixin, TemplateView):
             hx_target="table_wrapper",
         )
 
-    def render_tableaux(self):
+    def render_tableaux(self, hx_target="tableaux"):
         return self.render_template(
             template_name=self.templates["render_tableaux"],
-            hx_target="tableaux",
+            hx_target=hx_target,
         )
 
     def render_row(self, id=None, template_name=None):
@@ -273,14 +279,15 @@ class TableauxView(SingleTableMixin, TemplateView):
         buttons = self.get_buttons()
         actions = self.get_bulk_actions()
         toolbar_visible = (
-            len(buttons) > 0
-            or len(actions) > 0
-            or self.row_settings
-            or self.column_settings
-            or self.filterset_class
-            and self.filter_style == TableauxView.FilterStyle.MODAL
+                len(buttons) > 0
+                or len(actions) > 0
+                or self.row_settings
+                or self.column_settings
+                or self.filterset_class
+                and self.filter_style == TableauxView.FilterStyle.MODAL
         )
         context.update(
+            **kwargs,
             table=self.table,
             filter=self.filterset,
             object_list=self.get_filtered_object_list(),
@@ -288,16 +295,16 @@ class TableauxView(SingleTableMixin, TemplateView):
             buttons=buttons,
             actions=actions,
             rows=self.rows_list(),
-            page=self._query_dict.get("page", ""),
-            per_page=self._query_dict.get("per_page", 10),
-            order_by=self._query_dict.get("order_by", ""),
+            page=self.query_dict.get("page", "1"),
+            per_page=self.query_dict.get("per_page", 10),
+            order_by=self.query_dict.get("order_by", ""),
             breakpoints=breakpoints(self.table),
             templates=self.templates,
             toolbar_visible=toolbar_visible,
         )
         context["filter"] = self.filterset
-        for key, value in self.request.GET.items():
-            if key not in self.ALLOWED_PARAMS and value:
+        for key, value in self.query_dict.items():
+            if self.is_filter_name(key) and value:
                 context["filters"].append((key, value))
         return context
 
@@ -311,227 +318,206 @@ class TableauxView(SingleTableMixin, TemplateView):
         if self.filterset_class is None and self.filterset_fields:
             self.filterset_class = filterset_factory(self.model, fields=self.filterset_fields)
         return self.filterset_class(
-            self._query_dict,
+            self.query_dict,
             queryset=queryset,
             request=self.request
         ) if self.filterset_class else None
 
-
-    def get_htmx(self, request, *args, **kwargs):
-        # Some actions depend on trigger_name; others on trigger
-        if "_bp" in request.GET:
-            self._bp = request.GET["_bp"]
-        if "_filter" in request.GET:
-            return self.render_table()
-
-        trigger_name = request.htmx.trigger_name
-        trigger = request.htmx.trigger
-
-        # Deal with filter clear not working for datepicker ?
-        if trigger is None and trigger_name is None:
-            response = self.render_table(self.templates["render_tableaux"])
-            return push_url(response, request.build_absolute_uri())
-
-        if trigger_name is not None:
-            match trigger_name:
-                case "table_load":
-                    return self.render_tableaux()
-
-                case "page":
-                    return self.render_tableaux()
-
-                case "filter_modal" if self.filterset_class:
-                    # show filter in a modal
-                    context = {"filter": self.filterset_class(request.GET),
-                               "filter_button": self.filter_button}
-                    response = TemplateResponse(request, self.templates["modal_filter"], context)
-                    return trigger_client_event(response, "tableaux_init", after="swap")
-
-                case "filter_now":
-                    # filter button pressed
-                    return self.render_table()
-
-                case "filter_clear":
-                    return self.render_table()
-
-                case name if "clr_" in name:
-                    # cancel a filter
-                    filter = trigger_name.split("_")[1]
-                    qd = request.GET.copy()
-                    if filter == "all":
-                        keys = list(qd.keys())
-                        for key in keys:
-                            if key not in self.ALLOWED_PARAMS:
-                                qd.pop(key)
-                    else:
-                        qd.pop(filter)
-                    return HttpResponseClientRedirect(
-                        f"{request.path}?{qd.urlencode()}"
-                    )
-
-                case _:
-                    # Check if it's a button
-                    buttons = self.get_buttons()
-                    if buttons:
-                        for button in buttons:
-                            if button.name == trigger_name:
-                                result = self.handle_button(
-                                    request, button.original_name()
-                                )
-                                if result is not None:
-                                    return result
-                                else:
-                                    raise ImproperlyConfigured(
-                                        f"No handler for trigger_name {trigger_name}"
-                                    )
-
-        if trigger is not None:
-            # Unpack the data stored in the id
-            if "~" in trigger:
-                bits = trigger.split("~")
-                self.prefix = bits[0]
-                param = bits[2]
-            else:
-                param = None
-            match trigger:
-                case trigger if "~col~" in trigger:
-                    # Switch column visibility on or off
-                    col_name = param
-                    table = self.get_table()
-                    if col_name == "_reset":
-                        # Reset to default columns
-                        define_columns(table, self.get_breakpoint_values(), self._bp)
-                        save_columns_dict(
-                            request, table, self._bp, default_columns_dict(table)
-                        )
-                        # To make sure the column drop down is correct we update the whole tableaux
-                        return self.render_tableaux()
-                    # Click on a checkbox in the column dropdown re-renders the table data with new column settings.
-                    # The column dropdown remains open
-                    checked = f"{self.prefix}~col~{col_name}" in request.GET
-                    set_column(request, table, self._bp, col_name, checked)
-                    return self.render_table()
-
-                case trigger if "~row~" in trigger:
-                    # Change the number of rows to display
-                    save_per_page(request, param)
-                    self._query_dict["per_page"] = param
-                    return self.render_tableaux()
-
-                case trigger if "~sort~" in trigger:
-                    # change order_by
-                    old_value = self._query_dict.get("order_by", "")
-                    old_field = ""
-                    if len(old_value) > 0:
-                        old_field = old_value[1:] if old_value[0] == "-" else old_value
-                    if old_field == param:
-                        value = param if old_value[0] == "-" else "-" + param
-                    else:
-                        value = param
-                    self._query_dict["order_by"] = value
-                    return self.render_tableaux()
-
-                case trigger if "~page~" in trigger:
-                    # new page
-                    self._query_dict["page"] = param
-                    return self.render_tableaux()
-
-                case trigger if "_tr_" in trigger:
-                    # infinite scroll/load_more or click on row
-                    if "_scroll" in request.GET:
-                        return self.render_template(self.templates["render_rows"])
-
-                    return self.row_clicked(
-                        pk=trigger.split("_")[1],
-                        target=request.htmx.target,
-                        return_url=request.htmx.current_url,
-                    )
-
-                case trigger if "_f_" in trigger:
-                    return self.render_tableaux()
-                    # # a filter field was changed
-                    # # hx-get adds form parameters to exiting query strings so we get lists
-                    # # get only latest values
-                    # latest = {}
-                    # for key, values in request.GET.lists():
-                    #     seen = set()
-                    #     for v in reversed(values):
-                    #         if v not in seen:
-                    #             seen.add(v)
-                    #             latest[key] = v
-                    #             break  # keep only the last unique value
-                    # cleaned = {k: v for k, v in latest.items() if v and v.strip()}
-                    # query_string = urlencode(cleaned, doseq=True)
-                    # new_url = f"{request.path}?{query_string}" if query_string else request.path
-                    # return self.render_table(update_url=new_url)
-
-
-
-                case trigger if "editcol" in trigger:
-                    # display a form to edit a cell inline
-                    bits = trigger.split("_")
-                    id = bits[-1]
-                    column = "_".join(bits[1:-1])
-                    return self.render_cell_form(id, column)
-
-                case "table_data":
-                    # triggered refresh of table data after create or update
-                    return self.render_table()
-
-
-
-                case trigger if "cell_" in trigger:
-                    # cell clicked
-                    bits = trigger.split("_")
-                    return self.edit_cell(
-                        pk=bits[1],
-                        column_name=visible_columns(
-                            request,
-                            self.table_class,
-                            self.get_breakpoint_values(),
-                            self._bp,
-                        )[int(bits[2])],
-                        target=request.htmx.target,
-                    )
-
-                case trigger if "td_" in trigger:
-                    # cell clicked
-                    bits = trigger.split("_")
-                    visible = visible_columns(
-                            request,
-                            self.table_class,
-                            self.get_breakpoint_values(),
-                            self._bp,
-                        )
-                    index = int(bits[2])
-                    #todo this is a bit of a hack here
-                    if "selection" in visible and visible[0] != "selection":
-                        index -= 1
-                    return self.cell_clicked(
-                        pk=bits[1],
-                        column_name=visible[index],
-                        target=request.htmx.target,
-                    )
-
-                case trigger if "id_" in trigger:
-                    if trigger == request.htmx.target:
-                        # Clear filter value triggered by  click on X in input-prepend
-                        qd = request.GET.copy()
-                        qd.pop(trigger_name)
-                        return HttpResponseClientRedirect(
-                            f"{request.path}?{qd.urlencode()}"
-                        )
-                    #
-                    # Filter value changed
-                    url = self._update_parameter(
-                        request, trigger_name, request.GET.get(trigger_name, "")
-                    )
-                    return HttpResponseClientRedirect(url)
-
-                case _:
-                    pass
-
-        raise ValueError("Bad htmx get request")
+    # def get_htmx(self, request, *args, **kwargs):
+    #     # Some actions depend on trigger_name; others on trigger
+    #     if "_bp" in request.GET:
+    #         self._bp = request.GET["_bp"]
+    #     if "_filter" in request.GET:
+    #         return self.render_table()
+    #
+    #     trigger_name = request.htmx.trigger_name
+    #     trigger = request.htmx.trigger
+    #
+    #     # Deal with filter clear not working for datepicker ?
+    #     if trigger is None and trigger_name is None:
+    #         response = self.render_table(self.templates["render_tableaux"])
+    #         return push_url(response, request.build_absolute_uri())
+    #     if trigger_name is not None:
+    #         match trigger_name:
+    #             case "table_load":
+    #                 return self.render_tableaux()
+    #
+    #             case "page":
+    #                 return self.render_tableaux()
+    #
+    #             case "filter_modal" if self.filterset_class:
+    #                 # show filter form in a modal
+    #                 context = {"filter": self.filterset_class(data=self.query_dict),
+    #                            "filter_button": self.filter_button}
+    #                 response = TemplateResponse(request, self.templates["modal_filter"], context)
+    #                 return trigger_client_event(response, "tableaux_init", after="swap")
+    #
+    #             case "filter_button":
+    #                 # filter button pressed
+    #                 return self.render_tableaux()
+    #
+    #             case "filter_reset":
+    #                 # reset all filters
+    #                 keys = list(self.query_dict.keys())
+    #                 for key in keys:
+    #                     if self.is_filter_name(key):
+    #                         self.query_dict.pop(key)
+    #                 return self.render_tableaux()
+    #
+    #             case _:
+    #                 # Check if it's a button
+    #                 buttons = self.get_buttons()
+    #                 if buttons:
+    #                     for button in buttons:
+    #                         if button.name == trigger_name:
+    #                             result = self.handle_button(
+    #                                 request, button.original_name()
+    #                             )
+    #                             if result is not None:
+    #                                 return result
+    #                             else:
+    #                                 raise ImproperlyConfigured(
+    #                                     f"No handler for trigger_name {trigger_name}"
+    #                                 )
+    #
+    #     if trigger is not None:
+    #         # Unpack the data stored in the id
+    #         if "~" in trigger:
+    #             bits = trigger.split("~")
+    #             self.prefix = bits[0]
+    #             param = bits[2]
+    #         else:
+    #             param = None
+    #         match trigger:
+    #             case trigger if "filter_form" in trigger:
+    #                 return self.render_tableaux()
+    #
+    #             case trigger if "~remove~" in trigger:
+    #                 # remove a single filter
+    #                 self.query_dict.pop(param)
+    #                 return self.render_tableaux()
+    #
+    #             case trigger if "~col~" in trigger:
+    #                 # Switch column visibility on or off
+    #                 col_name = param
+    #                 table = self.get_table()
+    #                 if col_name == "_reset":
+    #                     # Reset to default columns
+    #                     define_columns(table, self.get_breakpoint_values(), self._bp)
+    #                     save_columns_dict(
+    #                         request, table, self._bp, default_columns_dict(table)
+    #                     )
+    #                     # To make sure the column drop down is correct we update the whole tableaux
+    #                     return self.render_tableaux()
+    #                 # Click on a checkbox in the column dropdown re-renders the table data with new column settings.
+    #                 # The column dropdown remains open
+    #                 checked = f"{self.prefix}~col~{col_name}" in request.GET
+    #                 set_column(request, table, self._bp, col_name, checked)
+    #                 return self.render_table()
+    #
+    #             case trigger if "~row~" in trigger:
+    #                 # Change the number of rows to display
+    #                 save_per_page(request, param)
+    #                 self.query_dict["per_page"] = param
+    #                 return self.render_tableaux()
+    #
+    #             case trigger if "~sort~" in trigger:
+    #                 # change order_by
+    #                 old_value = self.query_dict.get("order_by", "")
+    #                 old_field = ""
+    #                 if len(old_value) > 0:
+    #                     old_field = old_value[1:] if old_value[0] == "-" else old_value
+    #                 if old_field == param:
+    #                     value = param if old_value[0] == "-" else "-" + param
+    #                 else:
+    #                     value = param
+    #                 self.query_dict["order_by"] = value
+    #                 return self.render_tableaux()
+    #
+    #             case trigger if "~page~" in trigger:
+    #                 # new page
+    #                 self.query_dict["page"] = param
+    #                 return self.render_tableaux()
+    #
+    #             case trigger if "_tr_" in trigger:
+    #                 # infinite scroll/load_more or click on row
+    #                 if "_scroll" in request.GET:
+    #                     page = int(self.query_dict.get("_pagex", 1)) + 1
+    #                     self.query_dict["page"] = str(page)
+    #                     return self.render_template(self.templates["render_rows"], update_url=False)
+    #
+    #                 return self.row_clicked(
+    #                     pk=trigger.split("_")[1],
+    #                     target=request.htmx.target,
+    #                     return_url=request.htmx.current_url,
+    #                 )
+    #
+    #             case trigger if "modal_filter" in trigger:
+    #                 return self.render_tableaux()
+    #
+    #             case trigger if "editcol" in trigger:
+    #                 # display a form to edit a cell inline
+    #                 bits = trigger.split("_")
+    #                 id = bits[-1]
+    #                 column = "_".join(bits[1:-1])
+    #                 return self.render_cell_form(id, column)
+    #
+    #             case "table_data":
+    #                 # triggered refresh of table data after create or update
+    #                 return self.render_table()
+    #
+    #             case trigger if "cell_" in trigger:
+    #                 # cell clicked
+    #                 bits = trigger.split("_")
+    #                 return self.edit_cell(
+    #                     pk=bits[1],
+    #                     column_name=visible_columns(
+    #                         request,
+    #                         self.table_class,
+    #                         self.get_breakpoint_values(),
+    #                         self._bp,
+    #                     )[int(bits[2])],
+    #                     target=request.htmx.target,
+    #                 )
+    #
+    #             case trigger if "td_" in trigger:
+    #                 # cell clicked
+    #                 bits = trigger.split("_")
+    #                 visible = visible_columns(
+    #                     request,
+    #                     self.table_class,
+    #                     self.get_breakpoint_values(),
+    #                     self._bp,
+    #                 )
+    #                 index = int(bits[2])
+    #                 # todo this is a bit of a hack here
+    #                 if "selection" in visible and visible[0] != "selection":
+    #                     index -= 1
+    #                 return self.cell_clicked(
+    #                     pk=bits[1],
+    #                     column_name=visible[index],
+    #                     target=request.htmx.target,
+    #                 )
+    #
+    #             case trigger if "id_" in trigger:
+    #                 if trigger == request.htmx.target:
+    #                     # Clear filter value triggered by  click on X in input-prepend
+    #                     qd = request.GET.copy()
+    #                     qd.pop(trigger_name)
+    #                     return HttpResponseClientRedirect(
+    #                         f"{request.path}?{qd.urlencode()}"
+    #                     )
+    #                 #
+    #                 # Filter value changed
+    #                 url = self._update_parameter(
+    #                     request, trigger_name, request.GET.get(trigger_name, "")
+    #                 )
+    #                 return HttpResponseClientRedirect(url)
+    #
+    #             case _:
+    #                 pass
+    #
+    #     raise ValueError(f"Bad htmx get request. Trigger: {trigger} Trigger name: {trigger_name}")
 
     def rows_list(self):
         return [10, 15, 20, 25, 50, 100]
@@ -581,6 +567,7 @@ class TableauxView(SingleTableMixin, TemplateView):
                 return self.handle_cell_changed(id, column, value)
 
             # Assume this is an action performed on a queryset
+            self.return_url = request.POST.get("return_url")
             self.selected_ids = None
             self.selected_objects = None
             if "select_all" in request.POST:
@@ -624,7 +611,7 @@ class TableauxView(SingleTableMixin, TemplateView):
             return self.render_row(id=id)
         return HttpResponse(f"Missing attribute {column} in handle_cell_edit()")
 
-    #todo
+    # todo
     # def filtered_query_set(self, request, next=False):
     #     """Recreate the queryset used in GET for use in POST"""
     #     qd = self.query_dict
@@ -711,8 +698,8 @@ class TableauxView(SingleTableMixin, TemplateView):
 
     def has_filter_toolbar(self):
         return (
-            self.filterset is not None
-            and self.filter_style == TableauxView.FilterStyle.TOOLBAR
+                self.filterset is not None
+                and self.filter_style == TableauxView.FilterStyle.TOOLBAR
         )
 
     def has_filter_pills(self):
@@ -729,6 +716,11 @@ class SelectedMixin:
 
     model = None
     filterset_class = None
+    return_url = None
+
+    def get(self, *args, **kwargs):
+        self.return_url=self.request.session.get("return_url")
+        return super().get(*args, **kwargs)
 
     def get_query_set(self):
         if self.model is None:

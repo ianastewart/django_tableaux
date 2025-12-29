@@ -1,24 +1,17 @@
 {% load static %}
-<div class="tableaux" id="{{ table.prefix }}tableaux" style="background-color: white;">
+<div class="tableaux" data-controller="tableaux" id="{{ table.prefix }}tableaux" style="background-color: white;">
   {{ breakpoints|json_script:"breakpoints" }}
-<form method="get" id="{{ table.prefix }}filter_form">
-  <input type="hidden" name="page" value="{{ page }}">
-  <input type="hidden" name="per_page" value="{{ per_page }}">
-  <input type="hidden" name="order_by" value="{{ order_by }}">
-  {% if view.has_filter_toolbar %}
-    {% include templates.toolbar_filter %}
-  {% endif %}
+<form id="{{ table.prefix }}filter_form" hx-get=""
+  {% if not view.filter_button %} hx-trigger="change from:#{{ table.prefix }}filter_form"{% endif %}>
+  {% include templates.toolbar_filter %}
+  {% include templates.tb_filter_pills %}
 </form>
-  {% if view.filter_pills and filters %}
-    <div class="{{ css_toolbar }} d-flex">
-      {% include templates.tb_filter_pills %}
-    </div>
-  {% endif %}
   {% if toolbar_visible %}
     <div class="{{ css_toolbar }}">
       {% include templates.toolbar_main %}
     </div>
   {% endif %}
+
   {% include templates.render_table %}
   {% include templates.render_paginator %}
 

@@ -1,7 +1,7 @@
 from django import template
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.safestring import mark_safe
-from django.urls import reverse
-
+from django.urls import reverse, NoReverseMatch
 
 register = template.Library()
 
@@ -25,11 +25,15 @@ def attrs(context):
     return mark_safe(result)
 
 
-@register.simple_tag(takes_context=False)
-def load_table(url_name):
-    url = reverse(url_name)
-    hx_vals = "js:{ '_bp': tableaux.getCurrentBreakpoint() }"
-    code = f'<div id=load_{url_name} name="table_load" hx-trigger="load" hx-get="{url}" hx-vals="{hx_vals}" hx-swap="outerHTML" hx-target="#load_{url_name}"></div>'
+@register.simple_tag(takes_context=True)
+def load_table(context, url_name, prefix=""):
+    try:
+        url = reverse(url_name)
+    except NoReverseMatch:
+        raise ImproperlyConfigured(f"Tableaux: {url_name} is not a valid url name")
+    query_string = context.request.GET.urlencode()
+    hx_vals = f"js:{{ '_bp': getCurrentBreakpoint(), 'prefix': '{prefix}', 'query_string': '{query_string}' }}"
+    code = f'<div id="{prefix}load_{url_name}" name="table_load" hx-trigger="load" hx-get="{url}" hx-vals="{hx_vals}" hx-swap="outerHTML" hx-target="#{prefix}load_{url_name}"></div>'
     return mark_safe(code)
 
 

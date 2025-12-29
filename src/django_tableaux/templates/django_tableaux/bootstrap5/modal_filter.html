@@ -2,7 +2,8 @@
 {% load django_bootstrap5 %}
 {% block modal_title %}<span class="h4">Filter</span>{% endblock %}
 {% block modal_content %}
-  <form method="get" action="">
+  <form id="{{ table.prefix }}modal_filter" {% if not filter_button %}
+        hx-get="" hx-trigger="change from #{{ table.prefix }}modal_filter" {% endif %}>
     {{ block.super }}
   </form>
 {% endblock %}
@@ -11,20 +12,16 @@
     {{ filter.form.media }}
     <div class="d-flex-column">
       {% for field in filter.form.visible_fields %}
-        {% if filter_button %}
         {% bootstrap_field field wrapper_class="form-group mb-2" placeholder="" %}
-        {% else %}
-        {% bootstrap_field field wrapper_class="form-group auto-submit mb-2" placeholder="" %}
-        {% endif %}
       {% endfor %}
     </div>
   </div>
 {% endblock %}
 {% block modal_footer %}
   <div class="modal-footer">
-    <button type="button" class="btn btn-primary" hx-get="" name="filter_clear">Clear filters</button>
+    <button type="button" class="btn btn-primary" hx-get="" name="filter_reset">Clear filters</button>
     {% if filter_button %}
-    <button type="submit"  class="btn btn-primary" hx-get="" name="filter_now">Filter</button>
+      <button type="button" class="btn btn-primary" hx-get="" hx-include="closest form, #{{ table.prefix }}filter_form" name="filter_button">Filter</button>
     {% endif %}
   </div>
 {% endblock %}

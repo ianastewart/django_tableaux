@@ -1,11 +1,11 @@
 {% load querystring from django_tables2 %}
 {% if actions %}
-  <form id="action_form" hx-target="#modals-here">{% csrf_token %}
+  <form id="#{{ table.prefix }}action_form" class="action-form" hx-target="#modals-here">{% csrf_token %}
     <input type="hidden" name="query" value={% querystring without "page" "per_page" %}>
     <input type="hidden" name="selected_ids">
     <div class="flex-display">
 
-        <span id="selected" style="margin-left: 0.25em"><span id="count">0</span> of {{ table.rows|length }} rows
+        <span id="selected" style="margin-left: 0.25em"><span class="count" id="count">0</span> of {{ table.rows|length }} rows
           selected
         </span>
         <span style="display: none;">
@@ -16,7 +16,7 @@
 
       <div class="select-list">
         <div class="select-title">Actions</div>
-        <div class="select-options">
+        <div class="select-options selectActionMenu">
           {% for action in actions %}
             <div class="select-option" name="{{ action.0 }}" hx-post >{{ action.1 }}</div>
           {% endfor %}

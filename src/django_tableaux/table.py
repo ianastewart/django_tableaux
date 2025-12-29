@@ -31,17 +31,16 @@ def build_table(view, **kwargs):
 
     table.request = view.request
     # Sorting
-    order_by = view._query_dict.get("order_by", "")
+    order_by = view.query_dict.get("order_by", "")
     if order_by:
         table.order_by = order_by
-        table.last_order_by = view.last_order_by
     # Pagination
-    kwargs = {"per_page": view._query_dict.get("per_page", 10),
-              "page": view._query_dict.get("page", 1)}
+    kwargs = {"per_page": view.query_dict.get("per_page", 10),
+              "page": view.query_dict.get("page", 1)}
     if hasattr(view, "paginator_class"):
         kwargs["paginator_class"] = view.paginator_class
-    if view.last_order_by and "page" in kwargs:
-        if order_by != view.last_order_by:
+    # Changing sort order resets page to 1
+    if view._order_by_changed or view._filter_changed:
             kwargs["page"] = 1
     silent = kwargs.pop("silent", True)
     if not silent:

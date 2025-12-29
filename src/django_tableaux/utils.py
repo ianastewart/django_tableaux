@@ -5,10 +5,11 @@ from urllib.parse import parse_qs, urlunparse, urlparse, urlencode
 from django.apps import apps
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpRequest
+from django.http import HttpRequest, QueryDict
 from django.shortcuts import render
 from django.template import loader
 from django.utils.safestring import mark_safe
+from django.views import View
 from django_tables2 import Table
 
 
@@ -318,20 +319,18 @@ def render_editable_form(
     context = {"id": record_id, "column": column, "value": value, "form": form}
     return render(request, template_name, context)
 
-def set_query_parameter(url, key: str, value: str) -> str:
-    parsed = urlparse(url)
-    queries = parse_qs(parsed.query)
-    queries[key] = value
-    new_query = urlencode(queries, doseq=True)
-    return urlunparse((parsed._replace(query=new_query)))
-
-def clear_query_parameters(url, keys: list[str]):
-    parsed = urlparse(url)
-    queries = parse_qs(parsed.query)
-    for key in keys:
-        queries.pop(key, None)
-    new_query = urlencode(queries, doseq=True)
-    return urlunparse((parsed._replace(query=new_query)))
+def parse_query_dict(self: object, in_dict: QueryDict):
+    # Parse a query dictionary either from request.GET or from a query_string
+    # Strip prefixed if present and produce a regular dictionary, self.query_dict
+    for key, values in in_dict.lists():
+        if key != "query_string":
+            if self.prefix:
+                if key.startswith(self.prefix):
+                    key = key[len(self.prefix):]
+            if values[-1] != "":
+                self.query_dict[key] = values[-1]
+            elif key in self.query_dict:
+                self.query_dict.pop(key)
 
 
 def strip_prefix_from_keys(data: dict, prefix: str) -> dict:

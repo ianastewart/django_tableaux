@@ -19,7 +19,7 @@
             title="Click to sort by {{ column.name|capfirst }}"
             {% endif %}>
           {% if column.name == "selection" %}
-            <input type="checkbox" id="select_all_page" name="select_all_page">
+            <input type="checkbox" id="select_all_page" name="select_all_page" class="select-checkbox">
           {% else %}
             <span style="display: inline-block;">
             {% if column.orderable %}
