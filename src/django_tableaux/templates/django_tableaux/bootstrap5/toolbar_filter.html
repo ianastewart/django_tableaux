@@ -1,8 +1,4 @@
 {% load bootstrap4 %}
-<input type="hidden" name="{{ table.prefix }}page" value="{{ page }}">
-<input type="hidden" name="{{ table.prefix }}per_page" value="{{ per_page }}">
-<input type="hidden" name="{{ table.prefix }}order_by" value="{{ order_by }}">
-<input type="hidden" name="query_string" value="{{ query_string }}">
 {% if view.has_filter_toolbar %}
   {{ filter.form.media }}
   {% if filter.form.visible_fields %}

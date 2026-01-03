@@ -1,5 +1,5 @@
 {% if not form %}
-  <a id="editcol_{{ column }}_{{ id }}" href="#" hx-get="" hx-target="this" hx-swap="outerHTML">{{ value }}</a>
+  <a id="editcol_{{ column }}_{{ id }}" href="#" hx-get="{{ url }}" hx-target="this" hx-swap="outerHTML">{{ value }}</a>
 {% else %}
   <form>{% csrf_token %}
     {% for field in form.visible_fields %}

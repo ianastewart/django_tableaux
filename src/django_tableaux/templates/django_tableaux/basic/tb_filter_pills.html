@@ -2,8 +2,8 @@
       <div class="d-flex">
   {% for filter in filters %}
     <span class="filter-pill">{{ filter.0|capfirst }}<span class="filter-value">{{ filter.1 }}</span>
-      <button id="remove_{{ filter.0 }}" class="btn btn-close" hx-get=""></button></span>
+      <button id="remove_{{ filter.0 }}" class="btn btn-close" hx-get="{{ url }}"></button></span>
   {% endfor %}
-  <span name="clr_all" hx-get="" class="filter-clear"> Clear</span></p>
+  <span name="clr_all" hx-get="{{ url }}" class="filter-clear"> Clear</span></p>
       </div>
 {% endif %}

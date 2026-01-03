@@ -3,7 +3,7 @@
     <summary>{{ per_page }} rows</summary>
     <ul>
     {% for row in rows %}
-        <li><a href="#" name="{{ row }}" id="id_row_{{ row }}" hx-get="">{{ row }} rows</a></li>
+        <li><a href="#" name="{{ row }}" id="id_row_{{ row }}" hx-get="{{ url }}">{{ row }} rows</a></li>
     {% endfor %}
     </ul>
   </summary>

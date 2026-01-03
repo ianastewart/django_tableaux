@@ -1,20 +1,27 @@
 {% load static %}
-<div class="tableaux" data-controller="tableaux" id="{{ table.prefix }}tableaux" style="background-color: white;">
+<div class="tableaux" data-controller="tableaux" data-prefix="{{ table.prefix }}" id="{{ table.prefix }}tableaux"
+     data-url="{{ url }}" hx-get="{{ url }}" hx-trigger="tableauxResize from:body"
+     hx-include="#{{ table.prefix }}filter_form"
+     hx-swap="outerHTML"
+     style="background-color: white;">
   {{ breakpoints|json_script:"breakpoints" }}
-<form id="{{ table.prefix }}filter_form" hx-get=""
-  {% if not view.filter_button %} hx-trigger="change from:#{{ table.prefix }}filter_form"{% endif %}>
-  {% include templates.toolbar_filter %}
-  {% include templates.tb_filter_pills %}
-</form>
+  <form id="{{ table.prefix }}filter_form" class="filter-form" hx-get="{{ url }}"
+      {% if not view.filter_button %} hx-trigger="change from:#{{ table.prefix }}filter_form"{% endif %}>
+    <input type="hidden" name="{{ table.prefix }}page" value="{{ page }}">
+    <input type="hidden" name="{{ table.prefix }}per_page" value="{{ per_page }}">
+    <input type="hidden" name="{{ table.prefix }}order_by" value="{{ order_by }}">
+    <input type="hidden" name="bp" value="{{ bp }}">
+    <input type="hidden" name="query_string" value="{{ query_string }}">
+    {% include templates.toolbar_filter %}
+    {% include templates.tb_filter_pills %}
+  </form>
   {% if toolbar_visible %}
     <div class="{{ css_toolbar }}">
       {% include templates.toolbar_main %}
     </div>
   {% endif %}
-
   {% include templates.render_table %}
   {% include templates.render_paginator %}
-
   <div class="tableaux-overlay htmx-indicator" id="{{ table.prefix }}tableaux_overlay">
     <img src="{% static "django_tableaux/svg/grid.svg" %}">
   </div>

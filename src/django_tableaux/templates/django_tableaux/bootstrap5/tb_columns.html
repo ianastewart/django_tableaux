@@ -6,13 +6,13 @@
   <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownColumnButton">
     {% if view.column_reset %}
       <a class="dropdown-item py-0" href="#" hx-target="#{{ table.prefix }}tableaux" hx-swap="outerHTML" hx-include="#{{ table.prefix }}filter_form"
-         hx-get="" id="{{ table.prefix }}~col~_reset">Reset columns</a>
+         hx-get="{{ url }}" id="{{ table.prefix }}~col~_reset">Reset columns</a>
       <div class="dropdown-divider"></div>
     {% endif %}
     {% for column in table.column_states %}
       <div class="form-check ml-2 ms-2">
         <input type="checkbox" class="form-check-input" name="{{ table.prefix }}~col~{{ column.0 }}" id="{{ table.prefix }}~col~{{ column.0 }}"
-               hx-get="" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML" hx-include="#{{ table.prefix }}filter_form"
+               hx-get="{{ url }}" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML" hx-include="#{{ table.prefix }}filter_form"
             {% if column.2 %} checked {% endif %}>
         <label class="form-check-label" for="{{ table.prefix }}~col~{{ column.0 }}">
           {{ column.1 }}

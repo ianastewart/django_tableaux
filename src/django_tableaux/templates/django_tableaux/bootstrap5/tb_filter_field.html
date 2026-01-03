@@ -1,11 +1,11 @@
 {% load django_bootstrap5 %}
 {#{% if header %}#}
-{#  <div hx-get="" hx-trigger="change from:#id_{{ field.name }}" hx-include="closest form" id="{{ table.prefix }}_f_{{ field.name }}">#}
+{#  <div hx-get="{{ url }}" hx-trigger="change from:#id_{{ field.name }}" hx-include="closest form" id="{{ table.prefix }}_f_{{ field.name }}">#}
 {#    {% bootstrap_field field show_label=False form_group_class="m-0 p-0 filter-submit" %}#}
 {#  </div>#}
 {#{% elif toolbar %}#}
 {#  {% if not view.filter_button %}#}
-{#    <div hx-get="" hx-trigger="change from:#id_{{ field.name }}" hx-include="closest form" id="{{ table.prefix }}_f_{{ field.name }}">#}
+{#    <div hx-get="{{ url }}" hx-trigger="change from:#id_{{ field.name }}" hx-include="closest form" id="{{ table.prefix }}_f_{{ field.name }}">#}
 {#  {% endif %}#}
 {#  {% bootstrap_field field wrapper_class="" label_class="small mb-0" placeholder="" %}#}
 {#  {% if not view.filter_button %}</div>{% endif %}#}

@@ -11,10 +11,11 @@ from django_tableaux.utils import define_columns, save_columns_dict, default_col
 
 def get_htmx(self, request, *args, **kwargs):
     # Some actions depend on trigger_name; others on trigger
-    if "_bp" in request.GET:
-        self._bp = request.GET["_bp"]
-    if "_filter" in request.GET:
-        return self.render_table()
+    # if "_bp" in request.GET:
+    #     self._bp = request.GET["_bp"]
+    # if "_filter" in request.GET:
+    #     return self.render_table()
+    self._bp = self.query_dict.get("bp", "XXX")
 
     # Some actions depend on trigger_name; others on trigger
     trigger_name = request.htmx.trigger_name
@@ -75,6 +76,10 @@ def get_htmx(self, request, *args, **kwargs):
         else:
             param = None
         match trigger:
+            case trigger if "tableaux" in trigger:
+                # resize event
+                return self.render_tableaux()
+
             case trigger if "filter_form" in trigger:
                 self._filter_changed = True
                 return self.render_tableaux()

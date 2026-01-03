@@ -18,7 +18,7 @@
       <tr id="{{ table.prefix }}_tr_last"
           hx-target="#{{ table.prefix }}_tr_last"
           hx-swap="outerHTML"
-          hx-get=""
+          hx-get="{{ url }}"
           hx-vals='{"_scroll": "true", "_pagex": "{{ table.page.number }}"}'
           hx-include="#{{ table.prefix }}filter_form">
         <td colspan="{{ table.columns|length }}" style="text-align: center">

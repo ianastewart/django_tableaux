@@ -139,8 +139,8 @@ class TableauxView(SingleTableMixin, TemplateView):
         table_class = self.get_table_class()
 
         # If initial Get and table is responsive ask client to repeat the request with the breakpoint parameter
-        if "_bp" in request.GET:
-            self._bp = request.GET["_bp"]
+        if "bp" in request.GET:
+            self._bp = request.GET["bp"]
         elif hasattr(table_class, "Meta") and hasattr(table_class.Meta, "responsive"):
             return render(
                 request,
@@ -213,10 +213,11 @@ class TableauxView(SingleTableMixin, TemplateView):
             template=template_name,
             context=context,
         )
+        tableaux_id = f"#{self.table.prefix}{hx_target}"
         if hx_target:
-            response = retarget(response, f"#{self.table.prefix}{hx_target}")
+            response = retarget(response, tableaux_id)
         if trigger_client:
-            response = trigger_client_event(response, "init_tableaux", after="swap")
+            response = trigger_client_event(response, name="initTableauxId", params={"id": f"{self.table.prefix}tableaux"}, after="swap")
         if self.update_url and update_url:
             response = replace_url(response, return_url)
             response = push_url(response, return_url)
@@ -271,8 +272,6 @@ class TableauxView(SingleTableMixin, TemplateView):
         return exporter.response(filename=f"{self.export_filename}.{export_format}")
 
     def get_context_data(self, **kwargs):
-
-        # We build context from scratch because calling super recreates the table
         context = {"view": self}
         if self.extra_context is not None:
             context.update(self.extra_context)
@@ -288,6 +287,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         )
         context.update(
             **kwargs,
+            url = self.request.path,
             table=self.table,
             filter=self.filterset,
             object_list=self.get_filtered_object_list(),
@@ -298,6 +298,7 @@ class TableauxView(SingleTableMixin, TemplateView):
             page=self.query_dict.get("page", "1"),
             per_page=self.query_dict.get("per_page", 10),
             order_by=self.query_dict.get("order_by", ""),
+            bp=self._bp,
             breakpoints=breakpoints(self.table),
             templates=self.templates,
             toolbar_visible=toolbar_visible,

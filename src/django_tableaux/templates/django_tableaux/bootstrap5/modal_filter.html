@@ -3,7 +3,7 @@
 {% block modal_title %}<span class="h4">Filter</span>{% endblock %}
 {% block modal_content %}
   <form id="{{ table.prefix }}modal_filter" {% if not filter_button %}
-        hx-get="" hx-trigger="change from #{{ table.prefix }}modal_filter" {% endif %}>
+        hx-get="{{ url }}" hx-trigger="change from #{{ table.prefix }}modal_filter" {% endif %}>
     {{ block.super }}
   </form>
 {% endblock %}
@@ -19,9 +19,9 @@
 {% endblock %}
 {% block modal_footer %}
   <div class="modal-footer">
-    <button type="button" class="btn btn-primary" hx-get="" name="filter_reset">Clear filters</button>
+    <button type="button" class="btn btn-primary" hx-get="{{ url }}" name="filter_reset">Clear filters</button>
     {% if filter_button %}
-      <button type="button" class="btn btn-primary" hx-get="" hx-include="closest form, #{{ table.prefix }}filter_form" name="filter_button">Filter</button>
+      <button type="button" class="btn btn-primary" hx-get="{{ url }}" hx-include="closest form, #{{ table.prefix }}filter_form" name="filter_button">Filter</button>
     {% endif %}
   </div>
 {% endblock %}

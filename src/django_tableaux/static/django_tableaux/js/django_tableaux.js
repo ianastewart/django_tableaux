@@ -1,8 +1,13 @@
+'use strict';
+let tableaux = (function () {
+    const tb = {};
 
-const BREAKPOINTS = {
-    sm: 480, md: 768, lg: 1024, xl: 1280
-};
-getCurrentBreakpoint = function () {
+    // Define breakpoints once at the top level
+    const BREAKPOINTS = {
+        sm: 480, md: 768, lg: 1024, xl: 1280
+    };
+
+    tb.getCurrentBreakpoint = function () {
         const width = window.innerWidth;
         let current = 'xs'; // Default for widths below the smallest breakpoint
 
@@ -17,6 +22,57 @@ getCurrentBreakpoint = function () {
         }
         return current;
     };
+
+    tb.setupResizeListener = function (el) {
+        let currentBreakpoint = tb.getCurrentBreakpoint();
+        let resizePending = false;
+
+        const handleResize = () => {
+            if (resizePending) return;
+
+            const newBreakpoint = tb.getCurrentBreakpoint();
+            if (newBreakpoint === currentBreakpoint) return;
+
+            resizePending = true;
+            currentBreakpoint = newBreakpoint;
+            document.querySelectorAll('input[name="bp"]').forEach(el => {
+                el.value = newBreakpoint
+            });
+            htmx.trigger(el, 'tableauxResize', {
+                breakpoint: newBreakpoint
+            });
+
+            // allow HTMX request cycle to complete
+            requestAnimationFrame(() => {
+                resizePending = false;
+            });
+        };
+
+        window.addEventListener('resize', handleResize);
+    };
+    tb.initElement = function (el) {
+        if (!el || el._tableController) return;
+        el._tableController = new TableController(el, el.dataset.prefix || "");
+        tb.setupResizeListener(el);
+    }
+
+    tb.initTableaux = function () {
+        document.querySelectorAll('[data-controller="tableaux"]').forEach(tb.initElement);
+    }
+    return tb;
+})
+();
+
+window.addEventListener("load", tableaux.initTableaux);
+
+document.body.addEventListener("initTableauxId", e => {
+    const id = e.detail?.id;
+    if (!id) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    tableaux.initElement(el);
+});
+
 
 class TableController {
     constructor(container, prefix = "") {
@@ -38,14 +94,6 @@ class TableController {
         this.container
             .querySelectorAll("table")
             .forEach(t => t.addEventListener("click", e => this.tableClick(e)));
-
-        this.container
-            .querySelectorAll(".filter-clear")
-            .forEach(el => el.addEventListener("click", filterClear));
-
-        this.container
-            .querySelectorAll(".filter-submit")
-            .forEach(el => el.addEventListener("change", filterChanged));
 
         if (this.container.querySelector(".td_editing")) {
             document.addEventListener("keypress", this.loseFocus);
@@ -147,11 +195,10 @@ class TableController {
         const row = target.closest("tr");
         const table = target.closest("table");
         if (!row || !table) return;
-
-        // const pk = row.dataset.pk;
-        const form = this.container.querySelector(".action-form");
-        // if (!pk || !form) return;
-
+        const bits = row.id.split("_");
+        const prefix = bits[0];
+        const pk = bits[2];
+        const form = this.container.querySelector(".filter-form");
         const formData = new FormData(form);
         const formObject = Object.fromEntries(formData.entries());
 
@@ -230,17 +277,4 @@ class TableController {
         }
     }
 }
-
-function initTableaux(root = document) {
-    root
-        .querySelectorAll('[data-controller="tableaux"]')
-        .forEach(el => {
-            if (!el._tableController) {
-                el._tableController = new TableController(el);
-            }
-        });
-}
-
-window.addEventListener("load", () => initTableaux());
-document.body.addEventListener("htmx:afterSwap", e => initTableaux(e.target));
 

@@ -6,7 +6,7 @@
      {% for column in table.column_states %}
          <li>
              <label>
-        <input type="checkbox" name="_col_{{ column.0 }}"  id="id_col_{{ column.0 }}" value="solid" hx-get="" />
+        <input type="checkbox" name="_col_{{ column.0 }}"  id="id_col_{{ column.0 }}" value="solid" hx-get="{{ url }}" />
                  {{ column.1 }}
       </label>
          </li>
@@ -14,7 +14,7 @@
     {% endfor %}
     </ul>
     {% if default %}
-      <a class="dropdown-item py-0" href="#" hx-get="" id="id_col_reset">Reset columns</a>
+      <a class="dropdown-item py-0" href="#" hx-get="{{ url }}" id="id_col_reset">Reset columns</a>
       <div class="dropdown-divider"></div>
     {% endif %}
 

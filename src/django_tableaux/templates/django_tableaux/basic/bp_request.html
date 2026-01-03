@@ -28,7 +28,7 @@ const breakpoints = JSON.parse(document.getElementById('breakpoints-data').textC
     }
 
     let url = window.location.href
-    const bp = `_bp=${getCurrentBreakpoint()}`
+    const bp = `bp=${getCurrentBreakpoint()}`
     if (url.indexOf("?") > 0) {
         url += "&" + bp
     } else {
