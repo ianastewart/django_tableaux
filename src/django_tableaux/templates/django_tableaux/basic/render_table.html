@@ -1,5 +1,6 @@
 {% load django_tables2 i18n %}
-<div id="{{ table.prefix }}table_wrapper" {% if view.fixed_height > 0 %}style="overflow-y: scroll; max-height: {{ view.fixed_height }}px;"{% endif %}>
+<div id="{{ table.prefix }}table_wrapper" style="overflow-x: auto;
+    {% if view.fixed_height > 0 %} overflow-y: scroll; max-height: {{ view.fixed_height }}px;{% endif %}">
 <table {% if table.attrs.class %}{% render_attrs table.attrs %}{% else %}class="table" {% endif %}
          id="{{ table.prefix }}table" data-click="{{ table.click_action }}"
          data-url="{{ table.url }}"

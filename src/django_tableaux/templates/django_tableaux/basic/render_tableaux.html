@@ -1,7 +1,7 @@
 {% load static %}
 <div class="tableaux" data-controller="tableaux" data-prefix="{{ table.prefix }}" id="{{ table.prefix }}tableaux"
      data-url="{{ url }}" hx-get="{{ url }}" hx-trigger="tableauxResize from:body"
-     hx-include="#{{ table.prefix }}filter_form"
+     hx-include=".filter-form"
      hx-swap="outerHTML"
      style="background-color: white;">
   {{ breakpoints|json_script:"breakpoints" }}

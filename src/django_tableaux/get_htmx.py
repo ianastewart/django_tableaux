@@ -3,7 +3,7 @@
 
 from django.core.exceptions import ImproperlyConfigured
 from django.template.response import TemplateResponse
-from django_htmx.http import trigger_client_event, HttpResponseClientRedirect, push_url
+from django_htmx.http import trigger_client_event, HttpResponseClientRedirect
 
 from django_tableaux.utils import define_columns, save_columns_dict, default_columns_dict, set_column, save_per_page, \
     visible_columns
@@ -24,18 +24,21 @@ def get_htmx(self, request, *args, **kwargs):
     if trigger_name is not None:
         match trigger_name:
             case "table_load":
-                # initiated by load_table template tag
+                # Initiated by tableaux template tag
                 self.prefix = request.GET.get("prefix", "")
                 target = request.htmx.target[len(self.prefix):] if self.prefix else request.htmx.target
                 return self.render_tableaux(hx_target=target)
 
             case "page":
+                # Change of page
                 return self.render_tableaux()
 
             case "filter_modal" if self.filterset_class:
-                # request to show filter form in a modal
-                context = {"filter": self.filterset_class(data=self.query_dict),
-                           "filter_button": self.filter_button}
+                # Request to show filter form in a modal
+                context = {
+                    "prefix": self.prefix,
+                    "filter": self.filterset_class(data=self.query_dict),
+                    "filter_button": self.filter_button}
                 response = TemplateResponse(request, self.templates["modal_filter"], context)
                 return trigger_client_event(response, "tableaux_init", after="swap")
 

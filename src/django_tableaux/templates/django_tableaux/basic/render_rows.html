@@ -1,18 +1,18 @@
 {% load django_tables2 django_tableaux %}
 {% load i18n %}
 {% for row in table.paginated_rows %}
-    {% if table.mobile %}
+  {% if table.mobile %}
     {% include templates.render_row_mobile %}
-    {% else %}
+  {% else %}
     {% include templates.render_row %}
-    {% endif %}
-    {% if forloop.last and table.infinite_scroll and table.page.number >= table.page.paginator.num_pages %}
-      <tr>
-        <td colspan="{{ table.columns|length }}" style="text-align: center">
-          {% trans "-- End of data --" %}
-        </td>
-      </tr>
-    {% endif %}
+  {% endif %}
+  {% if forloop.last and table.infinite_scroll and table.page.number >= table.page.paginator.num_pages %}
+    <tr>
+      <td colspan="{{ table.columns|length }}" style="text-align: center">
+        {% trans "-- End of data --" %}
+      </td>
+    </tr>
+  {% endif %}
   {% if forloop.last and table.infinite_load %}
     {% if table.page.number < table.page.paginator.num_pages %}
       <tr id="{{ table.prefix }}_tr_last"

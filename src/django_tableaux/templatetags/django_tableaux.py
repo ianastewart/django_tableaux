@@ -32,7 +32,7 @@ def tableaux(context, url_name, prefix=""):
     except NoReverseMatch:
         raise ImproperlyConfigured(f"Tableaux: {url_name} is not a valid url name")
     query_string = context.request.GET.urlencode()
-    hx_vals = f"js:{{ 'bp': tableaux.getCurrentBreakpoint(), 'prefix': '{prefix}', 'query_string': '{query_string}' }}"
+    hx_vals = f"js:{{ 'bp': BreakpointService.get(), 'prefix': '{prefix}', 'query_string': '{query_string}' }}"
     code = f'<div id="{prefix}load_{url_name}" name="table_load" hx-trigger="load" hx-get="{url}" hx-vals="{hx_vals}" hx-swap="outerHTML" hx-target="#{prefix}load_{url_name}"></div>'
     return mark_safe(code)
 

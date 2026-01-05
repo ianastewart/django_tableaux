@@ -1,59 +1,104 @@
 'use strict';
+
+const BreakpointService = (function () {
+    const BREAKPOINTS = {
+        sm: 480,
+        md: 768,
+        lg: 1024,
+        xl: 1280
+    };
+
+    let currentBreakpoint = null;
+    const listeners = new Set();
+
+    function getCurrentBreakpoint() {
+        const width = window.innerWidth;
+        let current = 'xs';
+
+        for (const [name, value] of Object.entries(BREAKPOINTS).sort((a, b) => a[1] - b[1])) {
+            if (width >= value) current = name;
+            else break;
+        }
+        return current;
+    }
+
+    function notify(newBreakpoint) {
+        listeners.forEach(cb => cb(newBreakpoint));
+    }
+
+    window.addEventListener('resize', () => {
+        const next = getCurrentBreakpoint();
+        if (next === currentBreakpoint) return;
+
+        currentBreakpoint = next;
+        notify(next);
+    });
+
+    currentBreakpoint = getCurrentBreakpoint();
+
+    return {
+        get: () => currentBreakpoint,
+        subscribe: cb => listeners.add(cb),
+        unsubscribe: cb => listeners.delete(cb)
+    };
+})();
+
+
 let tableaux = (function () {
     const tb = {};
 
-    // Define breakpoints once at the top level
-    const BREAKPOINTS = {
-        sm: 480, md: 768, lg: 1024, xl: 1280
-    };
-
-    tb.getCurrentBreakpoint = function () {
-        const width = window.innerWidth;
-        let current = 'xs'; // Default for widths below the smallest breakpoint
-
-        const breakpointEntries = Object.entries(BREAKPOINTS).sort((a, b) => a[1] - b[1]);
-
-        for (const [name, value] of breakpointEntries) {
-            if (width >= value) {
-                current = name;
-            } else {
-                break; // Stop once we've gone past the current width
-            }
-        }
-        return current;
-    };
-
-    tb.setupResizeListener = function (el) {
-        let currentBreakpoint = tb.getCurrentBreakpoint();
-        let resizePending = false;
-
-        const handleResize = () => {
-            if (resizePending) return;
-
-            const newBreakpoint = tb.getCurrentBreakpoint();
-            if (newBreakpoint === currentBreakpoint) return;
-
-            resizePending = true;
-            currentBreakpoint = newBreakpoint;
-            document.querySelectorAll('input[name="bp"]').forEach(el => {
-                el.value = newBreakpoint
-            });
-            htmx.trigger(el, 'tableauxResize', {
-                breakpoint: newBreakpoint
-            });
-
-            // allow HTMX request cycle to complete
-            requestAnimationFrame(() => {
-                resizePending = false;
-            });
-        };
-
-        window.addEventListener('resize', handleResize);
-    };
+    // // Define breakpoints once at the top level
+    // const BREAKPOINTS = {
+    //     sm: 480, md: 768, lg: 1024, xl: 1280
+    // };
+    //
+    // tb.getCurrentBreakpoint = function () {
+    //     const width = window.innerWidth;
+    //     let current = 'xs'; // Default for widths below the smallest breakpoint
+    //
+    //     const breakpointEntries = Object.entries(BREAKPOINTS).sort((a, b) => a[1] - b[1]);
+    //
+    //     for (const [name, value] of breakpointEntries) {
+    //         if (width >= value) {
+    //             current = name;
+    //         } else {
+    //             break; // Stop once we've gone past the current width
+    //         }
+    //     }
+    //     return current;
+    // };
+    //
+    // tb.setupResizeListener = function (el) {
+    //     let currentBreakpoint = tb.getCurrentBreakpoint();
+    //     let resizePending = false;
+    //
+    //     const handleResize = () => {
+    //         if (resizePending) return;
+    //
+    //         const newBreakpoint = tb.getCurrentBreakpoint();
+    //         if (newBreakpoint === currentBreakpoint) return;
+    //
+    //         resizePending = true;
+    //         currentBreakpoint = newBreakpoint;
+    //         document.querySelectorAll('input[name="bp"]').forEach(el => {
+    //             el.value = newBreakpoint
+    //         });
+    //         htmx.trigger(el, 'tableauxResize', {
+    //             breakpoint: newBreakpoint
+    //         });
+    //
+    //         // allow HTMX request cycle to complete
+    //         requestAnimationFrame(() => {
+    //             resizePending = false;
+    //         });
+    //     };
+    //
+    //     window.addEventListener('resize', handleResize);
+    // };
     tb.initElement = function (el) {
         if (!el || el._tableController) return;
         el._tableController = new TableController(el, el.dataset.prefix || "");
-        tb.setupResizeListener(el);
+        // tb.setupResizeListener(el);
     }
 
     tb.initTableaux = function () {
@@ -81,6 +126,12 @@ class TableController {
         this.selAll = container.querySelector("#select_all");
         this.selAllPage = container.querySelector("#select_all_page");
         this.lastChecked = null;
+
+        this.breakpoint = BreakpointService.get();
+        this.onBreakpointChange = this.onBreakpointChange.bind(this);
+        BreakpointService.subscribe(this.onBreakpointChange);
+        this.syncBreakpointInput(this.breakpoint);
+
         this.bind();
         this.countChecked();
     }
@@ -98,6 +149,30 @@ class TableController {
         if (this.container.querySelector(".td_editing")) {
             document.addEventListener("keypress", this.loseFocus);
         }
+    }
+
+    syncBreakpointInput(bp) {
+        this.container
+            .querySelectorAll('input[name="bp"]')
+            .forEach(input => {
+                input.value = bp;
+            });
+    }
+
+    onBreakpointChange(newBreakpoint) {
+        if (newBreakpoint === this.breakpoint) return;
+
+        this.breakpoint = newBreakpoint;
+        this.syncBreakpointInput(newBreakpoint);
+
+        // trigger HTMX refresh for THIS table only
+        window.htmx.trigger(this.container, "tableauxResize", {
+            breakpoint: newBreakpoint
+        });
+    }
+
+    destroy() {
+        BreakpointService.unsubscribe(this.onBreakpointChange);
     }
 
 

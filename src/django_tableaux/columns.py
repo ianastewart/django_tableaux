@@ -1,8 +1,10 @@
 import itertools
+
 import django_tables2 as tables
 from django.contrib.humanize.templatetags.humanize import intcomma
-from .utils import get_template_path
 from django.utils.safestring import mark_safe
+
+from .utils import get_template_path
 
 
 class EditableColumn(tables.Column):
@@ -11,25 +13,46 @@ class EditableColumn(tables.Column):
 
 
 class RightAlignedColumn(tables.Column):
-    def __init__(self, **kwargs):
-        super().__init__()
-        if "th" not in self.attrs:
-            self.attrs["th"] = {}
-        if "td" not in self.attrs:
-            self.attrs["td"] = {}
-        self.attrs["th"]["style"] = "text-align: right;"
-        self.attrs["td"]["style"] = "text-align: right;"
+    pass
+    # def __init__(self, **kwargs):
+    #     # super().__init__(attrs={"class": "text-end"})
+    #     attrs = kwargs.pop("attrs", {})
+    #
+    #     # Merge / extend attrs safely
+    #     td_attrs = attrs.get("td", {}).copy()
+    #     th_attrs = attrs.get("th", {}).copy()
+    #
+    #     td_attrs.setdefault("class", "")
+    #     th_attrs.setdefault("class", "")
+    #
+    #     td_attrs["class"] = f'{td_attrs["class"]} text-end'.strip()
+    #     th_attrs["class"] = f'{th_attrs["class"]} text-end'.strip()
+    #
+    #     attrs["td"] = td_attrs
+    #     attrs["th"] = th_attrs
+    #
+    #     kwargs["attrs"] = attrs
+    #     super().__init__(**kwargs)
+
+    # def set_attr(self, value):
+    #     if "th" not in self.attrs:
+    #         self.attrs["th"] = {}
+    #     if "td" not in self.attrs:
+    #         self.attrs["td"] = {}
+    #     if "style" not in self.attrs["th"]:
+    #         self.attrs["th"]["style"] = value
+    #     else:
+    #         self.attrs["th"]["style"] = value + " " + self.attrs["th"]["style"]
+    #     if "style" not in self.attrs["td"]:
+    #         self.attrs["td"]["style"] = value
+    #     else:
+    #         self.attrs["td"]["style"] = value + " " + self.attrs["td"]["style"]
 
 
-class CenteredColumn(tables.Column):
+class CenteredColumn(RightAlignedColumn):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if "th" not in self.attrs:
-            self.attrs["th"] = {}
-        if "td" not in self.attrs:
-            self.attrs["td"] = {}
-        self.attrs["th"]["style"] = "text-align: center;"
-        self.attrs["td"]["style"] = "text-align: center;"
+        self.set_attr("text-align: center;")
 
 
 class CenteredTrueColumn(CenteredColumn):
