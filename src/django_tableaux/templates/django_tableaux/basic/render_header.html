@@ -24,10 +24,14 @@
             <span style="display: inline-block;">
             {% if column.orderable %}
               {% if column.is_ordered %}
-                {% if "-" in column.order_by.0 %}{{ column.header }}&nbsp;&#9661;{% else %}{{ column.header }}&nbsp;
-                  &#9651;{% endif %}
+{#                {% if "-" in column.order_by.0 %}{{ column.header }}&nbsp;&#9661;{% else %}{{ column.header }}&nbsp;#}
+{#                  &#9651;{% endif %}#}
+{#                              {% else %}#}
+{#                {{ column.header }}<span style="color: lightgrey;">&nbsp;&#x25c7;</span>#}
+                {% if "-" in column.order_by.0 %}{{ column.header }} {% include templates.svg_sort_down %}{% else %}{{ column.header }}
+                 {% include templates.svg_sort_up %}{% endif %}
               {% else %}
-                {{ column.header }}<span style="color: lightgrey;">&nbsp;&#x25c7;</span>
+                {{ column.header }}<span style="color: lightgrey;"> {% include templates.svg_sortable %}</span>
               {% endif %}
             {% else %}
               &nbsp;&nbsp;{{ column.header }}

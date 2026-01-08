@@ -1,6 +1,5 @@
 from pathlib import Path
-from symtable import Class
-from urllib.parse import parse_qs, urlunparse, urlparse, urlencode
+from typing import Dict, Union
 
 from django.apps import apps
 from django.conf import settings
@@ -9,7 +8,6 @@ from django.http import HttpRequest, QueryDict
 from django.shortcuts import render
 from django.template import loader
 from django.utils.safestring import mark_safe
-from django.views import View
 from django_tables2 import Table
 
 
@@ -21,7 +19,7 @@ def _view_name(request):
 
 
 def save_columns_dict(
-    request: HttpRequest, table: Table, bp: str, columns_dict: dict[str, bool]
+        request: HttpRequest, table: Table, bp: str, columns_dict: dict[str, bool]
 ):
     key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
     request.session[key] = columns_dict
@@ -53,7 +51,7 @@ def default_columns_dict(table: Table) -> dict[str, bool]:
 
 
 def set_column(
-    request: HttpRequest, table: Table, bp: str, column_name: str, checked: bool
+        request: HttpRequest, table: Table, bp: str, column_name: str, checked: bool
 ) -> list:
     column_dict = load_columns_dict(request, table, bp)
     column_dict[column_name] = checked
@@ -61,7 +59,7 @@ def set_column(
 
 
 def visible_columns(
-    request: HttpRequest, table_class, bp_dict: dict[str, int], bp: str
+        request: HttpRequest, table_class, bp_dict: dict[str, int], bp: str
 ) -> list[str]:
     """
     Return the list of visible column names in correct sequence
@@ -156,7 +154,7 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
 
 
 def resolve_breakpoint(
-    bp_dict: dict[str, int], responsive: dict[str, dict], bp: str
+        bp_dict: dict[str, int], responsive: dict[str, dict], bp: str
 ) -> dict | None:
     """
     Finds the most appropriate responsive configuration for a given breakpoint.
@@ -290,7 +288,7 @@ def build_templates_dictionary(library=None):
 
 
 def render_editable_link(
-    record=None, column=None, value=None, url="", template_name=None
+        record=None, column=None, value=None, url="", template_name=None
 ):
     """
     Call this code in a 'render_foo' method with a table definition
@@ -307,7 +305,7 @@ def render_editable_link(
 
 
 def render_editable_form(
-    request, record_id, column=None, value=None, form_class=None, template_name=None
+        request, record_id, column=None, value=None, form_class=None, template_name=None
 ):
     """
     Render a form inside a table cell so the cell value can be edited
@@ -318,6 +316,7 @@ def render_editable_form(
     form = form_class(initial={"value": value})
     context = {"id": record_id, "column": column, "value": value, "form": form}
     return render(request, template_name, context)
+
 
 def parse_query_dict(self: object, in_dict: QueryDict):
     # Parse a query dictionary either from request.GET or from a query_string
@@ -340,6 +339,56 @@ def strip_prefix_from_keys(data: dict, prefix: str) -> dict:
         for key, value in data.items()
     }
 
-def add_prefix_to_keys(data: dict, prefix: str, exclude: list[str]|None=None) -> dict:
+
+def add_prefix_to_keys(data: dict, prefix: str, exclude: list[str] | None = None) -> dict:
     exclude = exclude or []
-    return {(key if key in exclude else prefix + key) : value for key, value in data.items()}
+    return {(key if key in exclude else prefix + key): value for key, value in data.items()}
+
+
+AttrValue = Union[str, dict]
+AttrDict = Dict[str, dict[str, AttrValue]]
+
+def merge_attrs(col_attrs: AttrDict, table_attrs: AttrDict) -> AttrDict:
+    """
+    Merge table attributes into column attributes.
+
+    - Only relevant table sections (th/td/cell) are merged
+    - Column attributes overlay table defaults
+    - Class/style concatenated with column last
+    - Callables preserved
+    """
+    RELEVANT_SECTIONS =  {"th", "td", "cell"}
+    result: Dict[str, dict[str, AttrValue]] = {}
+
+    # First, copy column attributes
+    for section, col_section in col_attrs.items():
+        if isinstance(col_section, dict):
+            result[section] = dict(col_section)
+        else:
+            result[section] = col_section
+
+    # Merge relevant table sections
+    for section in RELEVANT_SECTIONS:
+        table_section = table_attrs.get(section)
+        col_section = result.get(section, {})
+
+        if isinstance(table_section, dict):
+            merged = dict(table_section)  # start with table defaults
+
+            if isinstance(col_section, dict):
+                for key, col_value in col_section.items():
+                    table_value = merged.get(key)
+
+                    if isinstance(table_value, str) and isinstance(col_value, str):
+                        if key == "class":
+                            merged[key] = f"{table_value} {col_value}"
+                        elif key == "style":
+                            merged[key] = f"{table_value.rstrip(';')}; {col_value}"
+                        else:
+                            merged[key] = col_value
+                    else:
+                        # callable or mixed-type → column wins
+                        merged[key] = col_value
+            result[section] = merged
+
+    return result

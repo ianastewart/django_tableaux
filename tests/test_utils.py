@@ -1,4 +1,5 @@
-from django_tableaux.utils import parse_query_dict
+import pytest
+from django_tableaux.utils import parse_query_dict, merge_attrs
 from django.http import QueryDict
 
 from django_tableaux.views import TableauxView
@@ -17,6 +18,4 @@ def test_parse_query_dict():
     assert "c" not in view.query_dict
     # query_string always ignored
     assert "query_string" not in view.query_dict
-
-
 

@@ -9,7 +9,7 @@ from django.shortcuts import render, reverse, redirect
 from django.template.response import TemplateResponse
 from django.urls.resolvers import NoReverseMatch
 from django.core.paginator import Paginator
-from django_tableaux.columns import RightAlignedColumn
+from django_tableaux.utils import merge_attrs
 from typing import Any, Optional
 
 from .utils import (
@@ -31,20 +31,21 @@ def build_table(view, **kwargs):
     # Merge table-level with column attributes
     for bound_column in table.columns:
         col = bound_column.column
+        col.attrs = merge_attrs(col.attrs, table.attrs)
 
-        th_dict =  table.attrs.get("th", "")
-        th_attrs = th_dict.get("class", "") if th_dict else ""
-        td_dict =  table.attrs.get("td", "")
-        td_attrs = td_dict.get("class", "") if td_dict else ""
-        if isinstance(col, RightAlignedColumn):
-            # Merge into existing attrs (table + column)
-            td = col.attrs.get("td", {}).copy()
-            th = col.attrs.get("th", {}).copy()
-
-            td["class"] = f'{td_attrs} {td.get("class", "")} text-end'.strip()
-            th["class"] = f'{th_attrs} {th.get("class", "")} text-end'.strip()
-            col.attrs["td"] = td
-            col.attrs["th"] = th
+        # th_dict =  table.attrs.get("th", "")
+        # th_attrs = th_dict.get("class", "") if th_dict else ""
+        # td_dict =  table.attrs.get("td", "")
+        # td_attrs = td_dict.get("class", "") if td_dict else ""
+        # if isinstance(col, RightAlignedColumn):
+        #     # Merge into existing attrs (table + column)
+        #     td = col.attrs.get("td", {}).copy()
+        #     th = col.attrs.get("th", {}).copy()
+        #
+        #     td["class"] = f'{td_attrs} {td.get("class", "")} text-end'.strip()
+        #     th["class"] = f'{th_attrs} {th.get("class", "")} text-end'.strip()
+        #     col.attrs["td"] = td
+        #     col.attrs["th"] = th
 
 
     table.request = view.request
