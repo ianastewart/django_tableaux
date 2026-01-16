@@ -46,59 +46,10 @@ const BreakpointService = (function () {
 
 let tableaux = (function () {
     const tb = {};
-
-    // // Define breakpoints once at the top level
-    // const BREAKPOINTS = {
-    //     sm: 480, md: 768, lg: 1024, xl: 1280
-    // };
-    //
-    // tb.getCurrentBreakpoint = function () {
-    //     const width = window.innerWidth;
-    //     let current = 'xs'; // Default for widths below the smallest breakpoint
-    //
-    //     const breakpointEntries = Object.entries(BREAKPOINTS).sort((a, b) => a[1] - b[1]);
-    //
-    //     for (const [name, value] of breakpointEntries) {
-    //         if (width >= value) {
-    //             current = name;
-    //         } else {
-    //             break; // Stop once we've gone past the current width
-    //         }
-    //     }
-    //     return current;
-    // };
-    //
-    // tb.setupResizeListener = function (el) {
-    //     let currentBreakpoint = tb.getCurrentBreakpoint();
-    //     let resizePending = false;
-    //
-    //     const handleResize = () => {
-    //         if (resizePending) return;
-    //
-    //         const newBreakpoint = tb.getCurrentBreakpoint();
-    //         if (newBreakpoint === currentBreakpoint) return;
-    //
-    //         resizePending = true;
-    //         currentBreakpoint = newBreakpoint;
-    //         document.querySelectorAll('input[name="bp"]').forEach(el => {
-    //             el.value = newBreakpoint
-    //         });
-    //         htmx.trigger(el, 'tableauxResize', {
-    //             breakpoint: newBreakpoint
-    //         });
-    //
-    //         // allow HTMX request cycle to complete
-    //         requestAnimationFrame(() => {
-    //             resizePending = false;
-    //         });
-    //     };
-    //
-    //     window.addEventListener('resize', handleResize);
-    // };
     tb.initElement = function (el) {
-        if (!el || el._tableController) return;
+        if (!el) return;
+        if (el._tableController) el._tableController.destroy();
         el._tableController = new TableController(el, el.dataset.prefix || "");
-        // tb.setupResizeListener(el);
     }
 
     tb.initTableaux = function () {
@@ -123,31 +74,34 @@ class TableController {
     constructor(container, prefix = "") {
         this.container = container;
         this.prefix = prefix; // e.g. "orders" or ""
-        this.selAll = container.querySelector("#select_all");
-        this.selAllPage = container.querySelector("#select_all_page");
+        this.table = container.querySelector("table");
+        this.selAll = container.querySelector(".select-all-rows");
+        this.selAllPage = container.querySelector(".select-all-page");
+        this.selCount = this.container.querySelector(".selected-count");
         this.lastChecked = null;
-
         this.breakpoint = BreakpointService.get();
+
+        /* ---- bind handlers once ---- */
         this.onBreakpointChange = this.onBreakpointChange.bind(this);
+        this.onLoseFocus = this.loseFocus.bind(this);
+        this.onTableClick = this.tableClick.bind(this);
+        this.onSelectAll = this.selectAll.bind(this);
+        this.onSelectAllPage = this.selectAllPage.bind(this);
+        this.onBreakpointChange = this.onBreakpointChange.bind(this);
+
         BreakpointService.subscribe(this.onBreakpointChange);
         this.syncBreakpointInput(this.breakpoint);
-
         this.bind();
         this.countChecked();
     }
 
-    /* ---------- bindings ---------- */
-
     bind() {
-        this.selAll?.addEventListener("click", () => this.selectAll());
-        this.selAllPage?.addEventListener("click", () => this.selectAllPage());
-
-        this.container
-            .querySelectorAll("table")
-            .forEach(t => t.addEventListener("click", e => this.tableClick(e)));
-
+        this.selAll?.addEventListener("click", this.onSelectAll);
+        this.selAllPage?.addEventListener("click", this.onSelectAllPage);
+        this.table?.addEventListener("click", this.onTableClick);
         if (this.container.querySelector(".td_editing")) {
-            document.addEventListener("keypress", this.loseFocus);
+            document.addEventListener("keypress", this.onLoseFocus);
+            this.hasKeypressListener = true;
         }
     }
 
@@ -164,15 +118,24 @@ class TableController {
 
         this.breakpoint = newBreakpoint;
         this.syncBreakpointInput(newBreakpoint);
-
-        // trigger HTMX refresh for THIS table only
+        // trigger HTMX resize
         window.htmx.trigger(this.container, "tableauxResize", {
             breakpoint: newBreakpoint
         });
     }
 
+
     destroy() {
+        console.log("Destroy")
         BreakpointService.unsubscribe(this.onBreakpointChange);
+        this.selAll?.removeEventListener("click", this.onSelectAll);
+        this.selAllPage?.removeEventListener("click", this.onSelectAllPage);
+        this.table?.removeEventListener("click", this.onTableClick);
+        /* Document listener */
+        if (this.hasKeypressListener) {
+            document.removeEventListener("keypress", this.onLoseFocus);
+        }
+        this.container._tableController = null;
     }
 
 
@@ -203,39 +166,29 @@ class TableController {
 
     selectAll() {
         if (!this.selAll) return;
-
-        const checked = this.selAll.checked;
-        const countEl = this.container.querySelector(".count");
-
-        if (checked) {
-            if (countEl) countEl.innerText = "All";
+        const allChecked = this.selAll.checked;
+        if (allChecked) {
+            if (this.selCount) this.selCount.innerText = "All";
             this.selAllPage && (this.selAllPage.disabled = true);
         } else {
             this.selAllPage && (this.selAllPage.disabled = false);
         }
-
         this.container
             .querySelectorAll("input[name='select-checkbox']")
-            .forEach(box => box.disabled = checked);
-
+            .forEach(box => box.disabled = allChecked);
         this.lastChecked = null;
         this.countChecked();
     }
 
     countChecked() {
         if (this.selAll?.checked) return;
-
         const ids = [];
-
         this.container
             .querySelectorAll("input[name='select-checkbox']")
             .forEach(el => {
                 const row = el.closest("tr");
-                const table = el.closest("table");
-                if (!row || !table) return;
-
-                const selectedClass = table.getAttribute("selected");
-
+                    if (!row) return;
+                const selectedClass = this.container.getAttribute("selected");
                 if (el.checked) {
                     ids.push(el.value);
                     selectedClass && row.classList.add(selectedClass);
@@ -246,11 +199,8 @@ class TableController {
 
         const hidden = this.container.querySelector("input[name='selected_ids']");
         if (hidden) hidden.value = ids.toString();
-
-        const countEl = this.container.querySelector(".count");
-        if (countEl) countEl.innerText = ids.length.toString();
-
-        const actionMenu = this.container.querySelector(".selectActionMenu");
+        if (this.selCount) this.selCount.innerText = ids.length.toString();
+        const actionMenu = this.container.querySelector(".select-action-menu");
         if (actionMenu) {
             actionMenu.disabled = ids.length === 0 && !this.selAll?.checked;
         }
@@ -267,9 +217,11 @@ class TableController {
         };
 
         const target = e.target;
+        if (target.closest('th')) return;
+
         const row = target.closest("tr");
-        const table = target.closest("table");
-        if (!row || !table) return;
+        if (!row) return;
+
         const bits = row.id.split("_");
         const prefix = bits[0];
         const pk = bits[2];
@@ -309,25 +261,26 @@ class TableController {
                     source: `#${target.id}`,
                     target: `#${target.id}`
                 });
-            } else if (table.dataset.url) {
+            } else if (this.table.dataset.url) {
                 let url = table.dataset.url;
-                if (table.dataset.pk) url += pk;
+                if (this.table.dataset.pk) url += pk;
 
                 if (table.dataset.click === ClickAction.GET) {
                     window.location.assign(url);
-                } else if (table.dataset.click === ClickAction.HX_GET) {
+                } else if (this.table.dataset.click === ClickAction.HX_GET) {
                     window.htmx.ajax("GET", url, {
-                        source: table,
-                        target: table.dataset.target,
+                        source: this.table,
+                        target: this.table.dataset.target,
                         values: formObject
                     });
                 }
-            } else if (table.dataset.click === ClickAction.CUSTOM) {
+            } else if (this.table.dataset.click === ClickAction.CUSTOM) {
                 target.id = `_td_${pk}_${col}_${window.outerWidth}`;
                 window.htmx.ajax("GET", "", {
                     source: `#${target.id}`,
                     target: `#${target.id}`,
-                    values: formObject
+                    values: formObject,
+                    context: {'swap': innerHTML}
                 });
             }
         } else if (target.name === "select-checkbox") {

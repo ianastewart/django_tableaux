@@ -3,47 +3,43 @@
 
 from django.core.exceptions import ImproperlyConfigured
 from django.template.response import TemplateResponse
-from django_htmx.http import trigger_client_event, HttpResponseClientRedirect
+from django_htmx.http import HttpResponseClientRedirect
 
 from django_tableaux.utils import define_columns, save_columns_dict, default_columns_dict, set_column, save_per_page, \
     visible_columns
 
 
 def get_htmx(self, request, *args, **kwargs):
-    # Some actions depend on trigger_name; others on trigger
-    # if "_bp" in request.GET:
-    #     self._bp = request.GET["_bp"]
-    # if "_filter" in request.GET:
-    #     return self.render_table()
     self._bp = self.query_dict.get("bp", "XXX")
 
     # Some actions depend on trigger_name; others on trigger
     trigger_name = request.htmx.trigger_name
     trigger = request.htmx.trigger
 
+    for k, v in self.query_dict.items():
+        print(k, v)
+
     if trigger_name is not None:
         match trigger_name:
             case "table_load":
                 # Initiated by tableaux template tag
-                self.prefix = request.GET.get("prefix", "")
+                # self.prefix = request.GET.get("prefix", "")
                 target = request.htmx.target[len(self.prefix):] if self.prefix else request.htmx.target
                 return self.render_tableaux(hx_target=target)
 
-            case "page":
-                # Change of page
-                return self.render_tableaux()
-
             case "filter_modal" if self.filterset_class:
-                # Request to show filter form in a modal
+                # Request to show the filter form in a modal
                 context = {
                     "prefix": self.prefix,
-                    "filter": self.filterset_class(data=self.query_dict),
-                    "filter_button": self.filter_button}
-                response = TemplateResponse(request, self.templates["modal_filter"], context)
-                return trigger_client_event(response, "tableaux_init", after="swap")
+                    "filter": self.filterset_class(data=self.filter_data),
+                    "filter_button": self.filter_button,
+                    "url": request.path
+                }
+                return TemplateResponse(request, self.templates["modal_filter"], context)
 
             case "filter_button":
-                # apply filter button pressed
+                # filter button pressed
+                self.query_dict.pop(trigger_name)
                 return self.render_tableaux()
 
             case "filter_reset":
@@ -113,12 +109,13 @@ def get_htmx(self, request, *args, **kwargs):
             case trigger if "~row~" in trigger:
                 # Change the number of rows to display
                 save_per_page(request, param)
-                self.query_dict["per_page"] = param
+                self.query_dict["~per_page"] = param
                 return self.render_tableaux()
 
             case trigger if "~sort~" in trigger:
                 # change order_by
-                old_value = self.query_dict.get("order_by", "")
+                key = f"~order_by"
+                old_value = self.query_dict.get(key, "")
                 old_field = ""
                 if len(old_value) > 0:
                     old_field = old_value[1:] if old_value[0] == "-" else old_value
@@ -126,13 +123,13 @@ def get_htmx(self, request, *args, **kwargs):
                     value = param if old_value[0] == "-" else "-" + param
                 else:
                     value = param
-                self.query_dict["order_by"] = value
+                self.query_dict[key] = value
                 self._order_by_changed = True
                 return self.render_tableaux()
 
             case trigger if "~page~" in trigger:
                 # new page
-                self.query_dict["page"] = param
+                self.query_dict["~page"] = param
                 return self.render_tableaux()
 
             case trigger if "_tr_" in trigger:

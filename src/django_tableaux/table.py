@@ -32,30 +32,14 @@ def build_table(view, **kwargs):
     for bound_column in table.columns:
         col = bound_column.column
         col.attrs = merge_attrs(col.attrs, table.attrs)
-
-        # th_dict =  table.attrs.get("th", "")
-        # th_attrs = th_dict.get("class", "") if th_dict else ""
-        # td_dict =  table.attrs.get("td", "")
-        # td_attrs = td_dict.get("class", "") if td_dict else ""
-        # if isinstance(col, RightAlignedColumn):
-        #     # Merge into existing attrs (table + column)
-        #     td = col.attrs.get("td", {}).copy()
-        #     th = col.attrs.get("th", {}).copy()
-        #
-        #     td["class"] = f'{td_attrs} {td.get("class", "")} text-end'.strip()
-        #     th["class"] = f'{th_attrs} {th.get("class", "")} text-end'.strip()
-        #     col.attrs["td"] = td
-        #     col.attrs["th"] = th
-
-
     table.request = view.request
     # Sorting
-    order_by = view.query_dict.get("order_by", "")
+    order_by = view.query_dict.get("~order_by", "")
     if order_by:
         table.order_by = order_by
     # Pagination
-    kwargs = {"per_page": view.query_dict.get("per_page", 10),
-              "page": view.query_dict.get("page", 1)}
+    kwargs = {"per_page": view.query_dict.get("~per_page", 10),
+              "page": view.query_dict.get("~page", 1)}
     if hasattr(view, "paginator_class"):
         kwargs["paginator_class"] = view.paginator_class
     # Changing sort order resets page to 1

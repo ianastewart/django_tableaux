@@ -1,10 +1,10 @@
-{% if view.filter_pills and filters %}
+{% if view.filter_pills and filter_dict %}
   <div class="d-flex flex-wrap gap-2">
-    {% for filter in filters %}
+    {% for key, value in filter_dict.items %}
       <span class="filter-pill badge rounded-pill border text-primary d-inline-flex align-items-center px-2 py-1">
-    {{ filter.0|capfirst }}: {{ filter.1 }}
-    <button type="button" class="btn-close ms-2" aria-label="Remove {{ filter.0 }} filter"
-            id="{{ table.prefix }}~remove~{{ filter.0 }}" hx-get="{{ url }}" hx-include="#{{ table.prefix }}filter_form">
+    {{ key|capfirst }}: {{ value}}
+    <button type="button" class="btn-close ms-2" aria-label="Remove {{ key }} filter"
+            id="{{ table.prefix }}~remove~{{ key }}" hx-get="{{ url }}" hx-include="#{{ table.prefix }}filter_form">
     </button>
       </span>
     {% endfor %}

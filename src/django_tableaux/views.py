@@ -1,6 +1,8 @@
+import json
 import logging
 from enum import IntEnum
-from urllib.parse import parse_qs
+from typing import Any
+from urllib.parse import urlsplit, urlunsplit, parse_qs
 
 from django.core.exceptions import ImproperlyConfigured
 from django.http import QueryDict, HttpResponse
@@ -20,19 +22,14 @@ from django_htmx.http import (
 from django_tables2.export.export import TableExport
 from django_tables2.views import SingleTableMixin
 
+from django_tableaux.get_htmx import get_htmx
 from django_tableaux.table import build_table
 from .utils import (
     breakpoints,
-    define_columns,
-    save_columns_dict,
-    set_column,
     visible_columns,
-    save_per_page,
     build_templates_dictionary,
-    default_columns_dict,
-    strip_prefix_from_keys, parse_query_dict,
-)
-from django_tableaux.get_htmx import get_htmx
+    strip_prefix_from_keys, )
+
 logger = logging.getLogger(__name__)
 
 
@@ -97,9 +94,6 @@ class TableauxView(SingleTableMixin, TemplateView):
     indicator = True
     prefix = ""
     _bp = ""
-    _page = None
-    _per_page = None
-    _sort = None
     _order_by_changed = False
     _filter_changed = False
     query_dict = None
@@ -114,31 +108,67 @@ class TableauxView(SingleTableMixin, TemplateView):
         self.selected_ids = None
         self.templates = build_templates_dictionary(self.template_library)
         self.query_dict = {}
+        self.filter_data = {}
 
     def get(self, request, *args, **kwargs):
-        # parse the request.GET query dictionary into a regular dictionary
-        # stored in self.query_dict
         if request.htmx:
-            #TODO remove debug code
-            print("request.htmx", request.htmx.trigger, request.htmx.trigger_name)
             # htmx appends a form's values so the query string contains lists
             # Take the latest version from the list, and eliminate empty values
-            if "query_string" in request.GET:
-                qd = QueryDict(request.GET["query_string"], mutable=True)
-                if "prefix" in qd.keys():
-                    self.prefix = qd["prefix"]
-                parse_query_dict(self, qd)
-            parse_query_dict(self, request.GET)
+
+            # if "query_string" in request.GET:
+            #     qd = QueryDict(request.GET["query_string"], mutable=True)
+            #     # if "prefix" in qd.keys():
+            #     #     self.prefix = qd["prefix"]
+            #     parse_query_dict(self, qd)
+            # todo Parse?
+            # parse_query_dict(self, request.GET)
+
+            # self.query dict contains only the parameters passed in the hx-get
+            # This includes new filter values
+            self.query_dict = request.GET.dict()
+
+            # self.filter_data contains the old filter values
+            # it is used to populate the filter form when this is a modal request
+            # note values can be a list if checkboxes or multiselect
+            filter_raw = self.query_dict.pop("~filter_data", None)
+            if filter_raw is not None:
+                self.filter_data = {
+                    k: v[0] if len(v) == 1 else v
+                    for k, v in parse_qs(filter_raw).items()
+                }
+
+            # Update query_dict with any filter data that is not already present
+            # this will be the case when a modal filter is saved
+            for k, v in self.filter_data.items():
+                if k not in self.query_dict:
+                    self.query_dict[k] = v
+
+            # Detect any changes to the filter values which will prompt a page change
+            for k, v in self.query_dict.items():
+                if self.is_filter_name(k):
+                    if k in self.filter_data:
+                        if v != self.filter_data[k]:
+                            self._filter_changed = True
+                    elif v != "":
+                        self._filter_changed = True
+
+            # self.original_params contains the url query string
+            # only used to update the url
+            search_raw = self.query_dict.pop("search", "")
+            self.original_params = json.loads(search_raw) if search_raw else {}
+
+            self.prefix = self.query_dict.pop("prefix", "")
+            self.query_dict.pop("query_string", None)
             return get_htmx(self, request, *args, **kwargs)
         else:
-            print("GET request")
             self.prefix = request.GET.get("prefix", self.prefix)
-            query_dict = request.GET.copy().dict()
+            query_dict = request.GET.copy()
+            # todo
             self.query_dict = strip_prefix_from_keys(data=query_dict, prefix=self.prefix)
 
         table_class = self.get_table_class()
 
-        # If initial Get and table is responsive ask client to repeat the request with the breakpoint parameter
+        # If initial GET and table is responsive ask client to repeat the request with the breakpoint parameter
         if "bp" in request.GET:
             self._bp = request.GET["bp"]
         elif hasattr(table_class, "Meta") and hasattr(table_class.Meta, "responsive"):
@@ -153,11 +183,13 @@ class TableauxView(SingleTableMixin, TemplateView):
 
         return self.render_template(self.template_name)
 
-
     def is_filter_name(self, name: str) -> bool:
         if self.filterset_class is not None:
             return name in self.filterset_class.declared_filters.keys()
         return False
+
+    def is_state_param(self, name: str) -> bool:
+        return name[0] == "~" or self.is_filter_name(name)
 
     def get_queryset(self):
         if hasattr(self, "queryset"):
@@ -196,15 +228,28 @@ class TableauxView(SingleTableMixin, TemplateView):
         self.get_filtered_object_list()
         self.table = build_table(self, prefix=self.prefix, **kwargs)
         # Build the query string
-        prefixed = {}
-        for key, value in self.query_dict.items():
-            if key != "query_string":
-                if self.prefix and (self.is_filter_name(key) or key in self.LOCAL_PARAMS):
-                    prefixed[self.prefix + key] = value
-                else:
-                    prefixed[key] = value
-        query_string = urlencode(prefixed, doseq=True)
-        return_url = self.request.path + "?" + query_string if query_string else self.request.path
+        # prefixed = {}
+        # for key, value in self.query_dict.items():
+        #     if key != "query_string":
+        #         if self.prefix and (self.is_filter_name(key) or key in self.LOCAL_PARAMS):
+        #             prefixed[self.prefix + key] = value
+        #         else:
+        #             prefixed[key] = value
+        # query_string = urlencode(prefixed, doseq=True)
+
+        # clean up the query string by removing empty parameters relating to this tableaux
+        q_dict = {}
+        for k, v in self.query_dict.items():
+            if self.is_state_param(k):
+                if v != "":
+                    q_dict[k] = v
+            else:
+                q_dict[k] = v
+        query_string = urlencode(q_dict.items(), doseq=True)
+
+        url = self.request.htmx.current_url if self.request.htmx.current_url else self.request.path
+        parts = urlsplit(url)
+        return_url = urlunsplit((parts.scheme, parts.netloc, parts.path, query_string, parts.fragment))
 
         context = self.get_context_data(return_url=return_url, query_string=query_string)
         template_name = template_name or self.template_name
@@ -217,7 +262,8 @@ class TableauxView(SingleTableMixin, TemplateView):
         if hx_target:
             response = retarget(response, tableaux_id)
         if trigger_client:
-            response = trigger_client_event(response, name="initTableauxId", params={"id": f"{self.table.prefix}tableaux"}, after="swap")
+            response = trigger_client_event(response, name="initTableauxId",
+                                            params={"id": f"{self.table.prefix}tableaux"}, after="swap")
         if self.update_url and update_url:
             response = replace_url(response, return_url)
             response = push_url(response, return_url)
@@ -271,7 +317,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         )
         return exporter.response(filename=f"{self.export_filename}.{export_format}")
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict[str, Any]:
         context = {"view": self}
         if self.extra_context is not None:
             context.update(self.extra_context)
@@ -286,8 +332,7 @@ class TableauxView(SingleTableMixin, TemplateView):
                 and self.filter_style == TableauxView.FilterStyle.MODAL
         )
         context.update(
-            **kwargs,
-            url = self.request.path,
+            url=self.request.path,
             table=self.table,
             filter=self.filterset,
             object_list=self.get_filtered_object_list(),
@@ -295,18 +340,30 @@ class TableauxView(SingleTableMixin, TemplateView):
             buttons=buttons,
             actions=actions,
             rows=self.rows_list(),
-            page=self.query_dict.get("page", "1"),
-            per_page=self.query_dict.get("per_page", 10),
-            order_by=self.query_dict.get("order_by", ""),
+            page=self.query_dict.get("~page", "1"),
+            per_page=self.query_dict.get("~per_page", 10),
+            order_by=self.query_dict.get("~order_by", ""),
             bp=self._bp,
             breakpoints=breakpoints(self.table),
             templates=self.templates,
             toolbar_visible=toolbar_visible,
+            **kwargs
         )
-        context["filter"] = self.filterset
-        for key, value in self.query_dict.items():
-            if self.is_filter_name(key) and value:
-                context["filters"].append((key, value))
+        filter_dict = {}
+        if self.filterset_class:
+            for k, v in self.filterset.form.cleaned_data.items():
+                if v:
+                    filter_dict[k] = v
+            context["filter_dict"] = filter_dict
+            context["filter_data"] = urlencode(filter_dict)
+            # for key, value in self.filterset.filters.items():
+            #     # pkey = self.prefix+key
+            #     if key in self.query_dict:
+            #         context["filters"].append((key, self.query_dict[key]))
+        # context["filter"] = self.filterset
+        # for key, value in self.query_dict.items():
+        #     if self.is_filter_name(key) and value:
+        #         context["filters"].append((key, value))
         return context
 
     def get_initial_data(self):
@@ -318,12 +375,14 @@ class TableauxView(SingleTableMixin, TemplateView):
     def get_filterset(self, queryset=None):
         if self.filterset_class is None and self.filterset_fields:
             self.filterset_class = filterset_factory(self.model, fields=self.filterset_fields)
+        # use query_dict for initial get and filter_data thereafter
+        # data = self.filter_data if self.filter_data else self.query_dict
+        data = self.query_dict
         return self.filterset_class(
-            self.query_dict,
+            data=data,
             queryset=queryset,
             request=self.request
         ) if self.filterset_class else None
-
 
     def rows_list(self):
         return [10, 15, 20, 25, 50, 100]
@@ -525,7 +584,7 @@ class SelectedMixin:
     return_url = None
 
     def get(self, *args, **kwargs):
-        self.return_url=self.request.session.get("return_url")
+        self.return_url = self.request.session.get("return_url")
         return super().get(*args, **kwargs)
 
     def get_query_set(self):

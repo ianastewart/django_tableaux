@@ -1,26 +1,24 @@
-{% load querystring from django_tables2 %}
 {% if actions %}
-  <form id="action_form" class="action-form">{% csrf_token %}
+  <form id="{{ table.prefix }}action_form" class="action-form">{% csrf_token %}
     <input type="hidden" name="return_url" value="{{ return_url }}">
     <input type="hidden" name="selected_ids">
     <div style="display: flex; align-items: center;">
-      <div style="width:200px; height:1.5em">
-        <div id="selected" class="mt-0 small" style="margin-left: 0.75em"><span class="count">0</span> of {{ table.rows|length }} rows
+      <div class="d-flex flex-column justify-content-center" style="width:200px; height:2.5em;">
+        <div id="{{ table.prefix }}selected" class="selected-rows mt-0 ms-2" ><span class="selected-count">0</span> of {{ table.rows|length }} rows
           selected
         </div>
         <div style="display: none;">
-          <input type="checkbox" id="select_all" name="select_all" value="Select all" class="select-checkbox mb-2" style="margin-left: 0.5em">
-          <label class="ms-2 py-0" for="select_all">Select all rows</label>
+          <input type="checkbox" id="{{ table.prefix }}select_all" name="select_all" value="Select all" class="select-all-rows select-checkbox mb-2" style="margin-left: 0.5em">
+          <label class="ms-2 py-0" for="{{ table.prefix }}select_all">Select all rows</label>
         </div>
       </div>
-
       <div class="dropdown float-right">
-        <button class="btn btn-sm btn-primary dropdown-toggle mt-3" type="button" id="selectActionMenu" data-bs-toggle="dropdown">
+        <button class="select-action-menu btn btn-sm btn-primary dropdown-toggle mt-2" type="button" id="{{ table.prefix }}selectActionMenu" data-bs-toggle="dropdown">
           Select action
         </button>
         <div class="dropdown-menu">
           {% for action in actions %}
-            <button class="dropdown-item" name="{{ action.0 }}" hx-post  hx-target="#modals-here">{{ action.1 }}</button>
+            <button class="dropdown-item" name="{{ action.0 }}" hx-post="{{ url }}"  hx-target="#modals-here" hx-swap="innerHTML">{{ action.1 }}</button>
           {% endfor %}
         </div>
       </div>

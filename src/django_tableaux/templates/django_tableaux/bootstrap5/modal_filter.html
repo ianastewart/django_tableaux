@@ -2,7 +2,7 @@
 {% load django_bootstrap5 %}
 {% block modal_title %}<span class="h4">Filter</span>{% endblock %}
 {% block modal_content %}
-  <form id="{{ prefix }}modal_filter" {% if not filter_button %}
+  <form id="{{ prefix }}modal_filter_form" {% if not filter_button %}
         hx-get="{{ url }}" hx-trigger="change from #{{ prefix }}modal_filter" {% endif %}>
     {{ block.super }}
   </form>

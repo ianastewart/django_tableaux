@@ -10,8 +10,12 @@
 
 .tableaux .table {
     border-collapse: separate;
-    border-spacing: 0px;
+    border-spacing: 0;
     width: 100%
+}
+
+.tableaux th {
+    white-space: nowrap;
 }
 
 .tableaux th.orderable:hover {

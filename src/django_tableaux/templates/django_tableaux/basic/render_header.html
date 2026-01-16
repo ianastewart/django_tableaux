@@ -12,22 +12,18 @@
             {% if column.name == "selection" %}style="width: 30px;" {% endif %}
             {% endif %}
             {% if column.orderable %}
-            hx-target="#{{ table.prefix }}table_wrapper"
-              {#            hx-push-url="true"#}
-            hx-get="{{ url }}" hx-swap="outerHTML"
-            id="{{ table.prefix }}~sort~{{ column.name|lower }}"
-            title="Click to sort by {{ column.name|capfirst }}"
+              hx-target="#{{ table.prefix }}table_wrapper"
+              hx-get="{{ url }}" hx-swap="outerHTML"
+              id="{{ table.prefix }}~sort~{{ column.name|lower }}"
+              title="Click to sort by {{ column.name|capfirst }}"
             {% endif %}>
           {% if column.name == "selection" %}
-            <input type="checkbox" id="select_all_page" name="select_all_page" class="select-checkbox">
+            <input type="checkbox" id="{{ table.prefix }}select_all_page" name="select_all_page" class="select-all-page select-checkbox"
+            aria-label="Select all rows on this page">
           {% else %}
             <span style="display: inline-block;">
             {% if column.orderable %}
               {% if column.is_ordered %}
-{#                {% if "-" in column.order_by.0 %}{{ column.header }}&nbsp;&#9661;{% else %}{{ column.header }}&nbsp;#}
-{#                  &#9651;{% endif %}#}
-{#                              {% else %}#}
-{#                {{ column.header }}<span style="color: lightgrey;">&nbsp;&#x25c7;</span>#}
                 {% if "-" in column.order_by.0 %}{{ column.header }} {% include templates.svg_sort_down %}{% else %}{{ column.header }}
                  {% include templates.svg_sort_up %}{% endif %}
               {% else %}

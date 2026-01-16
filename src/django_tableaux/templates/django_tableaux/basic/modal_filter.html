@@ -2,7 +2,7 @@
 {% load bootstrap4 %}
 {% block modal_title %}<span class="h4">Filter</span>{% endblock %}
 {% block modal_content %}
-  <form method="get" action="">
+  <form id="{{ table.prefix }}modal_filter_form" method="get" action="{{ url }}">
     {{ block.super }}
   </form>
 {% endblock %}
