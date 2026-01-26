@@ -25,8 +25,14 @@
 .tableaux .sticky th {
     position: sticky;
     top: 0;
-    background-color: white;
+    background-color: red;
 }
+/*.sticky{*/
+/*    position: sticky;*/
+/*    top: 0;*/
+/*    background-color: white;*/
+/*}*/
+
 
 .tableaux .form-control.is-valid {
     background-image: none;

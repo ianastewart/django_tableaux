@@ -12,6 +12,7 @@ from django.core.paginator import Paginator
 from django_tableaux.utils import merge_attrs
 from typing import Any, Optional
 
+from .models import Pagination, FilterStyle
 from .utils import (
     breakpoints,
     define_columns,
@@ -33,39 +34,42 @@ def build_table(view, **kwargs):
         col = bound_column.column
         col.attrs = merge_attrs(col.attrs, table.attrs)
     table.request = view.request
+
     # Sorting
     order_by = view.query_dict.get("~order_by", "")
     if order_by:
         table.order_by = order_by
+
     # Pagination
-    kwargs = {"per_page": view.query_dict.get("~per_page", 10),
-              "page": view.query_dict.get("~page", 1)}
-    if hasattr(view, "paginator_class"):
-        kwargs["paginator_class"] = view.paginator_class
-    # Changing sort order resets page to 1
-    if view._order_by_changed or view._filter_changed:
+    if view.pagination != Pagination.NONE:
+        kwargs = {"per_page": view.query_dict.get("~per_page", view.page_size),
+                  "page": view.query_dict.get("~page", 1)}
+        if hasattr(view, "paginator_class"):
+            kwargs["paginator_class"] = view.paginator_class
+        # Changing sort order or filtering resets page to 1
+        if view._order_by_changed or view._filter_changed:
             kwargs["page"] = 1
-    silent = kwargs.pop("silent", True)
-    if not silent:
-        table.paginate(**kwargs)
-    else:
-        try:
+        silent = kwargs.pop("silent", True)
+        if not silent:
             table.paginate(**kwargs)
-        except PageNotAnInteger:
-            table.page = table.paginator.page(1)
-        except EmptyPage:
-            table.page = table.paginator.page(table.paginator.num_pages)
+        else:
+            try:
+                table.paginate(**kwargs)
+            except PageNotAnInteger:
+                table.page = table.paginator.page(1)
+            except EmptyPage:
+                table.page = table.paginator.page(table.paginator.num_pages)
 
     # This adds dynamic attributes to the table instance
     table.prefix = view.prefix
     table.indicator = view.indicator
-    table.last_sort = view.request.GET.get("sort", None)
-    table.filter = view.filterset
-    table.infinite_scroll = view.infinite_scroll
-    table.infinite_load = view.infinite_load
+    # table.last_sort = view.request.GET.get("sort", None)
+    # table.filter = view.filterset
+    # table.infinite_scroll = view.infinite_scroll
+    # table.infinite_load = view.infinite_load
     table.sticky_header = view.sticky_header
     # variables that control action when table is clicked
-    table.click_action = view.click_action.value
+    # table.click_action = view.click_action.value
     table.url = ""
     table.pk = False
     if view.click_url_name:
@@ -101,17 +105,15 @@ def build_table(view, **kwargs):
     table.columns_visible = [col for col in columns_dict if columns_dict[col]]
     set_column_states(table)
 
-    if table.filter:
-        table.filter.style = view.filter_style
         # If filter is in header, build list of filters in same sequence as columns
-        if view.filter_style == view.FilterStyle.HEADER:
-            table.header_fields = []
-            for col in table.sequence:
-                if table.columns.columns[col].visible:
-                    if col in table.filter.base_filters.keys():
-                        table.header_fields.append(table.filter.form[col])
-                    else:
-                        table.header_fields.append(None)
+    if view.filter_style == FilterStyle.HEADER:
+        table.header_fields = []
+        for col in table.sequence:
+            if table.columns.columns[col].visible:
+                if col in view.filterset.base_filters.keys():
+                    table.header_fields.append(view.filterset.form[col])
+                else:
+                    table.header_fields.append(None)
     if view.sticky_header:
         if "class" not in table.attrs["thead"]:
             table.attrs["thead"]["class"] = "sticky"

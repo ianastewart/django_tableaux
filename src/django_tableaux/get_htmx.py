@@ -16,9 +16,6 @@ def get_htmx(self, request, *args, **kwargs):
     trigger_name = request.htmx.trigger_name
     trigger = request.htmx.trigger
 
-    for k, v in self.query_dict.items():
-        print(k, v)
-
     if trigger_name is not None:
         match trigger_name:
             case "table_load":
@@ -81,7 +78,9 @@ def get_htmx(self, request, *args, **kwargs):
 
             case trigger if "filter_form" in trigger:
                 self._filter_changed = True
-                return self.render_tableaux()
+                if self.filter_button:
+                    return self.render_tableaux()
+                return self.render_table()
 
             case trigger if "~remove~" in trigger:
                 # remove a single filter
@@ -136,7 +135,7 @@ def get_htmx(self, request, *args, **kwargs):
                 # infinite scroll/load_more or click on row
                 if "_scroll" in request.GET:
                     page = int(self.query_dict.get("_pagex", 1)) + 1
-                    self.query_dict["page"] = str(page)
+                    self.query_dict["~page"] = str(page)
                     return self.render_template(self.templates["render_rows"], update_url=False)
 
                 return self.row_clicked(
@@ -202,10 +201,10 @@ def get_htmx(self, request, *args, **kwargs):
                     )
                 #
                 # Filter value changed
-                url = self._update_parameter(
-                    request, trigger_name, request.GET.get(trigger_name, "")
-                )
-                return HttpResponseClientRedirect(url)
+                # url = self._update_parameter(
+                #     request, trigger_name, request.GET.get(trigger_name, "")
+                # )
+                # return HttpResponseClientRedirect(url)
 
             case _:
                 pass

@@ -1,10 +1,9 @@
 {% load static %}
-<div class="tableaux" data-controller="tableaux" data-prefix="{{ table.prefix }}" id="{{ table.prefix }}tableaux"
+<div class="tableaux sticky" data-controller="tableaux" data-prefix="{{ table.prefix }}" id="{{ table.prefix }}tableaux"
      data-url="{{ url }}" hx-get="{{ url }}" hx-trigger="tableauxResize from:body"
      hx-include="#{{ table.prefix }}filter_form, #{{ table.prefix }}modal_filter_form"
      hx-vals="js:{ search: JSON.stringify(Object.fromEntries(new URLSearchParams(window.location.search)))}"
-     hx-swap="outerHTML"
-     style="background-color: white;">
+     hx-swap="outerHTML">
   {{ breakpoints|json_script:"breakpoints" }}
   <form id="{{ table.prefix }}filter_form" class="filter-form" hx-get="{{ url }}"
       {% if not view.filter_button %} hx-trigger="change from:#{{ table.prefix }}filter_form"{% endif %}>
@@ -13,9 +12,7 @@
     <input type="hidden" name="~per_page" value="{{ per_page }}">
     <input type="hidden" name="~order_by" value="{{ order_by }}">
     <input type="hidden" name="~filter_data" value="{{ filter_data }}">
-    <input type="hidden" name="bp" value="{{ bp }}"
-        {#    <input type="hidden" name="query_string" value="{{ query_string }}"#}
-    >
+    <input type="hidden" name="bp" value="{{ bp }}">
     {% include templates.toolbar_filter %}
     {% include templates.tb_filter_pills %}
   </form>
@@ -24,10 +21,11 @@
       {% include templates.toolbar_main %}
     </div>
   {% endif %}
-  {% include templates.render_table %}
-  {% include templates.render_paginator %}
+  {% include templates.render_page_wrapper %}
+  </div>
   <div class="tableaux-overlay htmx-indicator" id="{{ table.prefix }}tableaux_overlay">
     <img src="{% static "django_tableaux/svg/grid.svg" %}">
   </div>
+  <div id="modal-filter-here"></div>
 </div>
 

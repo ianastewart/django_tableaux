@@ -3,7 +3,7 @@
 {% block modal_title %}<span class="h4">Filter</span>{% endblock %}
 {% block modal_content %}
   <form id="{{ prefix }}modal_filter_form" {% if not filter_button %}
-        hx-get="{{ url }}" hx-trigger="change from #{{ prefix }}modal_filter" {% endif %}>
+        hx-get="{{ url }}" hx-trigger="change" hx-target="#modal-filter-here" hx-swap="innerHTML"{% endif %}>
     {{ block.super }}
   </form>
 {% endblock %}
@@ -19,11 +19,11 @@
 {% endblock %}
 {% block modal_footer %}
   <div class="modal-footer">
-    <button type="button" class="btn btn-primary" hx-get="{{ url }}" name="filter_reset" hx-include=#{{ prefix }}filter_form"
+    <button type="button" class="btn btn-primary" hx-get="{{ url }}" name="filter_reset" hx-include="#{{ prefix }}filter_form"
             onclick="closeModal()">Clear filters</button>
     {% if filter_button %}
       <button type="button" class="btn btn-primary" hx-get="{{ url }}" name="filter_button" hx-include="closest form, #{{ prefix }}filter_form"
-      onclick="closeModal()">Filter</button>
+     >Filter</button>
     {% endif %}
   </div>
 {% endblock %}

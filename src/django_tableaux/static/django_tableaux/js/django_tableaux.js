@@ -55,12 +55,18 @@ let tableaux = (function () {
     tb.initTableaux = function () {
         document.querySelectorAll('[data-controller="tableaux"]').forEach(tb.initElement);
     }
+
+
+    tb.reload = function () {
+        document.querySelectorAll(".tableaux")
+            .forEach(el => htmx.trigger(el, "tableauxResize"));
+    }
     return tb;
 })
 ();
 
 window.addEventListener("load", tableaux.initTableaux);
-
+window.addEventListener("reloadTableaux", tableaux.reload);
 document.body.addEventListener("initTableauxId", e => {
     const id = e.detail?.id;
     if (!id) return;
@@ -187,7 +193,7 @@ class TableController {
             .querySelectorAll("input[name='select-checkbox']")
             .forEach(el => {
                 const row = el.closest("tr");
-                    if (!row) return;
+                if (!row) return;
                 const selectedClass = this.container.getAttribute("selected");
                 if (el.checked) {
                     ids.push(el.value);

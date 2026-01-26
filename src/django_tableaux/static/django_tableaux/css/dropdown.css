@@ -1,0 +1,36 @@
+.tbx-dropdown-menu {
+    position: absolute;
+    top: 0; /* will be overridden by JS */
+    left: 0; /* will be overridden by JS */
+    margin: 0;
+    padding: 0;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    background-color: white;
+    border: 1px solid #ccc;
+    min-width: 180px;
+    z-index: 1000;
+}
+
+.tbx-dropdown-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.dropdown-menu li button {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border: none;
+    background: none;
+    color: black;
+}
+
+.tbx-dropdown-menu li button:hover {
+    background: #f2f2f2;
+}
+
+
+
+

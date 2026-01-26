@@ -1,6 +1,6 @@
 {% load django_tables2 %}
 {% load i18n %}
-{% if not table.infinite_scroll and not table.infinite_load %}
+{% if view.pagination == Pagination.PAGED %}
   {% if table.page and table.paginator.num_pages > 1 %}
     <nav aria-label="Table navigation">
       <ul class="pagination justify-content-center pb-2">

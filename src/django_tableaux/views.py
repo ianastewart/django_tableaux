@@ -1,6 +1,5 @@
 import json
 import logging
-from enum import IntEnum
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit, parse_qs
 
@@ -23,6 +22,7 @@ from django_tables2.export.export import TableExport
 from django_tables2.views import SingleTableMixin
 
 from django_tableaux.get_htmx import get_htmx
+from django_tableaux.models import Pagination, FilterStyle, ClickAction
 from django_tableaux.table import build_table
 from .utils import (
     breakpoints,
@@ -34,18 +34,6 @@ logger = logging.getLogger(__name__)
 
 
 class TableauxView(SingleTableMixin, TemplateView):
-    class FilterStyle(IntEnum):
-        NONE = 0
-        TOOLBAR = 1
-        MODAL = 2
-        HEADER = 3
-
-    class ClickAction(IntEnum):
-        NONE = 0
-        GET = 1
-        HX_GET = 2
-        CUSTOM = 3
-
     title = ""
     caption = ""
     template_name = "django_tableaux/tableaux.html"
@@ -59,22 +47,20 @@ class TableauxView(SingleTableMixin, TemplateView):
     filterset_class = None
     filterset_fields = None
     filterset = None
-
-    table_pagination = {"per_page": 10}
-    paginate_by = 10
-    infinite_scroll = False
-    infinite_load = False
-    #
-    context_filter_name = "filter"
     filter_style = FilterStyle.NONE
     filter_pills = False
     filter_button = False
     filter_clear_button = True
+    filter_clear_field = True
+    #
+    pagination = Pagination.PAGED
+    page_size = 10
+    infinite_scroll = False
+    infinite_load = False
     #
     column_settings = False
     column_reset = True
     row_settings = False
-    per_page = 15
 
     click_action = ClickAction.NONE
     click_url_name = ""
@@ -93,11 +79,6 @@ class TableauxView(SingleTableMixin, TemplateView):
     update_url = True
     indicator = True
     prefix = ""
-    _bp = ""
-    _order_by_changed = False
-    _filter_changed = False
-    query_dict = None
-    last_order_by = None
 
     LOCAL_PARAMS = ["page", "per_page", "order_by"]
 
@@ -109,19 +90,21 @@ class TableauxView(SingleTableMixin, TemplateView):
         self.templates = build_templates_dictionary(self.template_library)
         self.query_dict = {}
         self.filter_data = {}
+        self._order_by_changed = False
+        self._filter_changed = False
+        self._bp = ""
+
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        if "TABLEAUX_SETTINGS" in request.session.keys():
+            settings = request.session["TABLEAUX_SETTINGS"]
+            for k, v in settings.items():
+                self.__setattr__(k, v)
 
     def get(self, request, *args, **kwargs):
         if request.htmx:
             # htmx appends a form's values so the query string contains lists
             # Take the latest version from the list, and eliminate empty values
-
-            # if "query_string" in request.GET:
-            #     qd = QueryDict(request.GET["query_string"], mutable=True)
-            #     # if "prefix" in qd.keys():
-            #     #     self.prefix = qd["prefix"]
-            #     parse_query_dict(self, qd)
-            # todo Parse?
-            # parse_query_dict(self, request.GET)
 
             # self.query dict contains only the parameters passed in the hx-get
             # This includes new filter values
@@ -156,8 +139,9 @@ class TableauxView(SingleTableMixin, TemplateView):
             # only used to update the url
             search_raw = self.query_dict.pop("search", "")
             self.original_params = json.loads(search_raw) if search_raw else {}
-
             self.prefix = self.query_dict.pop("prefix", "")
+
+            # query_string is sent by the tableaux template tag
             self.query_dict.pop("query_string", None)
             return get_htmx(self, request, *args, **kwargs)
         else:
@@ -227,16 +211,6 @@ class TableauxView(SingleTableMixin, TemplateView):
     ):
         self.get_filtered_object_list()
         self.table = build_table(self, prefix=self.prefix, **kwargs)
-        # Build the query string
-        # prefixed = {}
-        # for key, value in self.query_dict.items():
-        #     if key != "query_string":
-        #         if self.prefix and (self.is_filter_name(key) or key in self.LOCAL_PARAMS):
-        #             prefixed[self.prefix + key] = value
-        #         else:
-        #             prefixed[key] = value
-        # query_string = urlencode(prefixed, doseq=True)
-
         # clean up the query string by removing empty parameters relating to this tableaux
         q_dict = {}
         for k, v in self.query_dict.items():
@@ -318,9 +292,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         return exporter.response(filename=f"{self.export_filename}.{export_format}")
 
     def get_context_data(self, **kwargs) -> dict[str, Any]:
-        context = {"view": self}
-        if self.extra_context is not None:
-            context.update(self.extra_context)
+
         buttons = self.get_buttons()
         actions = self.get_bulk_actions()
         toolbar_visible = (
@@ -329,26 +301,32 @@ class TableauxView(SingleTableMixin, TemplateView):
                 or self.row_settings
                 or self.column_settings
                 or self.filterset_class
-                and self.filter_style == TableauxView.FilterStyle.MODAL
+                and self.filter_style == FilterStyle.MODAL
         )
-        context.update(
-            url=self.request.path,
-            table=self.table,
-            filter=self.filterset,
-            object_list=self.get_filtered_object_list(),
-            filters=[],
-            buttons=buttons,
-            actions=actions,
-            rows=self.rows_list(),
-            page=self.query_dict.get("~page", "1"),
-            per_page=self.query_dict.get("~per_page", 10),
-            order_by=self.query_dict.get("~order_by", ""),
-            bp=self._bp,
-            breakpoints=breakpoints(self.table),
-            templates=self.templates,
-            toolbar_visible=toolbar_visible,
-            **kwargs
-        )
+        addon_after = '<span class="btn-close clear-field" onclick="clearInput(this)"></span>' if self.filter_clear_field else ''
+        context = {
+            "view": self,
+            "url": self.request.path,
+            "table": self.table,
+            "filter": self.filterset,
+            "object_list": self.get_filtered_object_list(),
+            "filters": [],
+            "addon_after": addon_after,
+            "buttons": buttons,
+            "actions": actions,
+            "rows": self.rows_list(),
+            "page": self.query_dict.get("~page", "1"),
+            "per_page": self.query_dict.get("~per_page", 10),
+            "order_by": self.query_dict.get("~order_by", ""),
+            "bp": self._bp,
+            "breakpoints": breakpoints(self.table),
+            "templates": self.templates,
+            "toolbar_visible": toolbar_visible,
+            "Pagination": Pagination,
+            "FilterStyle": FilterStyle,
+            "ClickAction": ClickAction,
+        }
+
         filter_dict = {}
         if self.filterset_class:
             for k, v in self.filterset.form.cleaned_data.items():
@@ -356,21 +334,7 @@ class TableauxView(SingleTableMixin, TemplateView):
                     filter_dict[k] = v
             context["filter_dict"] = filter_dict
             context["filter_data"] = urlencode(filter_dict)
-            # for key, value in self.filterset.filters.items():
-            #     # pkey = self.prefix+key
-            #     if key in self.query_dict:
-            #         context["filters"].append((key, self.query_dict[key]))
-        # context["filter"] = self.filterset
-        # for key, value in self.query_dict.items():
-        #     if self.is_filter_name(key) and value:
-        #         context["filters"].append((key, value))
         return context
-
-    def get_initial_data(self):
-        """Initial values for filter"""
-        if self.table_pagination:
-            return self.table_pagination.copy()
-        return {}
 
     def get_filterset(self, queryset=None):
         if self.filterset_class is None and self.filterset_fields:
@@ -564,7 +528,7 @@ class TableauxView(SingleTableMixin, TemplateView):
     def has_filter_toolbar(self):
         return (
                 self.filterset is not None
-                and self.filter_style == TableauxView.FilterStyle.TOOLBAR
+                and self.filter_style == FilterStyle.TOOLBAR
         )
 
     def has_filter_pills(self):

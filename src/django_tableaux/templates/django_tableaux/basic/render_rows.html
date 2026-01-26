@@ -6,14 +6,14 @@
   {% else %}
     {% include templates.render_row %}
   {% endif %}
-  {% if forloop.last and table.infinite_scroll and table.page.number >= table.page.paginator.num_pages %}
+  {% if forloop.last and view.pagination == Pagination.LOAD and table.page.number >= table.page.paginator.num_pages %}
     <tr>
       <td colspan="{{ table.columns|length }}" style="text-align: center">
         {% trans "-- End of data --" %}
       </td>
     </tr>
   {% endif %}
-  {% if forloop.last and table.infinite_load %}
+  {% if forloop.last and view.pagination == Pagination.LOAD %}
     {% if table.page.number < table.page.paginator.num_pages %}
       <tr id="{{ table.prefix }}_tr_last"
           hx-target="#{{ table.prefix }}_tr_last"

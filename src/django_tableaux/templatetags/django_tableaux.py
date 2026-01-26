@@ -26,11 +26,14 @@ def attrs(context):
 
 
 @register.simple_tag(takes_context=True)
-def tableaux(context, url_name, prefix=""):
-    try:
-        url = reverse(url_name)
-    except NoReverseMatch:
-        raise ImproperlyConfigured(f"Tableaux: {url_name} is not a valid url name")
+def tableaux(context, url_name="", prefix=""):
+    if url_name:
+        try:
+            url = reverse(url_name)
+        except NoReverseMatch:
+            raise ImproperlyConfigured(f"Tableaux: {url_name} is not a valid url name")
+    else:
+        url = context["request"].path
     query_string = context.request.GET.urlencode()
     hx_vals = f"js:{{ 'bp': BreakpointService.get(), 'prefix': '{prefix}', 'query_string': '{query_string}' }}"
     code = f'<div id="{prefix}load_{url_name}" name="table_load" hx-trigger="load" hx-get="{url}" hx-vals="{hx_vals}" hx-swap="outerHTML" hx-target="#{prefix}load_{url_name}"></div>'
