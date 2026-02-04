@@ -227,10 +227,11 @@ DEFAULT_LIBRARY = "basic"
 
 
 def get_template_library():
-    if hasattr(settings, "DJANGO_TABLEAUX_LIBRARY"):
-        return settings.DJANGO_TABLEAUX_LIBRARY
+    if hasattr(settings, "DJANGO_TABLEAUX"):
+        if isinstance(settings.DJANGO_TABLEAUX, dict):
+            return settings.DJANGO_TABLEAUX.get("templates_library", DEFAULT_LIBRARY)
+        raise ImproperlyConfigured("DJANGO_TABLEAUX in settings.py must be a dictionary")
     return DEFAULT_LIBRARY
-
 
 def template_paths(library=None):
     app_path = Path(apps.get_app_config(DEFAULT_APP).path)
@@ -238,16 +239,16 @@ def template_paths(library=None):
 
     custom_path = None
     library = library or get_template_library()
-    if library == "bootstrap4":
-        try:
-            from bootstrap4 import forms
-        except ImportError:
-            raise ImproperlyConfigured("django-bootstrap4 is not installed")
-    if library == "bootstrap5":
-        try:
-            from django_bootstrap5 import forms
-        except ImportError:
-            raise ImproperlyConfigured("django-bootstrap5 is not installed")
+    # if library == "bootstrap4":
+    #     try:
+    #         from bootstrap4 import forms
+    #     except ImportError:
+    #         raise ImproperlyConfigured("django-bootstrap4 is not installed")
+    # if library == "bootstrap5":
+    #     try:
+    #         from django_bootstrap5 import forms
+    #     except ImportError:
+    #         raise ImproperlyConfigured("django-bootstrap5 is not installed")
     if library != DEFAULT_LIBRARY:
         if library.startswith("templates/"):
             custom_path = Path(settings.BASE_DIR) / library

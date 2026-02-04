@@ -1,0 +1,22 @@
+{#<div class="dropdown">#}
+{#  <label for="rowsDropdown">Select number of rows to display</label>#}
+{#  <select id="rowsDropdown"#}
+{#          name="rows"#}
+{#          aria-describedby="dropdownHelp"#}
+{#          onchange="tableaux.set_page_size(this.value, '#{{ table.prefix }}tableaux')">#}
+{#    {% for row in rows %}#}
+{#      <option value="{{ row }}" {% if row == per_page %}selected{% endif %}>{{ row }} rows</option>#}
+{#    {% endfor %}#}
+{#  </select>#}
+{#</div>#}
+<details class="tbx-dropdown click-to-close">
+  <summary>Rows</summary>
+  <ul class="tbx-dropdown-content">
+    {% for row in rows %}
+      <li class="tbx-dropdown-item" id="{{ table.prefix }}~row~{{ row }}" hx-get="{{ url }}" hx-include="#{{ table.prefix }}filter_form"
+      hx-target="#{{ table.prefix }}page_wrapper">
+        {{ row }} rows
+      </li>
+    {% endfor %}
+  </ul>
+</details>

@@ -1,8 +1,8 @@
 <div class="flex-display flex-between">
   {% if actions %}
     <div class="flex-display flex-start">
-      {% include templates.tb_actions %}
-    {% include templates.dropdown %}
+            {% include templates.dropdown_actions %}
+
     </div>
   {% endif %}
   <div class="flex-display {% if actions %}justify-content-middle{% else %}justify-content-start{% endif %}">
@@ -10,9 +10,9 @@
       {% include templates.tb_buttons %}
     </div>
     <div class="flex-display flex-end">
-        {% include templates.tb_filter_button %}
-        {% include templates.tb_columns %}
-        {% include templates.tb_rows %}
+      {% include templates.tb_filter_button %}
+      {% include templates.dropdown_columns %}
+      {% include templates.dropdown_rows %}
     </div>
   </div>
 </div>

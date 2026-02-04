@@ -1,22 +1,45 @@
 {% load bootstrap4 %}
-<form id="id_filter_form" hx-target="#table_data" hx-post="">
+{% if view.has_filter_toolbar %}
+  <style>
+  .clear-field {
+      cursor: pointer;
+  }
+  </style>
   {{ filter.form.media }}
-  <input type="hidden" name="per_page" value="{{ per_page }}">
   {% if filter.form.visible_fields %}
-    <div class="d-flex">
-    {% for field in filter.form.visible_fields %}
-      {% include templates.tb_filter_field with toolbar=True field=field filter_button=filter_button %}
-    {% endfor %}
-    {% if filter_button %}
-      <div class="form-group pl-2 pt-2">
-        <label for="id_filter_button"></label>
-        <button type="submit" class="form-control btn btn-primary" style="width:150px; display: block;"
-                id="id_filter_button">
-          Filter
-        </button>
-      </div>
-    {% endif %}
-    <span name="clr_all" hx-get="{{ url }}" class="filter-clear mt-3 p-3"> Clear</span></p>
+    <div class="d-flex flex-wrap gap-2">
+      {% for field in filter.form.visible_fields %}
+        {% bootstrap_field field label_class="small mb-0" size="small" placeholder="" addon_after=addon_after %}
+      {% endfor %}
+      {# add labels to buttons to get even alignment #}
+      {% if view.filter_button %}
+        <div class="form-group">
+          <label for="{{ table.prefix }}id_filter_button"></label>
+          <button type="button" name="filter_button" class="form-control btn btn-primary btn-sm "
+                  id="{{ table.prefix }}id_filter_button" hx-get="{{ url }}" hx-include="closest form">
+            Filter
+          </button>
+        </div>
+      {% endif %}
+      {% if view.filter_clear_button %}
+        <div class="form-group">
+          <label for="{{ table.prefix }}id_filter_reset"></label>
+          <button type="button" name="filter_reset" class="form-control btn btn-outline-primary btn-sm"
+                  id="{{ table.prefix }}id_filter_reset" hx-get="{{ url }}">
+            Clear filters
+          </button>
+        </div>
+      {% endif %}
+    </div>
   {% endif %}
-  </div>
-</form>
+  <script>
+function clearInput(el) {
+  const input = el.closest(".input-group")?.querySelector("input");
+  if (!input) return;
+  input.value = "";
+  {#input.focus();#}
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+  </script>
+{% endif %}

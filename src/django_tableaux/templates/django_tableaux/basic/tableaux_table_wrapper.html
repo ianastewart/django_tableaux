@@ -8,11 +8,11 @@
     {% if view.caption %}
       <caption class="caption.attrs">{{ caption }}</caption>
     {% endif %}
-    {% include templates.render_header %}
+    {% include templates.tableaux_header %}
     <tbody {{ table.attrs.tbody.as_html }} id="{{ table.prefix }}tbody">
-    {% include templates.render_rows %}
+    {% include templates.tableaux_rows %}
     </tbody>
-    {% include templates.render_footer %}
+    {% include templates.tableaux_footer %}
   </table>
 </div>
 

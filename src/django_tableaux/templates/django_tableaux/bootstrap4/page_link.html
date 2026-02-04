@@ -1,8 +1,12 @@
-{# page number and text #}
-{% load i18n django_tables2 %}
-<li class="page-item {{ class }} {% if table.page.number == page_number %}active{% endif %}">
-  <div class="page-link" name="page" {% if text != '...' %}
-       hx-get="{% querystring table.prefixed_page_field=page_number %}" hx-push-url="true" {% endif %}>
-    {% if text != page_number %}{% trans text %}{% else %}{{ page_number }}{% endif %}
-  </div>
+{% load i18n %}
+<li class="{{ text|lower }} page-item {% if table.page.number == p %} active{% endif %}">
+  <span class="page-link"
+        {% if p != "..." %}
+        hx-get="{{ url }}" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML"
+        {% if table.indicator %}hx-indicator="#{{ table.prefix }}tableaux_overlay"{% endif %}
+        id="{{ table.prefix }}~page~{{p}}"
+        {% endif %}>
+      <span aria-hidden="true">{{ symbol }}</span>
+      {% trans text %}
+  </span>
 </li>

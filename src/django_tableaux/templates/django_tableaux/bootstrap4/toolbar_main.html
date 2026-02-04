@@ -1,7 +1,7 @@
 <div class="d-flex justify-content-between my-2">
   {% if actions %}
     <div class="d-flex justify-content-start">
-      {% include templates.tb_actions %}
+      {% include templates.dropdown_actions %}
     </div>
   {% endif %}
   <div class="d-sm-flex {% if actions %}justify-content-middle{% else %}justify-content-start{% endif %}">
@@ -12,8 +12,8 @@
     <div class="d-flex justify-content-end">
       <div class="btn-group">
         {% include templates.tb_filter_button %}
-        {% include templates.tb_columns %}
-        {% include templates.tb_rows %}
+        {% include templates.dropdown_columns %}
+        {% include templates.dropdown_rows %}
       </div>
     </div>
 </div>

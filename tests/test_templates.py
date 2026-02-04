@@ -30,10 +30,10 @@ def test_external_template_path():
 def test_get_template_path_custom():
     # requires full template name
     settings.DJANGO_TABLEAUX_LIBRARY = "picocss"
-    template_name="render_rows.html"
+    template_name="tableaux_rows.html"
     path = get_template_path(template_name)
     assert os.path.join(DEFAULT_LIB, template_name ) in path
-    template_name="tb_rows.html"
+    template_name="rows_dropdown.html"
     path = get_template_path(template_name)
     assert os.path.join("picocss", template_name ) in path
 

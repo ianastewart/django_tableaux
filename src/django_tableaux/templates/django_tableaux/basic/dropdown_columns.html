@@ -1,0 +1,20 @@
+{% if view.columns_control %}
+<details class="tbx-dropdown">
+  <summary>Columns</summary>
+  <ul class="tbx-dropdown-content">
+    {% if view.column_reset %}
+      <li class="tbx-dropdown-item"><a href="#" hx-include="#{{ table.prefix }}filter_form"
+             hx-get="{{ url }}" id="{{ table.prefix }}~col~_reset">Reset columns</a></li>
+      <div class="tb-dropdown-divider"></div>
+    {% endif %}
+    {% for column in table.column_states %}
+      <li class="tbx-dropdown-item">
+        <input type="checkbox"  name="{{ table.prefix }}~col~{{ column.0 }}" id="{{ table.prefix }}~col~{{ column.0 }}"
+               hx-get="{{ url }}" hx-include="#{{ table.prefix }}filter_form"
+            {% if column.2 %} checked {% endif %}>
+          {{ column.1 }}
+      </li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}

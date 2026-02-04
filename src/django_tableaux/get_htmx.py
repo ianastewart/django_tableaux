@@ -109,6 +109,9 @@ def get_htmx(self, request, *args, **kwargs):
                 # Change the number of rows to display
                 save_per_page(request, param)
                 self.query_dict["~per_page"] = param
+                # rows dropdown in basic updated the current value; bootstrap does not
+                if request.htmx.target == "page_wrapper":
+                    return self.render_table()
                 return self.render_tableaux()
 
             case trigger if "~sort~" in trigger:
@@ -136,7 +139,7 @@ def get_htmx(self, request, *args, **kwargs):
                 if "_scroll" in request.GET:
                     page = int(self.query_dict.get("_pagex", 1)) + 1
                     self.query_dict["~page"] = str(page)
-                    return self.render_template(self.templates["render_rows"], update_url=False)
+                    return self.render_template(self.templates["tableaux_rows"], update_url=False)
 
                 return self.row_clicked(
                     pk=trigger.split("_")[1],

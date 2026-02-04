@@ -1,20 +1,30 @@
-{% load static django_htmx %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
-        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-  {% include "django_tableaux/block_head.html" %}
-</head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-<div class="container">
-<h3>{{ view.title }}</h3>
-{% include "django_tableaux/block_content.html" %}
+{% load static %}
+{% spaceless %}
+<div class="tableaux sticky" data-controller="tableaux" data-prefix="{{ table.prefix }}" id="{{ table.prefix }}tableaux"
+     data-url="{{ url }}" hx-get="{{ url }}" hx-trigger="tableauxResize from:body"
+     hx-include="#{{ table.prefix }}filter_form, #{{ table.prefix }}modal_filter_form"
+     hx-vals="js:{ search: JSON.stringify(Object.fromEntries(new URLSearchParams(window.location.search)))}"
+     hx-swap="outerHTML">
+  {{ breakpoints|json_script:"breakpoints" }}
+  <form id="{{ table.prefix }}filter_form" class="filter-form" hx-get="{{ url }}"
+      {% if not view.filter_button %} hx-trigger="change from:#{{ table.prefix }}filter_form"{% endif %}>
+    <input type="hidden" name="prefix" value="{{ table.prefix }}">
+    <input type="hidden" name="~page" value="{{ page }}">
+    <input type="hidden" name="~per_page" value="{{ per_page }}">
+    <input type="hidden" name="~order_by" value="{{ order_by }}">
+    <input type="hidden" name="~filter_data" value="{{ filter_data }}">
+    <input type="hidden" name="bp" value="{{ bp }}">
+    {% include templates.toolbar_filter %}
+    {% include templates.tb_filter_pills %}
+  </form>
+  {% if toolbar_visible %}
+    {% include templates.toolbar_main %}
+  {% endif %}
+  {% include templates.tableaux_page_wrapper %}
 </div>
-{% include "django_tableaux/bootstrap4/block_scripts.html"%}
-</body>
-</html>
-
-
+<div class="tableaux-overlay htmx-indicator" id="{{ table.prefix }}tableaux_overlay">
+  <img alt="loading" src="{% static "django_tableaux/svg/grid.svg" %}">
+</div>
+<div id="modal-filter-here"></div>
+{% endspaceless %}
 

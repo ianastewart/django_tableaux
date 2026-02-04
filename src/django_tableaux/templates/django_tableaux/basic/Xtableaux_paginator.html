@@ -1,6 +1,6 @@
 {% load django_tables2 %}
 <section id="{{ table.prefix }}pagination" hx-target="#{{ table.prefix }}tableaux">
-  {% if view.paginator == Paginator.PAGED %}
+  {% if view.pagination == Paginator.PAGED %}
     {% if table.page and table.paginator.num_pages > 1 %}
       <nav aria-label="Table navigation">
         <ul class="pagination">

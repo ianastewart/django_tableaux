@@ -2,9 +2,9 @@
 {% load i18n %}
 {% for row in table.paginated_rows %}
   {% if table.mobile %}
-    {% include templates.render_row_mobile %}
+    {% include templates.tableaux_row_mobile %}
   {% else %}
-    {% include templates.render_row %}
+    {% include templates.tableaux_row %}
   {% endif %}
   {% if forloop.last and view.pagination == Pagination.LOAD and table.page.number >= table.page.paginator.num_pages %}
     <tr>

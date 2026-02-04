@@ -5,16 +5,16 @@ class Pagination(models.TextChoices):
     PAGED = "paged", "Paged"
     INFINITE = "infinite", "Infinite scroll"
     LOAD = "load", "Infinite load more"
-    NONE = "none", "No pagination"
+    NONE = "", "No pagination"
 
 class FilterStyle(models.TextChoices):
-    NONE = "none", "No filter"
+    NONE = "", "No filter"
     TOOLBAR = "toolbar", "Toolbar above table"
     MODAL = "modal", "Modal"
     HEADER = "header", "In table header"
 
 class ClickAction(models.TextChoices):
-    NONE = "none", "No action"
+    NONE = "", "No action"
     GET = "get", "GET request"
     HX_GET = "hx_get", "HX-GET request"
     CUSTOM = "custom", "Custom action"

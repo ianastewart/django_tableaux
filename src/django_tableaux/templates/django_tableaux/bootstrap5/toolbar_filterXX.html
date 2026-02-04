@@ -1,4 +1,4 @@
-{% load crispy_forms_tags %}
+{% load bootstrap4 %}
 {% if view.has_filter_toolbar %}
   <style>
   .clear-field {
@@ -9,8 +9,7 @@
   {% if filter.form.visible_fields %}
     <div class="d-flex flex-wrap gap-2">
       {% for field in filter.form.visible_fields %}
-        {{ field|as_crispy_field:"bootstrap5" }}{{ addon_after|safe }}
-{#        {% bootstrap_field field label_class="small mb-0" size="sm" placeholder="" addon_after=addon_after %}#}
+        {% bootstrap_field field label_class="small mb-0" size="sm" placeholder="" addon_after=addon_after %}
       {% endfor %}
 
       {# add labels to buttons to get even alignment #}

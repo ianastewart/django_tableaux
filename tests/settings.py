@@ -7,9 +7,9 @@ SECRET_KEY = "just-an-insecure-test-key"
 DEBUG = True
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
+    # "django.contrib.admin",
+    # "django.contrib.auth",
+    # "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
@@ -78,4 +78,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Django_bootstrap4 settings
 BOOTSTRAP4 = {"error_css_class": "", "success_css_class": ""}
-DJANGO_TABLEAUX_LIBRARY = "bootstrap4"
+DJANGO_TABLEAUX = {
+    "css": "bootstrap4"
+}

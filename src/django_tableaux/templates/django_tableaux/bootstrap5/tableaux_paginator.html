@@ -1,0 +1,21 @@
+{% load django_tables2 %}
+{% load i18n %}
+{% if view.pagination == Pagination.PAGED %}
+  {% if table.page and table.paginator.num_pages > 1 %}
+    <nav aria-label="Table navigation">
+      <ul class="pagination justify-content-center pb-2">
+        {% if table.page.has_previous %}
+          {% include templates.page_link with p=table.page.previous_page_number symbol="&laquo;" text="Previous" %}
+        {% endif %}
+        {% if table.page.has_previous or table.page.has_next %}
+            {% for p in table.page|table_page_range:table.paginator %}
+              {% include templates.page_link with text=p|stringformat:"s" %}
+            {% endfor %}
+        {% endif %}
+        {% if table.page.has_next %}
+          {% include templates.page_link with p=table.page.next_page_number symbol="&raquo;" text="Next" %}
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% endif %}

@@ -1,0 +1,109 @@
+/*.tb-dropdown {*/
+/*  position: relative;*/
+/*  display: inline-block;*/
+/*}*/
+
+/*.tb-dropdown-menu {*/
+/*  display: none;*/
+/*  position: absolute;*/
+/*  min-width: 10rem;*/
+/*  margin: 0;*/
+/*  padding: 0.5rem 0;*/
+/*  list-style: none;*/
+/*  background: white;*/
+/*  border: 1px solid #ccc;*/
+/*}*/
+
+/*!* Open when focused (keyboard or click) *!*/
+/*.tb-dropdown:focus-within .dropdown-menu {*/
+/*  display: block;*/
+/*}*/
+
+/*.tb-dropdown-menu a {*/
+/*  display: block;*/
+/*  padding: 0.5rem 1rem;*/
+/*  text-decoration: none;*/
+/*}*/
+
+/*.tb-dropdown-menu a:focus,*/
+/*.tb-dropdown-menu a:hover {*/
+/*  background: #eee;*/
+/*}*/
+
+/* Container */
+.tb-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Button */
+.tb-dropdown > summary {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #bbb;
+    background: #f8f8f8;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    font-size: 1rem;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    overflow: visible;
+    line-height: 1;
+}
+
+/* Remove default marker */
+.tb-dropdown > summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Menu */
+.tb-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    left: 0;
+    z-index: 1000;
+    min-width: 12rem;
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 0.25rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Items */
+.tb-dropdown-menu a {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: inherit;
+    text-decoration: none;
+}
+
+.tb-dropdown-menu a:hover,
+.tb-dropdown-menu a:focus {
+    background: #f0f0f0;
+}
+.dropdown > summary::after {
+  content: "";
+  display: block;
+  width: 0.4em;
+  height: 0.4em;
+  border-left: 0.2em solid transparent;
+  border-right: 0.2em solid transparent;
+  border-top: 0.25em solid #333;
+
+  position: absolute;
+  right: 1rem;          /* spacing from text */
+  top: 50%;
+  transform: translateY(-50%) rotate(0deg); /* center vertically */
+  transition: transform 0.2s ease;
+}
+
+
+/* Rotate caret when open */
+.dropdown[open] .caret {
+    transform: rotate(180deg);
+}

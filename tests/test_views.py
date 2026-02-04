@@ -1,20 +1,80 @@
 import pytest
-from django.db.models import *
-from django.test import RequestFactory, TestCase
+from django.conf import settings
+from django.test import RequestFactory
 from django_tables2 import tables
-from myapp.models import *
-from django_htmx.middleware import HtmxDetails
 
+from myapp.models import *
 from src.django_tableaux.views import TableauxView
+
+
+class View1(TableauxView):
+    pass
+
+class View2(TableauxView):
+    template_library = "bootstrap4"
+
+class View3(TableauxView):
+    settings = {
+        "template_library": "bootstrap4",
+    }
+
+def test_setup_with_no_overrides():
+    settings.DJANGO_TABLEAUX = {}
+    request = RequestFactory().get("/")
+    view = View1()
+    view.setup(request)
+    assert view.template_library == "basic"
+
+
+def test_setup_with_global_override():
+    settings.DJANGO_TABLEAUX = {
+        "template_library": "bootstrap4",
+    }
+    request = RequestFactory().get("/")
+    view = View1()
+    view.setup(request)
+    assert view.template_library == "bootstrap4"
+
+def test_setup_local_wins_over_global_override():
+    settings.DJANGO_TABLEAUX = {
+        "template_library": "bootstrap5",
+    }
+    request = RequestFactory().get("/")
+    view = View2()
+    view.setup(request)
+    assert view.template_library == "bootstrap4"
+
+def test_setup_with_local_override():
+    settings.DJANGO_TABLEAUX = {
+        "template_library": "bootstrap4",
+    }
+    request = RequestFactory().get("/")
+    view = View3()
+    view.setup(request)
+    assert view.template_library == "bootstrap4"
+
+def test_setup_local_wins_over_local_override():
+    settings.DJANGO_TABLEAUX = {
+        "template_library": "bootstrap5",
+    }
+    request = RequestFactory().get("/")
+    view = View3()
+    view.setup(request)
+    assert view.template_library == "bootstrap4"
+
+def test_setup_local_wins_over_global_override():
+    settings.DJANGO_TABLEAUX = {
+        "template_library": "bootstrap5",
+    }
+    request = RequestFactory().get("/")
+    view = View2()
+    view.setup(request)
+    assert view.template_library == "bootstrap4"
 
 
 class Table1(tables.Table):
     class Meta:
         model = Model1
-
-
-class View1(TableauxView):
-    model = Model1
 
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)

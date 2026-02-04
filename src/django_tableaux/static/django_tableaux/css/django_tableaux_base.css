@@ -63,6 +63,17 @@ button.close {
     display: flex;
 }
 
+.tableaux .clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: none;
+}
+
 /*!* optional dimming *!*/
 /*.htmx-request ~ .my-table {*/
 /*    opacity: 0.5;*/

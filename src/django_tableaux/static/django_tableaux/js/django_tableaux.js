@@ -74,6 +74,21 @@ document.body.addEventListener("initTableauxId", e => {
     if (!el) return;
     tableaux.initElement(el);
 });
+document.addEventListener('click', (e) => {
+    document.querySelectorAll('details.tbx-dropdown[open]').forEach(details => {
+        if (details.contains(e.target)) {
+            if (e.target.tagName !== "SUMMARY") {
+                if (details.classList.contains('click-to-close')) {
+                    const summary = details.querySelector('summary');
+                    summary.textContent = e.target.textContent;
+                    details.removeAttribute('open');
+                }
+            }
+        } else {
+            details.removeAttribute('open'); // close if clicked outside
+        }
+    });
+});
 
 
 class TableController {

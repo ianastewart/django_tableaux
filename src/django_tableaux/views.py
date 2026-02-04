@@ -3,6 +3,7 @@ import logging
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit, parse_qs
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import QueryDict, HttpResponse
 from django.shortcuts import render
@@ -37,7 +38,7 @@ class TableauxView(SingleTableMixin, TemplateView):
     title = ""
     caption = ""
     template_name = "django_tableaux/tableaux.html"
-    template_library = None
+    template_library = "basic"
 
     table_data = None
     table_class = None
@@ -55,12 +56,10 @@ class TableauxView(SingleTableMixin, TemplateView):
     #
     pagination = Pagination.PAGED
     page_size = 10
-    infinite_scroll = False
-    infinite_load = False
     #
-    column_settings = False
+    columns_control = False
     column_reset = True
-    row_settings = False
+    rows_control = False
 
     click_action = ClickAction.NONE
     click_url_name = ""
@@ -80,6 +79,8 @@ class TableauxView(SingleTableMixin, TemplateView):
     indicator = True
     prefix = ""
 
+    debug = False
+
     LOCAL_PARAMS = ["page", "per_page", "order_by"]
 
     def __init__(self, **kwargs):
@@ -87,7 +88,6 @@ class TableauxView(SingleTableMixin, TemplateView):
         self.table = None
         self.selected_objects = None
         self.selected_ids = None
-        self.templates = build_templates_dictionary(self.template_library)
         self.query_dict = {}
         self.filter_data = {}
         self._order_by_changed = False
@@ -95,17 +95,29 @@ class TableauxView(SingleTableMixin, TemplateView):
         self._bp = ""
 
     def setup(self, request, *args, **kwargs):
+        """
+        Apply settings to attributes that are not already defined on the instance
+        First do local settings dict then global one
+        """
+        def _setup(cls, my_settings):
+            for k, v in my_settings.items():
+                if hasattr(cls, k):
+                    if k not in cls.__dict__:
+                        setattr(cls, k, v)
+                # else:
+                #     raise ImproperlyConfigured(f"Invalid variable '{k}' in tableaux settings")
+
         super().setup(request, *args, **kwargs)
-        if "TABLEAUX_SETTINGS" in request.session.keys():
-            settings = request.session["TABLEAUX_SETTINGS"]
-            for k, v in settings.items():
-                self.__setattr__(k, v)
+        #cls = type(self)
+        if hasattr(self, "settings"):
+            _setup(self, self.settings)
+        if hasattr(settings, "DJANGO_TABLEAUX"):
+            _setup(self, settings.DJANGO_TABLEAUX)
+        self.templates = build_templates_dictionary(self.template_library)
+        print(self.template_library)
 
     def get(self, request, *args, **kwargs):
         if request.htmx:
-            # htmx appends a form's values so the query string contains lists
-            # Take the latest version from the list, and eliminate empty values
-
             # self.query dict contains only the parameters passed in the hx-get
             # This includes new filter values
             self.query_dict = request.GET.dict()
@@ -201,6 +213,17 @@ class TableauxView(SingleTableMixin, TemplateView):
         """
         return self.object_list
 
+    def make_query_string(self):
+        # clean up the query string by removing empty parameters relating to this tableaux
+        q_dict = {}
+        for k, v in self.query_dict.items():
+            if self.is_state_param(k):
+                if v != "":
+                    q_dict[k] = v
+            else:
+                q_dict[k] = v
+        return urlencode(q_dict.items(), doseq=True)
+
     def render_template(
             self,
             template_name=None,
@@ -211,17 +234,10 @@ class TableauxView(SingleTableMixin, TemplateView):
     ):
         self.get_filtered_object_list()
         self.table = build_table(self, prefix=self.prefix, **kwargs)
-        # clean up the query string by removing empty parameters relating to this tableaux
-        q_dict = {}
-        for k, v in self.query_dict.items():
-            if self.is_state_param(k):
-                if v != "":
-                    q_dict[k] = v
-            else:
-                q_dict[k] = v
-        query_string = urlencode(q_dict.items(), doseq=True)
-
-        url = self.request.htmx.current_url if self.request.htmx.current_url else self.request.path
+        query_string = self.make_query_string()
+        url = self.request.path
+        if self.request.htmx:
+            url = self.request.htmx.current_url
         parts = urlsplit(url)
         return_url = urlunsplit((parts.scheme, parts.netloc, parts.path, query_string, parts.fragment))
 
@@ -245,13 +261,13 @@ class TableauxView(SingleTableMixin, TemplateView):
 
     def render_table(self):
         return self.render_template(
-            template_name=self.templates["render_table"],
+            template_name=self.templates["tableaux_table_wrapper"],
             hx_target="table_wrapper",
         )
 
     def render_tableaux(self, hx_target="tableaux"):
         return self.render_template(
-            template_name=self.templates["render_tableaux"],
+            template_name=self.templates["tableaux"],
             hx_target=hx_target,
         )
 
@@ -259,7 +275,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         self.get_filtered_object_list()
         self.table = build_table(self)
         context = self.get_context_data(oob=True, row=self.table.rows[0])
-        template_name = template_name or self.templates["render_row"]
+        template_name = template_name or self.templates["tableaux_row"]
         return self.render_to_response(template_name, context)
 
     def render_to_response(self, template_name, context, **response_kwargs):
@@ -298,8 +314,8 @@ class TableauxView(SingleTableMixin, TemplateView):
         toolbar_visible = (
                 len(buttons) > 0
                 or len(actions) > 0
-                or self.row_settings
-                or self.column_settings
+                or self.rows_control
+                or self.columns_control
                 or self.filterset_class
                 and self.filter_style == FilterStyle.MODAL
         )
@@ -310,6 +326,7 @@ class TableauxView(SingleTableMixin, TemplateView):
             "table": self.table,
             "filter": self.filterset,
             "object_list": self.get_filtered_object_list(),
+            "templates": self.templates,
             "filters": [],
             "addon_after": addon_after,
             "buttons": buttons,
@@ -320,7 +337,6 @@ class TableauxView(SingleTableMixin, TemplateView):
             "order_by": self.query_dict.get("~order_by", ""),
             "bp": self._bp,
             "breakpoints": breakpoints(self.table),
-            "templates": self.templates,
             "toolbar_visible": toolbar_visible,
             "Pagination": Pagination,
             "FilterStyle": FilterStyle,
@@ -416,8 +432,9 @@ class TableauxView(SingleTableMixin, TemplateView):
                     request.session["selected_ids"] = self.selected_ids
                     bits = request.htmx.trigger_name.split("_")
                     export_format = bits[-1] if bits[-1] != "export" else "csv"
-                    path = request.path + request.POST["query"]
-                    if len(request.POST["query"]) > 1:
+                    query_string = self.make_query_string()
+                    path = request.path + query_string
+                    if len(request.query_string) > 1:
                         path += "&"
                     return HttpResponseClientRedirect(
                         f"{path}_export={export_format}&_subset={subset}"
