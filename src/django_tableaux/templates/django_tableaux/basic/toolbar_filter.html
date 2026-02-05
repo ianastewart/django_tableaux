@@ -7,34 +7,36 @@
   </style>
   {{ filter.form.media }}
   {% if filter.form.visible_fields %}
-    <div class="d-flex flex-wrap gap-2">
+    <div style="display:flex; flex-wrap:wrap; gap: .5em">
       {% for field in filter.form.visible_fields %}
-        {% render_field field class="tbx-form-control" %}
-{#        {% bootstrap_field field label_class="small mb-0" size="sm" placeholder="" addon_after=addon_after %}#}
+        <div class="form-group">
+        <label for="{{ table.prefix }}{{ field.id_for_label }}" class="small m-0" >{{ field.label }}</label>
+        {% render_field field class="form-control" id=prefix|add:field.id_for_label %}
+        </div>
       {% endfor %}
 
       {# add labels to buttons to get even alignment #}
       {% if view.filter_button %}
-        <div class="form-group">
-          <label for="{{ table.prefix }}id_filter_button"></label>
-          <button type="button" name="filter_button" class="tbx-form-control btn btn-primary btn-sm "
+{#        <div class="form-group">#}
+{#          <label for="{{ table.prefix }}id_filter_button">&nbsp;</label>#}
+          <button type="button" name="filter_button" class="btn btn-primary btn-sm " style="margin-top: 1em;"
                   id="{{ table.prefix }}id_filter_button" hx-get="{{ url }}" hx-include="closest form">
             Filter
           </button>
-        </div>
+{#        </div>#}
       {% endif %}
       {% if view.filter_clear_button %}
-        <div class="form-group">
-          <label for="{{ table.prefix }}id_filter_reset"></label>
-          <button type="button" name="filter_reset" class="form-control btn btn-outline-primary btn-sm"
+          <button type="button" name="filter_reset" class="btn btn-primary btn-sm" style="margin-top: 1em;"
                   id="{{ table.prefix }}id_filter_reset" hx-get="{{ url }}">
             Clear filters
           </button>
-        </div>
-      {% endif %}
+       {% endif %}
     </div>
   {% endif %}
   <script>
+
+
+
 function clearInput(el) {
   const input = el.closest(".input-group")?.querySelector("input");
   if (!input) return;

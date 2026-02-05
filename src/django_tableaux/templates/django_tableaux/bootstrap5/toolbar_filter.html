@@ -1,4 +1,4 @@
-{% load crispy_forms_tags %}
+{% load widget_tweaks crispy_forms_tags %}
 {% if view.has_filter_toolbar %}
   <style>
   .clear-field {
@@ -7,16 +7,18 @@
   </style>
   {{ filter.form.media }}
   {% if filter.form.visible_fields %}
-    <div class="d-flex flex-wrap gap-2">
+    <div style="display:flex; flex-wrap:wrap; gap: .5em">
       {% for field in filter.form.visible_fields %}
-        {{ field|as_crispy_field:"bootstrap5" }}{{ addon_after|safe }}
-{#        {% bootstrap_field field label_class="small mb-0" size="sm" placeholder="" addon_after=addon_after %}#}
+        <div>
+        <label for="{{ table.prefix }}{{ field.id_for_label }}" class="col-form-label small m-0" >{{ field.label }}</label>
+        {% render_field field class="form-control" id=prefix|add:field.id_for_label %}
+        </div>
       {% endfor %}
 
       {# add labels to buttons to get even alignment #}
       {% if view.filter_button %}
         <div class="form-group">
-          <label for="{{ table.prefix }}id_filter_button"></label>
+          <label for="{{ table.prefix }}id_filter_button" class="small m-0">&nbsp;</label>
           <button type="button" name="filter_button" class="form-control btn btn-primary btn-sm "
                   id="{{ table.prefix }}id_filter_button" hx-get="{{ url }}" hx-include="closest form">
             Filter
@@ -25,7 +27,7 @@
       {% endif %}
       {% if view.filter_clear_button %}
         <div class="form-group">
-          <label for="{{ table.prefix }}id_filter_reset"></label>
+          <label for="{{ table.prefix }}id_filter_reset" class="small m-0">&nbsp;</label>
           <button type="button" name="filter_reset" class="form-control btn btn-outline-primary btn-sm"
                   id="{{ table.prefix }}id_filter_reset" hx-get="{{ url }}">
             Clear filters
