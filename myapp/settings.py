@@ -4,9 +4,8 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-# sys.path.insert(0, os.path.join(BASE_DIR, "src"))
-# sys.path.insert(0, os.path.join(BASE_DIR, "myapp"))
-# print(BASE_DIR)
+sys.path.insert(0, str(BASE_DIR / "src"))
+
 SECRET_KEY = "just-an-insecure-test-key"
 DEBUG = True
 
@@ -22,7 +21,7 @@ INSTALLED_APPS = [
     "django_tables2",
     "django_filters",
     "django_htmx",
-    "src.django_tableaux",
+    "django_tableaux",
     "myapp",
     "tests",
 ]
@@ -82,6 +81,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Django_bootstrap4 settings
 BOOTSTRAP4 = {"error_css_class": "", "success_css_class": ""}
-DJANGO_TABLEAUX= {
-    "templates_library": "bootstrap5"
-}
+DJANGO_TABLEAUX = {"templates_library": "bootstrap5"}
