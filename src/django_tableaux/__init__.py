@@ -26,4 +26,4 @@ Full documentation to follow.
 0.7.6 Extensive rework to support multiple tables and component-like table handling
 """
 
-__version__ = "0.7.6"
+__version__ = "0.7.7"

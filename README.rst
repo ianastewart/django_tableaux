@@ -45,10 +45,10 @@ django-bootstrap5. These packages are not automatically installed; you must inst
 Templates and css
 -----------------
 
-Django-tableaux splits table generation into a hierarchy of templates. To properly predsnt tables a minimum
+Django-tableaux splits table generation into a hierarchy of templates. To properly present tables a minimum
 amount of css is required. We provide a native css file that defines the minimum to make tables look good,
-and include variables that you can set to tailor the colours and presentation. We also supply ready-built
+and include CSS variables that you can set to tailor the colours and presentation. We also supply ready-built
 templates adapted for bootstrap version 5 and version 4.
 
-Internally, templates are organised in a template dictionary. This dictioanary is loaded with a mixture of
+Internally, templates are organised in a template dictionary. This dictionary is loaded with a mixture of
 basic templates, bootstrap-specific templates is required, and optionally user-specific templates.

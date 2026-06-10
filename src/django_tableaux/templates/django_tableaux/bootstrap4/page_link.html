@@ -2,7 +2,7 @@
 <li class="{{ text|lower }} page-item {% if table.page.number == p %} active{% endif %}">
   <span class="page-link"
         {% if p != "..." %}
-        hx-get="{{ url }}" hx-target="#{{ table.prefix }}table_wrapper" hx-swap="outerHTML"
+        hx-get="{{ url }}" hx-target="#{{ table.prefix }}page_wrapper" hx-swap="outerHTML"
         {% if table.indicator %}hx-indicator="#{{ table.prefix }}tableaux_overlay"{% endif %}
         id="{{ table.prefix }}~page~{{p}}"
         {% endif %}>

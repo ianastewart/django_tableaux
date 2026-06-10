@@ -126,7 +126,8 @@ class TableauxView(SingleTableMixin, TemplateView):
             # it is used to populate the filter form when this is a modal request
             # note values can be a list if checkboxes or multiselect
             filter_raw = self.query_dict.pop("~filter_data", None)
-            if filter_raw is not None:
+            has_prior_filter_state = bool(filter_raw)
+            if has_prior_filter_state:
                 self.filter_data = {
                     k: v[0] if len(v) == 1 else v
                     for k, v in parse_qs(filter_raw).items()
@@ -138,19 +139,24 @@ class TableauxView(SingleTableMixin, TemplateView):
                 if k not in self.query_dict:
                     self.query_dict[k] = v
 
-            # Detect any changes to the filter values which will prompt a page change
-            for k, v in self.query_dict.items():
-                if self.is_filter_name(k):
-                    if k in self.filter_data:
-                        if v != self.filter_data[k]:
+            # Detect filter changes only when we have prior state to compare against.
+            # Without it we cannot distinguish a genuinely new filter from a form field
+            # that always renders with a default non-empty value (e.g. ChoiceFilter with
+            # empty_label=None).  Explicit filter actions (filter_form, filter_button,
+            # ~remove~, filter_reset) set _filter_changed directly in get_htmx.py.
+            if has_prior_filter_state:
+                for k, v in self.query_dict.items():
+                    if self.is_filter_name(k):
+                        if k in self.filter_data:
+                            if v != self.filter_data[k]:
+                                self._filter_changed = True
+                        elif v != "":
                             self._filter_changed = True
-                    elif v != "":
-                        self._filter_changed = True
 
             # self.original_params contains the url query string
             # only used to update the url
-            search_raw = self.query_dict.pop("search", "")
-            self.original_params = json.loads(search_raw) if search_raw else {}
+            # search_raw = self.query_dict.pop("search", "")
+            # self.original_params = json.loads(search_raw) if search_raw else {}
             self.prefix = self.query_dict.pop("prefix", "")
 
             # query_string is sent by the tableaux template tag
@@ -319,7 +325,7 @@ class TableauxView(SingleTableMixin, TemplateView):
                 or self.filterset_class
                 and self.filter_style == FilterStyle.MODAL
         )
-        addon_after = '<span class="btn-close clear-field" onclick="clearInput(this)"></span>' if self.filter_clear_field else ''
+        addon_after = '<span class="clear-field small" onclick="clearInput(this)">X</span>' if self.filter_clear_field else ''
         context = {
             "view": self,
             "url": self.request.path,
@@ -345,10 +351,10 @@ class TableauxView(SingleTableMixin, TemplateView):
 
         filter_dict = {}
         if self.filterset_class:
-            for k, v in self.filterset.form.cleaned_data.items():
-                if v:
-                    filter_dict[k] = v
-            context["filter_dict"] = filter_dict
+            # for k, v in self.filterset.form.cleaned_data.items():
+            #     if v:
+            #         filter_dict[k] = v
+            context["filter_dict"] = self.filterset.form.cleaned_data
             context["filter_data"] = urlencode(filter_dict)
         return context
 
@@ -356,7 +362,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         if self.filterset_class is None and self.filterset_fields:
             self.filterset_class = filterset_factory(self.model, fields=self.filterset_fields)
         # use query_dict for initial get and filter_data thereafter
-        # data = self.filter_data if self.filter_data else self.query_dict
+        #data = self.filter_data if self.filter_data else self.query_dict
         data = self.query_dict
         return self.filterset_class(
             data=data,

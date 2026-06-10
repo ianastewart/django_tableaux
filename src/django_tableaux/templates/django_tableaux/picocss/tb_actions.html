@@ -1,9 +1,7 @@
-{% load querystring from django_tables2 %}
 {% if actions %}
     <form id="action_form" hx-target="#modals-here">{% csrf_token %}
     <ul>
   <li>
-    <input type="hidden" name="query" value={% querystring without "page" "per_page" %}>
     <input type="hidden" name="selected_ids">
     <ul style="display: flex; align-items: center;">
       <div>

@@ -230,13 +230,6 @@ class TableController {
     /* ---------- table click ---------- */
 
     tableClick(e) {
-        const ClickAction = {
-            NONE: "0",
-            GET: "1",
-            HX_GET: "2",
-            CUSTOM: "3"
-        };
-
         const target = e.target;
         if (target.closest('th')) return;
 
@@ -283,19 +276,19 @@ class TableController {
                     target: `#${target.id}`
                 });
             } else if (this.table.dataset.url) {
-                let url = table.dataset.url;
-                if (this.table.dataset.pk) url += pk;
+                let url = this.table.dataset.url;
+                if (this.table.dataset.pk) url = url.replace('__pk__', pk);
 
-                if (table.dataset.click === ClickAction.GET) {
+                if (this.table.dataset.click === "get") {
                     window.location.assign(url);
-                } else if (this.table.dataset.click === ClickAction.HX_GET) {
+                } else if (this.table.dataset.click === "hx_get") {
                     window.htmx.ajax("GET", url, {
                         source: this.table,
                         target: this.table.dataset.target,
                         values: formObject
                     });
                 }
-            } else if (this.table.dataset.click === ClickAction.CUSTOM) {
+            } else if (this.table.dataset.click === "custom") {
                 target.id = `_td_${pk}_${col}_${window.outerWidth}`;
                 window.htmx.ajax("GET", "", {
                     source: `#${target.id}`,

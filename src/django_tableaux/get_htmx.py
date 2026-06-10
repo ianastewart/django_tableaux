@@ -37,6 +37,7 @@ def get_htmx(self, request, *args, **kwargs):
             case "filter_button":
                 # filter button pressed
                 self.query_dict.pop(trigger_name)
+                self._filter_changed = True
                 return self.render_tableaux()
 
             case "filter_reset":
@@ -45,6 +46,7 @@ def get_htmx(self, request, *args, **kwargs):
                 for key in keys:
                     if self.is_filter_name(key):
                         self.query_dict.pop(key)
+                self._filter_changed = True
                 return self.render_tableaux()
 
             case _:
@@ -78,13 +80,12 @@ def get_htmx(self, request, *args, **kwargs):
 
             case trigger if "filter_form" in trigger:
                 self._filter_changed = True
-                if self.filter_button:
-                    return self.render_tableaux()
-                return self.render_table()
+                return self.render_tableaux()
 
             case trigger if "~remove~" in trigger:
                 # remove a single filter
                 self.query_dict.pop(param)
+                self._filter_changed = True
                 return self.render_tableaux()
 
             case trigger if "~col~" in trigger:
@@ -132,7 +133,10 @@ def get_htmx(self, request, *args, **kwargs):
             case trigger if "~page~" in trigger:
                 # new page
                 self.query_dict["~page"] = param
-                return self.render_tableaux()
+                return self.render_template(
+                    template_name=self.templates["tableaux_page_wrapper"],
+                    hx_target="page_wrapper",
+                )
 
             case trigger if "_tr_" in trigger:
                 # infinite scroll/load_more or click on row

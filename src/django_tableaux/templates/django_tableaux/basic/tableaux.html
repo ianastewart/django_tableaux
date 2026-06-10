@@ -3,7 +3,7 @@
 <div class="tableaux sticky" data-controller="tableaux" data-prefix="{{ table.prefix }}" id="{{ table.prefix }}tableaux"
      data-url="{{ url }}" hx-get="{{ url }}" hx-trigger="tableauxResize from:body"
      hx-include="#{{ table.prefix }}filter_form, #{{ table.prefix }}modal_filter_form"
-     hx-vals="js:{ search: JSON.stringify(Object.fromEntries(new URLSearchParams(window.location.search)))}"
+{#     hx-vals="js:{ search: JSON.stringify(Object.fromEntries(new URLSearchParams(window.location.search)))}"#}
      hx-swap="outerHTML">
   {{ breakpoints|json_script:"breakpoints" }}
   <form id="{{ table.prefix }}filter_form" class="filter-form" hx-get="{{ url }}"
@@ -22,9 +22,9 @@
   {% endif %}
   {% include templates.tableaux_page_wrapper %}
 </div>
-<div class="tableaux-overlay htmx-indicator" id="{{ table.prefix }}tableaux_overlay">
+<div class="tableaux-overlay htmx-indicator" id="{{ table.prefix }}tableaux_overlay" hx-swap-oob="true">
   <img alt="loading" src="{% static "django_tableaux/svg/grid.svg" %}">
 </div>
-<div id="modal-filter-here"></div>
+<div id="modal-filter-here" hx-swap-oob="true"></div>
 {% endspaceless %}
 

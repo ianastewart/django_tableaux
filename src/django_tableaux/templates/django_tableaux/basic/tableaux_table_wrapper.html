@@ -2,7 +2,7 @@
 <div id="{{ table.prefix }}table_wrapper" style="overflow-x: auto;
     {% if view.fixed_height > 0 %} overflow-y: auto; max-height: {{ view.fixed_height }}px;{% endif %}">
 <table {% if table.attrs.class %}{% render_attrs table.attrs %}{% else %}class="table" {% endif %}
-         id="{{ table.prefix }}table" data-click="{{ view.click_action }}"
+         id="{{ table.prefix }}table" data-click="{{ view.click_action.value }}"
          data-url="{{ table.url }}"
          data-pk={{ table.pk }} data-target="{{ table.target }}">
     {% if view.caption %}

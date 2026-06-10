@@ -69,7 +69,6 @@ def build_table(view, **kwargs):
     # table.infinite_load = view.infinite_load
     table.sticky_header = view.sticky_header
     # variables that control action when table is clicked
-    # table.click_action = view.click_action.value
     table.url = ""
     table.pk = False
     if view.click_url_name:
@@ -79,7 +78,10 @@ def build_table(view, **kwargs):
         except NoReverseMatch:
             # Detail or update views have a pk
             try:
-                table.url = reverse(view.click_url_name, kwargs={"pk": 0})[:-2]
+                sentinel = 987654321
+                table.url = reverse(view.click_url_name, kwargs={"pk": sentinel}).replace(
+                    str(sentinel), "__pk__"
+                )
                 table.pk = True
             except NoReverseMatch:
                 raise (
