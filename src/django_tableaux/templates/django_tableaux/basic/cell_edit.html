@@ -5,7 +5,7 @@
     {% for field in form.visible_fields %}
       {% if field.name == column %}
         {% if field.widget_type == "select" %}
-          <select name="{{ column }}" class="td-editing" title="" id="editcol_{{ column }}_{{ id }}">
+          <select name="{{ column }}" class="td-editing" title="" id="editcol_{{ column }}_{{ id }}" hx-post="" >
             {% for widget in field.subwidgets %}
               <option value="{{ widget.data.value|stringformat:'s' }}" {% if widget.data.value == value %}selected{% endif %}>{{ widget.data.label }}</option>
             {% endfor %}

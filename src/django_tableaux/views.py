@@ -29,7 +29,8 @@ from .utils import (
     breakpoints,
     visible_columns,
     build_templates_dictionary,
-    strip_prefix_from_keys, )
+    strip_prefix_from_keys,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         Apply settings to attributes that are not already defined on the instance
         First do local settings dict then global one
         """
+
         def _setup(cls, my_settings):
             for k, v in my_settings.items():
                 if hasattr(cls, k):
@@ -108,13 +110,16 @@ class TableauxView(SingleTableMixin, TemplateView):
                 #     raise ImproperlyConfigured(f"Invalid variable '{k}' in tableaux settings")
 
         super().setup(request, *args, **kwargs)
-        #cls = type(self)
+        # cls = type(self)
         if hasattr(self, "settings"):
             _setup(self, self.settings)
         if hasattr(settings, "DJANGO_TABLEAUX"):
             _setup(self, settings.DJANGO_TABLEAUX)
         self.templates = build_templates_dictionary(self.template_library)
         print(self.template_library)
+
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         if request.htmx:
@@ -166,7 +171,9 @@ class TableauxView(SingleTableMixin, TemplateView):
             self.prefix = request.GET.get("prefix", self.prefix)
             query_dict = request.GET.copy()
             # todo
-            self.query_dict = strip_prefix_from_keys(data=query_dict, prefix=self.prefix)
+            self.query_dict = strip_prefix_from_keys(
+                data=query_dict, prefix=self.prefix
+            )
 
         table_class = self.get_table_class()
 
@@ -231,12 +238,12 @@ class TableauxView(SingleTableMixin, TemplateView):
         return urlencode(q_dict.items(), doseq=True)
 
     def render_template(
-            self,
-            template_name=None,
-            hx_target=None,
-            trigger_client=True,
-            update_url=True,
-            **kwargs,
+        self,
+        template_name=None,
+        hx_target=None,
+        trigger_client=True,
+        update_url=True,
+        **kwargs,
     ):
         self.get_filtered_object_list()
         self.table = build_table(self, prefix=self.prefix, **kwargs)
@@ -245,9 +252,13 @@ class TableauxView(SingleTableMixin, TemplateView):
         if self.request.htmx:
             url = self.request.htmx.current_url
         parts = urlsplit(url)
-        return_url = urlunsplit((parts.scheme, parts.netloc, parts.path, query_string, parts.fragment))
+        return_url = urlunsplit(
+            (parts.scheme, parts.netloc, parts.path, query_string, parts.fragment)
+        )
 
-        context = self.get_context_data(return_url=return_url, query_string=query_string)
+        context = self.get_context_data(
+            return_url=return_url, query_string=query_string
+        )
         template_name = template_name or self.template_name
         response = TemplateResponse(
             request=self.request,
@@ -258,8 +269,12 @@ class TableauxView(SingleTableMixin, TemplateView):
         if hx_target:
             response = retarget(response, tableaux_id)
         if trigger_client:
-            response = trigger_client_event(response, name="initTableauxId",
-                                            params={"id": f"{self.table.prefix}tableaux"}, after="swap")
+            response = trigger_client_event(
+                response,
+                name="initTableauxId",
+                params={"id": f"{self.table.prefix}tableaux"},
+                after="swap",
+            )
         if self.update_url and update_url:
             response = replace_url(response, return_url)
             response = push_url(response, return_url)
@@ -314,18 +329,21 @@ class TableauxView(SingleTableMixin, TemplateView):
         return exporter.response(filename=f"{self.export_filename}.{export_format}")
 
     def get_context_data(self, **kwargs) -> dict[str, Any]:
-
         buttons = self.get_buttons()
         actions = self.get_bulk_actions()
         toolbar_visible = (
-                len(buttons) > 0
-                or len(actions) > 0
-                or self.rows_control
-                or self.columns_control
-                or self.filterset_class
-                and self.filter_style == FilterStyle.MODAL
+            len(buttons) > 0
+            or len(actions) > 0
+            or self.rows_control
+            or self.columns_control
+            or self.filterset_class
+            and self.filter_style == FilterStyle.MODAL
         )
-        addon_after = '<span class="clear-field small" onclick="clearInput(this)">X</span>' if self.filter_clear_field else ''
+        addon_after = (
+            '<span class="clear-field small" onclick="clearInput(this)">X</span>'
+            if self.filter_clear_field
+            else ""
+        )
         context = {
             "view": self,
             "url": self.request.path,
@@ -348,6 +366,7 @@ class TableauxView(SingleTableMixin, TemplateView):
             "FilterStyle": FilterStyle,
             "ClickAction": ClickAction,
         }
+        context.update(kwargs)
 
         filter_dict = {}
         if self.filterset_class:
@@ -360,15 +379,17 @@ class TableauxView(SingleTableMixin, TemplateView):
 
     def get_filterset(self, queryset=None):
         if self.filterset_class is None and self.filterset_fields:
-            self.filterset_class = filterset_factory(self.model, fields=self.filterset_fields)
+            self.filterset_class = filterset_factory(
+                self.model, fields=self.filterset_fields
+            )
         # use query_dict for initial get and filter_data thereafter
-        #data = self.filter_data if self.filter_data else self.query_dict
+        # data = self.filter_data if self.filter_data else self.query_dict
         data = self.query_dict
-        return self.filterset_class(
-            data=data,
-            queryset=queryset,
-            request=self.request
-        ) if self.filterset_class else None
+        return (
+            self.filterset_class(data=data, queryset=queryset, request=self.request)
+            if self.filterset_class
+            else None
+        )
 
     def rows_list(self):
         return [10, 15, 20, 25, 50, 100]
@@ -549,10 +570,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         return f"{request.path}?{query_dict.urlencode()}"
 
     def has_filter_toolbar(self):
-        return (
-                self.filterset is not None
-                and self.filter_style == FilterStyle.TOOLBAR
-        )
+        return self.filterset is not None and self.filter_style == FilterStyle.TOOLBAR
 
     def has_filter_pills(self):
         return self.filter_pills

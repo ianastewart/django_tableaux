@@ -19,7 +19,7 @@ def _view_name(request):
 
 
 def save_columns_dict(
-        request: HttpRequest, table: Table, bp: str, columns_dict: dict[str, bool]
+    request: HttpRequest, table: Table, bp: str, columns_dict: dict[str, bool]
 ):
     key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
     request.session[key] = columns_dict
@@ -51,7 +51,7 @@ def default_columns_dict(table: Table) -> dict[str, bool]:
 
 
 def set_column(
-        request: HttpRequest, table: Table, bp: str, column_name: str, checked: bool
+    request: HttpRequest, table: Table, bp: str, column_name: str, checked: bool
 ) -> list:
     column_dict = load_columns_dict(request, table, bp)
     column_dict[column_name] = checked
@@ -59,7 +59,7 @@ def set_column(
 
 
 def visible_columns(
-        request: HttpRequest, table_class, bp_dict: dict[str, int], bp: str
+    request: HttpRequest, table_class, bp_dict: dict[str, int], bp: str
 ) -> list[str]:
     """
     Return the list of visible column names in correct sequence
@@ -154,7 +154,7 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
 
 
 def resolve_breakpoint(
-        bp_dict: dict[str, int], responsive: dict[str, dict], bp: str
+    bp_dict: dict[str, int], responsive: dict[str, dict], bp: str
 ) -> dict | None:
     """
     Finds the most appropriate responsive configuration for a given breakpoint.
@@ -230,8 +230,11 @@ def get_template_library():
     if hasattr(settings, "DJANGO_TABLEAUX"):
         if isinstance(settings.DJANGO_TABLEAUX, dict):
             return settings.DJANGO_TABLEAUX.get("templates_library", DEFAULT_LIBRARY)
-        raise ImproperlyConfigured("DJANGO_TABLEAUX in settings.py must be a dictionary")
+        raise ImproperlyConfigured(
+            "DJANGO_TABLEAUX in settings.py must be a dictionary"
+        )
     return DEFAULT_LIBRARY
+
 
 def template_paths(library=None):
     app_path = Path(apps.get_app_config(DEFAULT_APP).path)
@@ -289,14 +292,14 @@ def build_templates_dictionary(library=None):
 
 
 def render_editable_link(
-        record=None, column=None, value=None, url="", template_name=None
+    record=None, column=None, value=None, url="", template_name=None
 ):
     """
-    Call this code in a 'render_foo' method with a table definition
+    Call this code in a 'render_foo' method within a table definition
     Renders an <a> tag with hx-get to fetch a form that is rendered inside the cell
     Note this does not use the template library code
     """
-    template_name = template_name or "django_tableaux/bootstrap4/cell_edit.html"
+    template_name = template_name or "django_tableaux/basic/cell_edit.html"
     if record is None or column is None or value is None:
         raise ValueError(
             "Function render_editable() requires record, column and value to be specified"
@@ -306,14 +309,14 @@ def render_editable_link(
 
 
 def render_editable_form(
-        request, record_id, column=None, value=None, form_class=None, template_name=None
+    request, record_id, column=None, value=None, form_class=None, template_name=None
 ):
     """
     Render a form inside a table cell so the cell value can be edited
     django_tableaux.js will send hx-post when a value is selected or entered
     Note this does not use the template library code
     """
-    template_name = template_name or "django_tableaux/bootstrap4/cell_edit.html"
+    template_name = template_name or "django_tableaux/basic/cell_edit.html"
     form = form_class(initial={"value": value})
     context = {"id": record_id, "column": column, "value": value, "form": form}
     return render(request, template_name, context)
@@ -326,7 +329,7 @@ def parse_query_dict(self: object, in_dict: QueryDict):
         if key != "query_string":
             if self.prefix:
                 if key.startswith(self.prefix):
-                    key = key[len(self.prefix):]
+                    key = key[len(self.prefix) :]
             if values[-1] != "":
                 self.query_dict[key] = values[-1]
             elif key in self.query_dict:
@@ -341,13 +344,18 @@ def strip_prefix_from_keys(data: dict, prefix: str) -> dict:
     }
 
 
-def add_prefix_to_keys(data: dict, prefix: str, exclude: list[str] | None = None) -> dict:
+def add_prefix_to_keys(
+    data: dict, prefix: str, exclude: list[str] | None = None
+) -> dict:
     exclude = exclude or []
-    return {(key if key in exclude else prefix + key): value for key, value in data.items()}
+    return {
+        (key if key in exclude else prefix + key): value for key, value in data.items()
+    }
 
 
 AttrValue = Union[str, dict]
 AttrDict = Dict[str, dict[str, AttrValue]]
+
 
 def merge_attrs(col_attrs: AttrDict, table_attrs: AttrDict) -> AttrDict:
     """
@@ -358,7 +366,7 @@ def merge_attrs(col_attrs: AttrDict, table_attrs: AttrDict) -> AttrDict:
     - Class/style concatenated with column last
     - Callables preserved
     """
-    RELEVANT_SECTIONS =  {"th", "td", "cell"}
+    RELEVANT_SECTIONS = {"th", "td", "cell"}
     result: Dict[str, dict[str, AttrValue]] = {}
 
     # First, copy column attributes
