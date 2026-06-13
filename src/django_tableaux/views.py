@@ -464,12 +464,9 @@ class TableauxView(SingleTableMixin, TemplateView):
                     request.session["selected_ids"] = self.selected_ids
                     bits = request.htmx.trigger_name.split("_")
                     export_format = bits[-1] if bits[-1] != "export" else "csv"
-                    query_string = self.make_query_string()
-                    path = request.path + query_string
-                    if len(request.query_string) > 1:
-                        path += "&"
+                    separator = "&" if "?" in self.return_url else "?"
                     return HttpResponseClientRedirect(
-                        f"{path}_export={export_format}&_subset={subset}"
+                        f"{self.return_url}{separator}_export={export_format}&_subset={subset}"
                     )
 
                 response = self.handle_action(request, request.htmx.trigger_name)

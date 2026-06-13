@@ -1,5 +1,6 @@
 {% load static %}
 {% spaceless %}
+<div class="tableaux-wrapper" id="{{ table.prefix }}tableaux_wrapper">
 <div class="tableaux sticky" data-controller="tableaux" data-prefix="{{ table.prefix }}" id="{{ table.prefix }}tableaux"
      data-url="{{ url }}" hx-get="{{ url }}" hx-trigger="tableauxResize from:body"
      hx-include="#{{ table.prefix }}filter_form, #{{ table.prefix }}modal_filter_form"
@@ -7,7 +8,8 @@
      hx-swap="outerHTML">
   {{ breakpoints|json_script:"breakpoints" }}
   <form id="{{ table.prefix }}filter_form" class="filter-form" hx-get="{{ url }}"
-      {% if not view.filter_button %} hx-trigger="change from:#{{ table.prefix }}filter_form"{% endif %}>
+      {% if not view.filter_button %} hx-trigger="change from:#{{ table.prefix }}filter_form"{% endif %}
+      {% if table.indicator %} hx-indicator="#{{ table.prefix }}tableaux_overlay"{% endif %}>
     <input type="hidden" name="prefix" value="{{ table.prefix }}">
     <input type="hidden" name="~page" value="{{ page }}">
     <input type="hidden" name="~per_page" value="{{ per_page }}">
@@ -24,6 +26,7 @@
 </div>
 <div class="tableaux-overlay htmx-indicator" id="{{ table.prefix }}tableaux_overlay" hx-swap-oob="true">
   <img alt="loading" src="{% static "django_tableaux/svg/grid.svg" %}">
+</div>
 </div>
 <div id="modal-filter-here" hx-swap-oob="true"></div>
 {% endspaceless %}

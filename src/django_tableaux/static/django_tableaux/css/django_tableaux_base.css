@@ -1,11 +1,37 @@
-.tableaux {
+/* Wrapper owns the flex sizing and provides the positioning context for the overlay */
+.tableaux-wrapper {
     position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
-.tableaux .table-wrapper {
-    overflow-y: scroll;
-    max-height: 300px;
-    border-bottom: 1px;
+.tableaux {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+[id$="page_wrapper"] {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+[id$="table_wrapper"] {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+[id$="page_wrapper"] nav {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding-top: 4px;
 }
 
 .tableaux .table {
@@ -25,7 +51,7 @@
 .tableaux .sticky th {
     position: sticky;
     top: 0;
-    background-color: red;
+    background-color: #c2f4d7;
 }
 /*.sticky{*/
 /*    position: sticky;*/
