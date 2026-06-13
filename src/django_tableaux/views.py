@@ -192,6 +192,10 @@ class TableauxView(SingleTableMixin, TemplateView):
 
         return self.render_template(self.template_name)
 
+    def get_initial_data(self):
+        # get initial data for the filterset
+        return {}
+
     def is_filter_name(self, name: str) -> bool:
         if self.filterset_class is not None:
             return name in self.filterset_class.declared_filters.keys()
@@ -293,7 +297,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         )
 
     def render_row(self, id=None, template_name=None):
-        self.get_filtered_object_list()
+        self.object_list = self.get_filtered_object_list().filter(id=id)
         self.table = build_table(self)
         context = self.get_context_data(oob=True, row=self.table.rows[0])
         template_name = template_name or self.templates["tableaux_row"]
@@ -384,7 +388,8 @@ class TableauxView(SingleTableMixin, TemplateView):
             )
         # use query_dict for initial get and filter_data thereafter
         # data = self.filter_data if self.filter_data else self.query_dict
-        data = self.query_dict
+        data = self.get_initial_data()
+        data.update(self.query_dict)
         return (
             self.filterset_class(data=data, queryset=queryset, request=self.request)
             if self.filterset_class

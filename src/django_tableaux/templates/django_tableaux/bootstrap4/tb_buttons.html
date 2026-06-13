@@ -1,8 +1,8 @@
 {% load django_tableaux %}
 {% if buttons %}
-  <div class="button-group mr-4">
+  <div class="button-group">
     {% for button in buttons %}
-      {{ button|render_button }}
+      <span class="mx-2">{{ button|render_button }}</span>
     {% endfor %}
   </div>
 {% endif %}

@@ -10,7 +10,7 @@ class Button:
     name = ""
 
     def __init__(
-        self, content="", name="", typ="button", css="btn btn-primary", **kwargs
+        self, content="", name="", typ="button", css="btn btn-primary btn-sm", **kwargs
     ):
         if content == "" and name == "":
             raise ValueError("Button content and name cannot both be empty.")

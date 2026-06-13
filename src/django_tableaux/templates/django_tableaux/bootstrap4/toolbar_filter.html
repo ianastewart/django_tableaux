@@ -9,7 +9,7 @@
   {% if filter.form.visible_fields %}
     <div style="display:flex; flex-wrap:wrap; gap: .5em">
       {% for field in filter.form.visible_fields %}
-        {% bootstrap_field field label_class="small mb-0" size="small" placeholder="" addon_after=addon_after %}
+        {% bootstrap_field field label_class="small mb-0" size="small" placeholder="" %}
       {% endfor %}
       {# add labels to buttons to get even alignment #}
       {% if view.filter_button %}
