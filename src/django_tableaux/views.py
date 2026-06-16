@@ -66,7 +66,8 @@ class TableauxView(SingleTableMixin, TemplateView):
     click_url_name = ""
     click_target = "#modals-here"
     #
-    sticky_header = False
+    sticky_header = True
+    sticky_pagination = True
     fixed_height = 0
     buttons = []
     object_name = ""
@@ -123,49 +124,46 @@ class TableauxView(SingleTableMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         if request.htmx:
-            # self.query dict contains only the parameters passed in the hx-get
-            # This includes new filter values
             self.query_dict = request.GET.dict()
-
-            # self.filter_data contains the old filter values
-            # it is used to populate the filter form when this is a modal request
-            # note values can be a list if checkboxes or multiselect
-            filter_raw = self.query_dict.pop("~filter_data", None)
-            has_prior_filter_state = bool(filter_raw)
-            if has_prior_filter_state:
-                self.filter_data = {
+            query_string = self.query_dict.pop("query_string", None)
+            if query_string:
+                self.query_dict = {
                     k: v[0] if len(v) == 1 else v
-                    for k, v in parse_qs(filter_raw).items()
+                    for k, v in parse_qs(query_string).items()
                 }
+            else:
+                # self.filter_data contains the old filter values
+                # it is used to populate the filter form when this is a modal request
+                # note values can be a list if checkboxes or multiselect
+                filter_raw = self.query_dict.pop("~filter_data", None)
+                has_prior_filter_state = bool(filter_raw)
+                if has_prior_filter_state:
+                    self.filter_data = {
+                        k: v[0] if len(v) == 1 else v
+                        for k, v in parse_qs(filter_raw).items()
+                    }
 
-            # Update query_dict with any filter data that is not already present
-            # this will be the case when a modal filter is saved
-            for k, v in self.filter_data.items():
-                if k not in self.query_dict:
-                    self.query_dict[k] = v
+                # Update query_dict with any filter data that is not already present
+                # this will be the case when a modal filter is saved
+                for k, v in self.filter_data.items():
+                    if k not in self.query_dict:
+                        self.query_dict[k] = v
 
-            # Detect filter changes only when we have prior state to compare against.
-            # Without it we cannot distinguish a genuinely new filter from a form field
-            # that always renders with a default non-empty value (e.g. ChoiceFilter with
-            # empty_label=None).  Explicit filter actions (filter_form, filter_button,
-            # ~remove~, filter_reset) set _filter_changed directly in get_htmx.py.
-            if has_prior_filter_state:
-                for k, v in self.query_dict.items():
-                    if self.is_filter_name(k):
-                        if k in self.filter_data:
-                            if v != self.filter_data[k]:
+                # Detect filter changes only when we have prior state to compare against.
+                # Without it we cannot distinguish a genuinely new filter from a form field
+                # that always renders with a default non-empty value (e.g. ChoiceFilter with
+                # empty_label=None).  Explicit filter actions (filter_form, filter_button,
+                # ~remove~, filter_reset) set _filter_changed directly in get_htmx.py.
+                if has_prior_filter_state:
+                    for k, v in self.query_dict.items():
+                        if self.is_filter_name(k):
+                            if k in self.filter_data:
+                                if v != self.filter_data[k]:
+                                    self._filter_changed = True
+                            elif v != "":
                                 self._filter_changed = True
-                        elif v != "":
-                            self._filter_changed = True
 
-            # self.original_params contains the url query string
-            # only used to update the url
-            # search_raw = self.query_dict.pop("search", "")
-            # self.original_params = json.loads(search_raw) if search_raw else {}
             self.prefix = self.query_dict.pop("prefix", "")
-
-            # query_string is sent by the tableaux template tag
-            self.query_dict.pop("query_string", None)
             return get_htmx(self, request, *args, **kwargs)
         else:
             self.prefix = request.GET.get("prefix", self.prefix)
@@ -361,7 +359,7 @@ class TableauxView(SingleTableMixin, TemplateView):
             "actions": actions,
             "rows": self.rows_list(),
             "page": self.query_dict.get("~page", "1"),
-            "per_page": self.query_dict.get("~per_page", 10),
+            "per_page": self.query_dict.get("~per_page", 20),
             "order_by": self.query_dict.get("~order_by", ""),
             "bp": self._bp,
             "breakpoints": breakpoints(self.table),
@@ -374,9 +372,6 @@ class TableauxView(SingleTableMixin, TemplateView):
 
         filter_dict = {}
         if self.filterset_class:
-            # for k, v in self.filterset.form.cleaned_data.items():
-            #     if v:
-            #         filter_dict[k] = v
             context["filter_dict"] = self.filterset.form.cleaned_data
             context["filter_data"] = urlencode(filter_dict)
         return context
@@ -397,7 +392,7 @@ class TableauxView(SingleTableMixin, TemplateView):
         )
 
     def rows_list(self):
-        return [10, 15, 20, 25, 50, 100]
+        return [20, 50, 100]
 
     def get_buttons(self):
         return []

@@ -14,24 +14,21 @@
     min-height: 0;
 }
 
-[id$="page_wrapper"] {
+.tbx-scroll {
+    overflow-y: auto;
+}
+
+.tbx-page-wrapper.tbx-sticky {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
 }
 
-[id$="table_wrapper"] {
+.tbx-table-wrapper.tbx-sticky {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-}
-
-[id$="page_wrapper"] nav {
-    position: sticky;
-    bottom: 0;
-    background: white;
-    padding-top: 4px;
 }
 
 .tableaux .table {

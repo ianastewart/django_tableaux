@@ -1,4 +1,6 @@
-  <div id="{{ table.prefix }}page_wrapper">
+  <div id="{{ table.prefix }}page_wrapper" class="tbx-page-wrapper{% if view.sticky_pagination %} tbx-sticky{% endif %}">
     {% include templates.tableaux_table_wrapper %}
+  {% if view.pagination == Pagination.PAGED %}
     {% include templates.tableaux_paginator %}
+  {% endif %}
   </div>

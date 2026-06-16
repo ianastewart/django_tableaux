@@ -2,10 +2,11 @@ from django.db import models
 
 # These models are used inside the Tableaux view
 class Pagination(models.TextChoices):
-    PAGED = "paged", "Paged"
+    NONE = "", "No pagination"
+    PAGED = "paged", "Paged at bottom"
+    PAGED_TOP = "paged_top", "Paged at top"
     INFINITE = "infinite", "Infinite scroll"
     LOAD = "load", "Infinite load more"
-    NONE = "", "No pagination"
 
 class FilterStyle(models.TextChoices):
     NONE = "", "No filter"

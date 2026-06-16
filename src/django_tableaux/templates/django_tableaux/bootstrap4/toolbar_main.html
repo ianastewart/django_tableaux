@@ -23,6 +23,9 @@
       {% include templates.dropdown_actions %}
     {% include templates.tb_buttons %}
     </div>
+  {% if view.pagination.value == "paged_top" %}
+  {% include templates.tableaux_paginator %}
+  {% endif %}
     <div class="d-flex justify-content-end">
       <div class="btn-group">
         {% include templates.tb_filter_button %}
