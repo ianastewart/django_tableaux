@@ -6,7 +6,7 @@ from django.template.response import TemplateResponse
 from django_htmx.http import HttpResponseClientRedirect
 
 from django_tableaux.utils import define_columns, save_columns_dict, default_columns_dict, set_column, save_per_page, \
-    visible_columns
+    visible_columns, set_select_column
 
 
 def get_htmx(self, request, *args, **kwargs):
@@ -91,7 +91,8 @@ def get_htmx(self, request, *args, **kwargs):
             case trigger if "~col~" in trigger:
                 # Switch column visibility on or off
                 col_name = param
-                table = self.get_table()
+                table = self.get_table_class()(data=[])
+                set_select_column(table)
                 if col_name == "_reset":
                     # Reset to default columns
                     define_columns(table, self.get_breakpoint_values(), self._bp)

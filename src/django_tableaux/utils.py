@@ -97,7 +97,7 @@ def set_select_column(table):
             table.sequence.insert(0, table.select_name)
 
 
-def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
+def define_columns_old(table, bp_dict: dict[str, int], bp: str = ""):
     """
     Add 4 lists of column names to table according to the breakpoint
       columns_fixed = columns that are always visible
@@ -152,6 +152,64 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
         if c not in table.columns_fixed and c != table.select_name
     ]
 
+def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
+    """
+    Parse Meta.columns dict of the form:
+        { col_name: "frozen" | "fixed" | "default" | ("frozen", width) | ("fixed", width) }
+
+    Populates:
+        table.columns_fixed    - frozen + fixed columns (always visible, user cannot hide)
+        table.columns_frozen   - frozen columns as list of (name, width) tuples
+        table.columns_default  - initially visible columns (fixed + default-marked)
+        table.columns_optional - columns user can show/hide (non-fixed, non-selection)
+        table.columns_editable - editable columns (from Meta.editable if present)
+    """
+    table.columns_fixed = []
+    table.columns_frozen = []
+    table.columns_default = []
+    table.columns_editable = getattr(table.Meta, "editable", []) if table.Meta else []
+    if not hasattr(table, "select_name"):
+        table.select_name = ""
+
+    col_meta = getattr(table.Meta, "columns", {}) if table.Meta else {}
+
+    for col_name, attr in col_meta.items():
+        kind = attr[0] if isinstance(attr, tuple) else attr
+        width = attr[1] if isinstance(attr, tuple) and len(attr) > 1 else None
+
+        if kind in ("frozen", "fixed"):
+            table.columns_fixed.append(col_name)
+            if kind == "frozen":
+                table.columns_frozen.append((col_name, width))
+        elif kind == "default":
+            table.columns_default.append(col_name)
+
+    # columns_default always includes fixed columns (fixed are a subset of default)
+    table.columns_default = list(dict.fromkeys(table.columns_fixed + table.columns_default))
+
+    # columns_optional: all non-fixed columns the user can show/hide, excluding selection
+    fixed_set = set(table.columns_fixed)
+    table.columns_optional = [
+        c for c in table.sequence
+        if c not in fixed_set and c != table.select_name
+    ]
+
+    # Merge sticky left-offset attrs into frozen columns; frozen takes precedence on clash
+    offset = 0
+    for col_name, width in table.columns_frozen:
+        if width is not None:
+            style = (
+                f"left: {offset}px; width: {width}px; "
+                f"min-width: {width}px; max-width: {width}px;"
+            )
+            frozen_attrs = {
+                "th": {"class": "frozen", "style": style},
+                "td": {"class": "frozen", "style": style},
+            }
+            existing_attrs = table.columns[col_name].column.attrs
+            # Pass frozen as col_attrs so it is appended last (wins for inline style clashes)
+            table.columns[col_name].column.attrs = merge_attrs(frozen_attrs, existing_attrs)
+            offset += width
 
 def resolve_breakpoint(
     bp_dict: dict[str, int], responsive: dict[str, dict], bp: str

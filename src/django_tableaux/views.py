@@ -19,8 +19,8 @@ from django_htmx.http import (
     retarget,
     replace_url,
 )
+import django_tables2 as tables
 from django_tables2.export.export import TableExport
-from django_tables2.views import SingleTableMixin
 
 from django_tableaux.get_htmx import get_htmx
 from django_tableaux.models import Pagination, FilterStyle, ClickAction
@@ -35,7 +35,7 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
-class TableauxView(SingleTableMixin, TemplateView):
+class TableauxView(TemplateView):
     title = ""
     caption = ""
     template_name = "django_tableaux/tableaux.html"
@@ -84,6 +84,15 @@ class TableauxView(SingleTableMixin, TemplateView):
     debug = False
 
     LOCAL_PARAMS = ["page", "per_page", "order_by"]
+
+    def get_table_class(self):
+        if self.table_class:
+            return self.table_class
+        if self.model:
+            return tables.table_factory(self.model)
+        raise ImproperlyConfigured(
+            f"You must either specify {type(self).__name__}.table_class or {type(self).__name__}.model"
+        )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -215,7 +224,7 @@ class TableauxView(SingleTableMixin, TemplateView):
             )
 
     def get_filtered_object_list(self):
-        self.object_list = self.get_table_data()
+        self.object_list = self.table_data if self.table_data is not None else self.get_queryset()
         self.filterset = self.get_filterset(self.object_list)
         if self.filterset is not None:
             self.object_list = self.filterset.qs
@@ -381,8 +390,6 @@ class TableauxView(SingleTableMixin, TemplateView):
             self.filterset_class = filterset_factory(
                 self.model, fields=self.filterset_fields
             )
-        # use query_dict for initial get and filter_data thereafter
-        # data = self.filter_data if self.filter_data else self.query_dict
         data = self.get_initial_data()
         data.update(self.query_dict)
         return (

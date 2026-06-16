@@ -33,7 +33,6 @@ def build_table(view, **kwargs):
     for bound_column in table.columns:
         col = bound_column.column
         col.attrs = merge_attrs(col.attrs, table.attrs)
-    table.request = view.request
 
     # Sorting
     order_by = view.query_dict.get("~order_by", "")
@@ -63,10 +62,7 @@ def build_table(view, **kwargs):
     # This adds dynamic attributes to the table instance
     table.prefix = view.prefix
     table.indicator = view.indicator
-    # table.last_sort = view.request.GET.get("sort", None)
-    # table.filter = view.filterset
-    # table.infinite_scroll = view.infinite_scroll
-    # table.infinite_load = view.infinite_load
+
     table.sticky_header = view.sticky_header
     # variables that control action when table is clicked
     table.url = ""
@@ -107,7 +103,7 @@ def build_table(view, **kwargs):
     table.columns_visible = [col for col in columns_dict if columns_dict[col]]
     set_column_states(table)
 
-        # If filter is in header, build list of filters in same sequence as columns
+    # If filter is in header, build list of filters in same sequence as columns
     if view.filter_style == FilterStyle.HEADER:
         table.header_fields = []
         for col in table.sequence:

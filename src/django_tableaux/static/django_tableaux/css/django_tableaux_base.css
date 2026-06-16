@@ -18,6 +18,10 @@
     overflow-y: auto;
 }
 
+.tbx-table-wrapper {
+    overflow-x: auto;
+  max-width: 100%;
+}
 .tbx-page-wrapper.tbx-sticky {
     flex: 1;
     min-height: 0;
@@ -29,12 +33,6 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-}
-
-.tableaux .table {
-    border-collapse: separate;
-    border-spacing: 0;
-    width: 100%
 }
 
 .tableaux th {
@@ -50,12 +48,6 @@
     top: 0;
     background-color: #c2f4d7;
 }
-/*.sticky{*/
-/*    position: sticky;*/
-/*    top: 0;*/
-/*    background-color: white;*/
-/*}*/
-
 
 .tableaux .form-control.is-valid {
     background-image: none;
@@ -97,6 +89,15 @@ button.close {
   display: none;
 }
 
+.tableaux .frozen {
+  position: sticky;
+  background: white;
+  z-index: 2;
+}
+
+.tableaux th.frozen {
+  z-index: 3;
+}
 /*!* optional dimming *!*/
 /*.htmx-request ~ .my-table {*/
 /*    opacity: 0.5;*/
