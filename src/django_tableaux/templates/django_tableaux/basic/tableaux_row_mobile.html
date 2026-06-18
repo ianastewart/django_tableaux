@@ -3,7 +3,7 @@
 {#  Selection columns occupies first column in first row #}
   {% for column, cell in row.items %}
     {% if forloop.counter == 1 %}
-      <tr {{ row.attrs.as_html }}>
+      <tr {{ row.attrs.as_html }} style="background: #cedf82;">
         <td>{{ cell }}</td>
         {% elif forloop.counter == 2 %}
         <th>{{ column.header }}</th>

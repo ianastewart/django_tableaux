@@ -1,4 +1,15 @@
 from django.db import models
+from django.conf import settings
+
+class UserTableSettings(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    table_name = models.CharField(max_length=100)
+    breakpoint = models.CharField(max_length=5)
+    visible_columns = models.JSONField(default=dict)
+
+    class Meta:
+        unique_together = ("user", "table_name", "breakpoint")
+
 
 # These models are used inside the Tableaux view
 class Pagination(models.TextChoices):

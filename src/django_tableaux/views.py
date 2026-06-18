@@ -488,25 +488,6 @@ class TableauxView(TemplateView):
             return self.render_row(id=id)
         return HttpResponse(f"Missing attribute {column} in handle_cell_edit()")
 
-    # todo
-    # def filtered_query_set(self, request, next=False):
-    #     """Recreate the queryset used in GET for use in POST"""
-    #     qd = self.query_dict
-    #     if next:
-    #         if "page" not in qd:
-    #             qd["page"] = "2"
-    #         else:
-    #             qd["page"] = str(int(qd["page"]) + 1)
-    #     if self.filterset_class:
-    #         return self.filterset_class(qd, queryset=query_set, request=request).qs
-    #     return query_set
-
-    # def query_dict(self, request):
-    #     bits = request.htmx.current_url.split("?")
-    #     if len(bits) == 2:
-    #         return QueryDict(bits[1]).copy()
-    #     return QueryDict().copy()
-
     def handle_action(self, request, action):
         """
         self.selected_objects is a queryset that contains the objects to be processed.
@@ -608,7 +589,6 @@ class SelectedMixin:
                 self.request.GET, queryset=query_set, request=self.request
             ).qs
         return query_set
-
 
 class ModalMixin:
     """Mixin to convert generic views to operate as modal views when called by hx-get"""

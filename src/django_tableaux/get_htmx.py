@@ -5,7 +5,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.template.response import TemplateResponse
 from django_htmx.http import HttpResponseClientRedirect
 
-from django_tableaux.utils import define_columns, save_columns_dict, default_columns_dict, set_column, save_per_page, \
+from django_tableaux.utils import define_columns, save_columns_dict, default_columns_dict, set_column, \
     visible_columns, set_select_column
 
 
@@ -93,9 +93,9 @@ def get_htmx(self, request, *args, **kwargs):
                 col_name = param
                 table = self.get_table_class()(data=[])
                 set_select_column(table)
+                define_columns(table, self.get_breakpoint_values(), self._bp)
                 if col_name == "_reset":
                     # Reset to default columns
-                    define_columns(table, self.get_breakpoint_values(), self._bp)
                     save_columns_dict(
                         request, table, self._bp, default_columns_dict(table)
                     )
@@ -109,7 +109,6 @@ def get_htmx(self, request, *args, **kwargs):
 
             case trigger if "~row~" in trigger:
                 # Change the number of rows to display
-                save_per_page(request, param)
                 self.query_dict["~per_page"] = param
                 # rows dropdown in basic updated the current value; bootstrap does not
                 if request.htmx.target == "page_wrapper":

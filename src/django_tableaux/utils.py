@@ -18,19 +18,48 @@ def _view_name(request):
         return "test"
 
 
+def _session_key(request: HttpRequest, table: Table, bp: str) -> str:
+    return f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
+
+
 def save_columns_dict(
     request: HttpRequest, table: Table, bp: str, columns_dict: dict[str, bool]
 ):
-    key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
-    request.session[key] = columns_dict
+    if request.user.is_authenticated:
+        from django_tableaux.models import UserTableSettings
+        UserTableSettings.objects.update_or_create(
+            user=request.user,
+            table_name=table.__class__.__name__,
+            breakpoint=bp,
+            defaults={"visible_columns": columns_dict},
+        )
+    else:
+        request.session[_session_key(request, table, bp)] = columns_dict
 
 
-def load_columns_dict(request: HttpRequest, table: Table, bp: str) -> dict[str, bool]:
-    key = f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
-    stored_dict = request.session.get(key)
-    if stored_dict is None:
-        stored_dict = default_columns_dict(table)
-    # Sync with table's current columns, adding new ones as False (not visible).
+def load_columns_dict(
+    request: HttpRequest,
+    table: Table,
+    bp: str,
+    current_dict: dict[str, bool] | None = None,
+) -> dict[str, bool]:
+    if request.user.is_authenticated:
+        from django_tableaux.models import UserTableSettings
+        try:
+            row = UserTableSettings.objects.get(
+                user=request.user,
+                table_name=table.__class__.__name__,
+                breakpoint=bp,
+            )
+            stored_dict = row.visible_columns
+        except UserTableSettings.DoesNotExist:
+            stored_dict = current_dict if current_dict is not None else default_columns_dict(table)
+    else:
+        stored_dict = request.session.get(_session_key(request, table, bp))
+        if stored_dict is None:
+            stored_dict = current_dict if current_dict is not None else default_columns_dict(table)
+
+    # Sync with the table's current sequence: new columns default to False.
     columns_dict = {col: stored_dict.get(col, False) for col in table.sequence}
     save_columns_dict(request, table, bp, columns_dict)
     return columns_dict
@@ -155,7 +184,8 @@ def define_columns_old(table, bp_dict: dict[str, int], bp: str = ""):
 def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
     """
     Parse Meta.columns dict of the form:
-        { col_name: "frozen" | "fixed" | "default" | ("frozen", width) | ("fixed", width) }
+        { col_name: kind | (kind, pixel_width) }
+    where kind is "frozen" | "fixed" | "default".
 
     Populates:
         table.columns_fixed    - frozen + fixed columns (always visible, user cannot hide)
@@ -171,8 +201,19 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
     if not hasattr(table, "select_name"):
         table.select_name = ""
 
-    col_meta = getattr(table.Meta, "columns", {}) if table.Meta else {}
+    table.responsive = False
+    if table.Meta and hasattr(table.Meta, "responsive"):
+        if not isinstance(table.Meta.responsive, dict):
+            raise ImproperlyConfigured("Meta.responsive must be a dictionary")
+        table.responsive = True
+        col_meta = dict(resolve_breakpoint(bp_dict, table.Meta.responsive, bp) or {})
+    else:
+        col_meta = dict(getattr(table.Meta, "columns", {}) if table.Meta else {})
 
+    table.mobile = col_meta.pop("mobile_template", False)
+
+    # Parse each column entry; value can be a string or (string, width) tuple
+    sized = []  # (col_name, width) for all columns with an explicit width
     for col_name, attr in col_meta.items():
         kind = attr[0] if isinstance(attr, tuple) else attr
         width = attr[1] if isinstance(attr, tuple) and len(attr) > 1 else None
@@ -181,11 +222,25 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
             table.columns_fixed.append(col_name)
             if kind == "frozen":
                 table.columns_frozen.append((col_name, width))
+            elif width is not None:
+                sized.append((col_name, width))
         elif kind == "default":
             table.columns_default.append(col_name)
+            if width is not None:
+                sized.append((col_name, width))
 
-    # columns_default always includes fixed columns (fixed are a subset of default)
+    # columns_default always includes fixed columns (fixed are a subset of default).
+    # If no columns were defined at all, show every column by default.
     table.columns_default = list(dict.fromkeys(table.columns_fixed + table.columns_default))
+    if not table.columns_default:
+        table.columns_default = list(table.sequence)
+
+    # Reorder sequence: defined columns first (in definition order), then the rest
+    # in their original order. Only applied when a columns definition was provided.
+    if col_meta:
+        defined_set = set(table.columns_default)
+        rest = [c for c in table.sequence if c not in defined_set]
+        table.sequence = table.columns_default + rest
 
     # columns_optional: all non-fixed columns the user can show/hide, excluding selection
     fixed_set = set(table.columns_fixed)
@@ -193,6 +248,13 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
         c for c in table.sequence
         if c not in fixed_set and c != table.select_name
     ]
+
+    # Apply width-only attrs to fixed/default columns that have a pixel width
+    for col_name, width in sized:
+        size_style = f"width: {width}px; min-width: {width}px; max-width: {width}px;"
+        size_attrs = {"th": {"style": size_style}, "td": {"style": size_style}}
+        existing_attrs = table.columns[col_name].column.attrs
+        table.columns[col_name].column.attrs = merge_attrs(size_attrs, existing_attrs)
 
     # Merge sticky left-offset attrs into frozen columns; frozen takes precedence on clash
     offset = 0
@@ -207,7 +269,6 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
                 "td": {"class": "frozen", "style": style},
             }
             existing_attrs = table.columns[col_name].column.attrs
-            # Pass frozen as col_attrs so it is appended last (wins for inline style clashes)
             table.columns[col_name].column.attrs = merge_attrs(frozen_attrs, existing_attrs)
             offset += width
 
@@ -268,16 +329,6 @@ def breakpoints(table):
         list(table.Meta.responsive.keys()) if hasattr(table.Meta, "responsive") else []
     )
     return {"breakpoints": bps}
-
-
-def save_per_page(request: HttpRequest, value: int):
-    key = f"per_page:{request.resolver_match.view_name}"
-    request.session[key] = value
-
-
-def load_per_page(request: HttpRequest):
-    key = f"per_page:{request.resolver_match.view_name}"
-    return request.session[key] if key in request.session else 0
 
 
 DEFAULT_APP = "django_tableaux"
@@ -380,34 +431,11 @@ def render_editable_form(
     return render(request, template_name, context)
 
 
-def parse_query_dict(self: object, in_dict: QueryDict):
-    # Parse a query dictionary either from request.GET or from a query_string
-    # Strip prefixed if present and produce a regular dictionary, self.query_dict
-    for key, values in in_dict.lists():
-        if key != "query_string":
-            if self.prefix:
-                if key.startswith(self.prefix):
-                    key = key[len(self.prefix) :]
-            if values[-1] != "":
-                self.query_dict[key] = values[-1]
-            elif key in self.query_dict:
-                self.query_dict.pop(key)
-
-
 def strip_prefix_from_keys(data: dict, prefix: str) -> dict:
     plen = len(prefix)
     return {
         (key[plen:] if key.startswith(prefix) else key): value
         for key, value in data.items()
-    }
-
-
-def add_prefix_to_keys(
-    data: dict, prefix: str, exclude: list[str] | None = None
-) -> dict:
-    exclude = exclude or []
-    return {
-        (key if key in exclude else prefix + key): value for key, value in data.items()
     }
 
 

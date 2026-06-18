@@ -98,8 +98,18 @@ def build_table(view, **kwargs):
     # define possible columns depending upon the current breakpoint
     define_columns(table, view.get_breakpoint_values(), view._bp)
 
+    # Detect breakpoint change; if the bp has changed and the new one has no saved
+    # settings, seed it from the previous bp's settings rather than defaulting.
+    prev_bp_key = f"tbx:prev_bp:{table.__class__.__name__}"
+    prev_bp = view.request.session.get(prev_bp_key)
+    view.request.session[prev_bp_key] = view._bp
+    if prev_bp and prev_bp != view._bp:
+        current_dict = load_columns_dict(view.request, table, prev_bp)
+    else:
+        current_dict = None
+
     # set visible columns according to saved setting
-    columns_dict = load_columns_dict(view.request, table, view._bp)
+    columns_dict = load_columns_dict(view.request, table, view._bp, current_dict=current_dict)
     table.columns_visible = [col for col in columns_dict if columns_dict[col]]
     set_column_states(table)
 

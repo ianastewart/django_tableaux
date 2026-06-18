@@ -1,4 +1,7 @@
 {% load widget_tweaks %}
+{% if table.mobile %}
+        {% include templates.tb_filter_button %}
+{% else %}
 {% if view.has_filter_toolbar %}
   <style>
   .clear-field {
@@ -32,6 +35,7 @@
           </button>
        {% endif %}
     </div>
+  {% endif %}
   {% endif %}
   <script>
 

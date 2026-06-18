@@ -1,4 +1,7 @@
 {% load bootstrap4 %}
+{% if table.mobile %}
+        {% include templates.tb_filter_button %}
+{% else %}
 {% if view.has_filter_toolbar %}
   <style>
   .clear-field {
@@ -31,6 +34,7 @@
         </div>
       {% endif %}
     </div>
+  {% endif %}
   {% endif %}
   <script>
 function clearInput(el) {
