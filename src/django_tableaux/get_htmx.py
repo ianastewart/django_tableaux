@@ -10,7 +10,7 @@ from django_tableaux.utils import define_columns, save_columns_dict, default_col
 
 
 def get_htmx(self, request, *args, **kwargs):
-1    self._bp = self.query_dict.get("bp", "XXX")
+    self._bp = self.query_dict.get("bp", "XXX")
     self._apply_responsive_settings()
 
     # Some actions depend on trigger_name; others on trigger
