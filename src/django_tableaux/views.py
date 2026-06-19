@@ -330,9 +330,10 @@ class TableauxView(TemplateView):
             hx_target="table_wrapper",
         )
 
-    def render_tableaux(self, hx_target="tableaux"):
+    def render_tableaux(self, hx_target="tableaux", outer=False):
+        key = "tableaux_outer" if outer else "tableaux"
         return self.render_template(
-            template_name=self.templates["tableaux"],
+            template_name=self.templates[key],
             hx_target=hx_target,
         )
 

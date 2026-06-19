@@ -20,10 +20,9 @@ def get_htmx(self, request, *args, **kwargs):
     if trigger_name is not None:
         match trigger_name:
             case "table_load":
-                # Initiated by tableaux template tag
-                # self.prefix = request.GET.get("prefix", "")
+                # Initiated by tableaux template tag — needs the outer wrapper
                 target = request.htmx.target[len(self.prefix):] if self.prefix else request.htmx.target
-                return self.render_tableaux(hx_target=target)
+                return self.render_tableaux(hx_target=target, outer=True)
 
             case "filter_modal" if self.filterset_class:
                 # Request to show the filter form in a modal
