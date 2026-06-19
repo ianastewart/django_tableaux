@@ -1,33 +1,23 @@
 {% load django_tables2 django_tableaux %}
-{% if table.select_name %}
-{#  Selection columns occupies first column in first row #}
-  {% for column, cell in row.items %}
-    {% if forloop.counter == 1 %}
-      <tr {{ row.attrs.as_html }} style="background: #cedf82;">
-        <td>{{ cell }}</td>
-        {% elif forloop.counter == 2 %}
-        <th>{{ column.header }}</th>
-        <td>{{ cell }}</td>
-      </tr>
-    {% else %}
-      {% if column.name in table.columns_visible %}
-      <tr {{ row.attrs.as_html }}>
-        <td></td>
-        <th>{{ column.header }}</th>
-        <td>{{ cell }}</td>
-      </tr>
-        {% endif %}
+<tr {{ row.attrs.as_html }} id="{{ table.prefix }}_tr_{{ row.record.id }}" {% if oob %}hx-swap-oob="true" {% endif %}
+    {% if forloop.last and view.pagination == Pagination.INFINITE and table.page.number < table.page.paginator.num_pages %}
+        hx-get="{{ url }}"
+        hx-target="#{{ table.prefix }}_tr_{{ row.record.id }}"
+        hx-trigger="intersect once" hx-swap="afterend"
+        hx-vals='{"_scroll": "true", "_pagex": "{{ table.page.number }}"}'
+        {% if table.indicator %}hx-indicator="#{{ table.prefix }}tableaux_overlay"{% endif %}
     {% endif %}
-  {% endfor %}
-{% else %}
-  {% for column, cell in row.items %}
-    {% if column.name in table.columns_visible %}
-    <tr {{ row.attrs.as_html }}>
-      <th>{{ column.header }}</th>
-      <td>{{ cell }}</td>
-    </tr>
-    {% endif %}
-  {% endfor %}
-{% endif %}
-
-
+>
+  <td colspan="{{ table.columns|length }}" class="tbx-mobile-card">
+    {% for column, cell in row.items %}
+      {% if column.name == table.select_name %}
+        <div class="tbx-mobile-select">{{ cell }}</div>
+      {% elif column.name in table.columns_visible %}
+        <div class="tbx-mobile-field">
+          <span class="tbx-mobile-label">{{ column.header }}:</span>
+          <span class="tbx-mobile-value">{{ cell }}</span>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </td>
+</tr>

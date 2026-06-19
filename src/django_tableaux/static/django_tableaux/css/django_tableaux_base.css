@@ -99,6 +99,27 @@ button.close {
   z-index: 3;
 }
 
+/* Mobile card layout */
+.tbx-mobile-card {
+  padding: 0.5rem 0.75rem;
+}
+
+.tbx-mobile-select {
+  float: right;
+}
+
+.tbx-mobile-field {
+  display: flex;
+  gap: 0.5em;
+  padding: 0.1rem 0;
+}
+
+.tbx-mobile-label {
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 8em;
+}
+
 /* Overlay the hover tint via background-image so background-color stays solid white
    (needed to cover scrolled content) while matching the non-frozen cell hover appearance */
 .tableaux tbody tr:hover td.frozen {
