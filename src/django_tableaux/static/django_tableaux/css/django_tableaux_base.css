@@ -99,6 +99,22 @@ button.close {
   z-index: 3;
 }
 
+/* Filter pill remove button — plain × with no outline, border, or colour */
+.tbx-pill-remove {
+  background: none;
+  border: none;
+  padding: 0 0 0 0.3em;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1em;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.tbx-pill-remove:hover {
+  opacity: 1;
+}
+
 /* Mobile card layout */
 .tbx-mobile-card {
   padding: 0.5rem 0.75rem;
