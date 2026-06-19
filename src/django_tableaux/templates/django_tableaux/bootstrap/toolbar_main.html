@@ -1,0 +1,16 @@
+<div class="d-flex justify-content-between my-2" style="height: 2.5em;">
+  <div class="d-flex justify-content-start">
+    {% include templates.dropdown_actions %}
+    {% include templates.tb_buttons %}
+  </div>
+  {% if view.pagination.value == "paged_top" %}
+    {% include templates.tableaux_paginator %}
+  {% endif %}
+  <div class="d-flex justify-content-end">
+    <div class="btn-group">
+      {% include templates.tb_filter_button %}
+      {% include templates.dropdown_columns %}
+      {% include templates.dropdown_rows %}
+    </div>
+  </div>
+</div>
