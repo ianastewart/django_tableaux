@@ -1,7 +1,7 @@
 {% if view.filter_style == FilterStyle.MODAL %}
 <div class="dropdown">
   <button type="button" class="btn btn-sm btn-outline-primary me-1 mr-1" name="filter_modal"
-          hx-get="{{ url }}" hx-target="#modal-filter-here" hx-include="#{{ table.prefix }}filter_form"
+          hx-get="{{ url }}" hx-target="#modals-here" hx-include="#{{ table.prefix }}filter_form"
           hx-swap="innerHTML">Filter
   </button>
 </div>
