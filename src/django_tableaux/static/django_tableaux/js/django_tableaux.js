@@ -1,21 +1,27 @@
 'use strict';
 
 const BreakpointService = (function () {
-    const BREAKPOINTS = {
-        sm: 480,
-        md: 768,
-        lg: 1024,
-        xl: 1280
+    // Match Python's get_breakpoint_values() — used as fallback when DOM element absent
+    const DEFAULT_BREAKPOINTS = {
+        xs: 576, sm: 768, md: 992, lg: 1200, xl: 1400, xxl: 1600
     };
 
+    let _entries = null;
     let currentBreakpoint = null;
     const listeners = new Set();
+
+    function getEntries() {
+        if (_entries) return _entries;
+        const el = document.getElementById('breakpoint-values');
+        const values = el ? JSON.parse(el.textContent) : DEFAULT_BREAKPOINTS;
+        _entries = Object.entries(values).sort((a, b) => a[1] - b[1]);
+        return _entries;
+    }
 
     function getCurrentBreakpoint() {
         const width = window.innerWidth;
         let current = 'xs';
-
-        for (const [name, value] of Object.entries(BREAKPOINTS).sort((a, b) => a[1] - b[1])) {
+        for (const [name, value] of getEntries()) {
             if (width >= value) current = name;
             else break;
         }
@@ -29,12 +35,29 @@ const BreakpointService = (function () {
     window.addEventListener('resize', () => {
         const next = getCurrentBreakpoint();
         if (next === currentBreakpoint) return;
-
         currentBreakpoint = next;
         notify(next);
     });
 
+    // Initial detection uses DEFAULT_BREAKPOINTS (DOM not ready yet).
+    // Once DOM is ready, re-read from the #breakpoint-values element so any
+    // server-customised thresholds take effect before TableController initialises.
     currentBreakpoint = getCurrentBreakpoint();
+
+    function syncFromDom() {
+        _entries = null; // clear cache so next call reads from DOM
+        const detected = getCurrentBreakpoint();
+        if (detected !== currentBreakpoint) {
+            currentBreakpoint = detected;
+            notify(detected);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncFromDom);
+    } else {
+        syncFromDom();
+    }
 
     return {
         get: () => currentBreakpoint,
@@ -112,6 +135,17 @@ class TableController {
 
         BreakpointService.subscribe(this.onBreakpointChange);
         this.syncBreakpointInput(this.breakpoint);
+
+        // If the URL carries a stale bp (e.g. from a previous wider window), the server
+        // rendered with the wrong breakpoint. Trigger an immediate HTMX re-render so the
+        // server sees the actual current bp.
+        const urlBp = new URLSearchParams(window.location.search).get('bp');
+        if (urlBp && urlBp !== this.breakpoint) {
+            setTimeout(() => {
+                window.htmx.trigger(this.container, "tableauxResize", {breakpoint: this.breakpoint});
+            }, 0);
+        }
+
         this.bind();
         this.countChecked();
     }

@@ -7,6 +7,7 @@
 {#     hx-vals="js:{ search: JSON.stringify(Object.fromEntries(new URLSearchParams(window.location.search)))}"#}
      hx-swap="outerHTML">
   {{ breakpoints|json_script:"breakpoints" }}
+  {{ breakpoint_values|json_script:"breakpoint-values" }}
   <form id="{{ table.prefix }}filter_form" class="filter-form" hx-get="{{ url }}"
       {% if not view.filter_button %} hx-trigger="change from:#{{ table.prefix }}filter_form"{% endif %}
       {% if table.indicator %} hx-indicator="#{{ table.prefix }}tableaux_overlay"{% endif %}>

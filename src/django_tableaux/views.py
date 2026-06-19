@@ -404,6 +404,7 @@ class TableauxView(TemplateView):
             "order_by": self.query_dict.get("~order_by", ""),
             "bp": self._bp,
             "breakpoints": breakpoints(self.table),
+            "breakpoint_values": self.get_breakpoint_values(),
             "toolbar_visible": toolbar_visible,
             "Pagination": Pagination,
             "FilterStyle": FilterStyle,
