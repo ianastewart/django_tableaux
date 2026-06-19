@@ -91,12 +91,18 @@ button.close {
 
 .tableaux .frozen {
   position: sticky;
-  background: white;
+  background-color: white;
   z-index: 2;
 }
 
 .tableaux th.frozen {
   z-index: 3;
+}
+
+/* Overlay the hover tint via background-image so background-color stays solid white
+   (needed to cover scrolled content) while matching the non-frozen cell hover appearance */
+.tableaux tbody tr:hover td.frozen {
+  background-image: linear-gradient(rgba(0, 0, 0, .075), rgba(0, 0, 0, .075));
 }
 /*!* optional dimming *!*/
 /*.htmx-request ~ .my-table {*/
