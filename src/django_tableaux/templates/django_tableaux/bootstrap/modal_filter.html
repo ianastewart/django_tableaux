@@ -3,7 +3,8 @@
 {% block modal_title %}<span class="h4">Filter</span>{% endblock %}
 {% block modal_content %}
   <form id="{{ prefix }}modal_filter_form"{% if not filter_button %}
-        hx-get="{{ url }}" hx-trigger="change" hx-target="#modals-here" hx-swap="innerHTML"{% endif %}>
+        hx-get="{{ url }}" hx-trigger="change" hx-target="#modals-here" hx-swap="innerHTML"
+        hx-include="this, #{{ prefix }}filter_form"{% endif %}>
     {{ block.super }}
   </form>
 {% endblock %}
