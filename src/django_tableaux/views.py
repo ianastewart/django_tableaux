@@ -30,6 +30,7 @@ from .utils import (
     visible_columns,
     build_templates_dictionary,
     strip_prefix_from_keys,
+    resolve_breakpoint,
 )
 
 logger = logging.getLogger(__name__)
@@ -82,8 +83,38 @@ class TableauxView(TemplateView):
     prefix = ""
 
     debug = False
+    responsive_settings = {}
 
     LOCAL_PARAMS = ["page", "per_page", "order_by"]
+
+    def _apply_responsive_settings(self):
+        if not self.responsive_settings or not self._bp:
+            return
+        bp_order = list(self.get_breakpoint_values().keys())
+        current_index = bp_order.index(self._bp) if self._bp in bp_order else len(bp_order)
+        defined = {k: i for i, k in enumerate(bp_order) if k in self.responsive_settings}
+        if not defined:
+            return
+        # Above the largest defined bp → class-level defaults apply, no override
+        if current_index > max(defined.values()):
+            return
+        # Fall-forward: largest defined bp at or below current, else smallest defined
+        resolved = None
+        fallback = None
+        for key in bp_order[: current_index + 1]:
+            if key in self.responsive_settings:
+                resolved = self.responsive_settings[key]
+                if fallback is None:
+                    fallback = resolved
+        resolved = resolved or fallback
+        if not resolved:
+            return
+        for k, v in resolved.items():
+            if not hasattr(self, k):
+                raise ImproperlyConfigured(
+                    f"'{k}' in responsive_settings is not a valid TableauxView attribute"
+                )
+            setattr(self, k, v)
 
     def get_table_class(self):
         if self.table_class:
@@ -187,7 +218,8 @@ class TableauxView(TemplateView):
         # If initial GET and table is responsive ask client to repeat the request with the breakpoint parameter
         if "bp" in request.GET:
             self._bp = request.GET["bp"]
-        elif hasattr(table_class, "Meta") and hasattr(table_class.Meta, "responsive"):
+            self._apply_responsive_settings()
+        elif (hasattr(table_class, "Meta") and hasattr(table_class.Meta, "responsive")) or self.responsive_settings:
             return render(
                 request,
                 self.templates["bp_request"],
