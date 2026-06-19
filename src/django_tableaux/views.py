@@ -416,7 +416,13 @@ class TableauxView(TemplateView):
 
         filter_dict = {}
         if self.filterset_class:
-            context["filter_dict"] = self.filterset.form.cleaned_data
+            initial = self.get_initial_data()
+            filter_dict = {
+                k: v
+                for k, v in self.filterset.form.cleaned_data.items()
+                if v not in (None, "", [], (), {}) and v != initial.get(k)
+            }
+            context["filter_dict"] = filter_dict
             context["filter_data"] = urlencode(filter_dict)
         return context
 
