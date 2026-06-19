@@ -98,17 +98,18 @@ class TableauxView(TemplateView):
         # Above the largest defined bp → class-level defaults apply, no override
         if current_index > max(defined.values()):
             return
-        # Fall-forward: largest defined bp at or below current, else smallest defined
-        resolved = None
-        fallback = None
-        for key in bp_order[: current_index + 1]:
-            if key in self.responsive_settings:
-                resolved = self.responsive_settings[key]
-                if fallback is None:
-                    fallback = resolved
-        resolved = resolved or fallback
-        if not resolved:
-            return
+        # Below the smallest defined bp → fall backward to smallest defined config
+        if current_index < min(defined.values()):
+            smallest_key = min(defined.keys(), key=lambda k: bp_order.index(k))
+            resolved = self.responsive_settings[smallest_key]
+        else:
+            # Fall-forward: use largest defined bp at or below current
+            resolved = None
+            for key in bp_order[: current_index + 1]:
+                if key in self.responsive_settings:
+                    resolved = self.responsive_settings[key]
+            if not resolved:
+                return
         for k, v in resolved.items():
             if not hasattr(self, k):
                 raise ImproperlyConfigured(

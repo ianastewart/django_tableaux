@@ -136,11 +136,14 @@ class TableController {
         BreakpointService.subscribe(this.onBreakpointChange);
         this.syncBreakpointInput(this.breakpoint);
 
-        // If the URL carries a stale bp (e.g. from a previous wider window), the server
-        // rendered with the wrong breakpoint. Trigger an immediate HTMX re-render so the
-        // server sees the actual current bp.
-        const urlBp = new URLSearchParams(window.location.search).get('bp');
+        // If the URL carries a stale bp (e.g. reloaded after resizing), the server rendered
+        // with the wrong breakpoint. Update the URL first (so subsequent TableController inits
+        // after the HTMX swap don't re-trigger), then fire a re-render.
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlBp = urlParams.get('bp');
         if (urlBp && urlBp !== this.breakpoint) {
+            urlParams.set('bp', this.breakpoint);
+            history.replaceState({}, '', '?' + urlParams.toString());
             setTimeout(() => {
                 window.htmx.trigger(this.container, "tableauxResize", {breakpoint: this.breakpoint});
             }, 0);
