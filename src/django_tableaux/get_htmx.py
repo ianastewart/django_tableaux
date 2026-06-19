@@ -10,7 +10,7 @@ from django_tableaux.utils import define_columns, save_columns_dict, default_col
 
 
 def get_htmx(self, request, *args, **kwargs):
-    self._bp = self.query_dict.get("bp", "XXX")
+1    self._bp = self.query_dict.get("bp", "XXX")
     self._apply_responsive_settings()
 
     # Some actions depend on trigger_name; others on trigger
@@ -28,7 +28,7 @@ def get_htmx(self, request, *args, **kwargs):
                 # Request to show the filter form in a modal
                 context = {
                     "prefix": self.prefix,
-                    "filter": self.filterset_class(data=self.filter_data),
+                    "filter": self.get_filterset(self.get_queryset()),
                     "filter_button": self.filter_button,
                     "url": request.path
                 }
