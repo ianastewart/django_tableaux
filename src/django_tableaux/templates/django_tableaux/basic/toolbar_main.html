@@ -1,17 +1,17 @@
-<div class="flex-display flex-between">
-  {% if actions %}
-    <div class="flex-display flex-start">
-            {% include templates.dropdown_actions %}
+<div class="d-flex justify-content-between align-items-center">
+  {% if toolbar_areas.left %}
+    <div class="d-flex align-items-center">
+      {% for tpl in toolbar_areas.left %}{% include tpl %}{% endfor %}
     </div>
   {% endif %}
-  <div class="flex-display {% if actions %}justify-content-middle{% else %}justify-content-start{% endif %}">
-    <div class="d-sm-none d-lg-block">
-      {% include templates.tb_buttons %}
+  {% if toolbar_areas.center %}
+    <div class="d-flex align-items-center justify-content-center flex-grow-1">
+      {% for tpl in toolbar_areas.center %}{% include tpl %}{% endfor %}
     </div>
-    <div class="flex-display flex-end">
-      {% include templates.tb_filter_button %}
-      {% include templates.dropdown_columns %}
-      {% include templates.dropdown_rows %}
+  {% endif %}
+  {% if toolbar_areas.right %}
+    <div class="d-flex align-items-center justify-content-end">
+      {% for tpl in toolbar_areas.right %}{% include tpl %}{% endfor %}
     </div>
-  </div>
+  {% endif %}
 </div>

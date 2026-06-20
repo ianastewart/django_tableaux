@@ -200,6 +200,7 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
     table.columns_editable = getattr(table.Meta, "editable", []) if table.Meta else []
     if not hasattr(table, "select_name"):
         table.select_name = ""
+    valid_columns = set(table.sequence)
 
     table.responsive = False
     if table.Meta and hasattr(table.Meta, "responsive"):
@@ -212,9 +213,21 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
 
     table.mobile = col_meta.pop("mobile_template", False)
 
+    invalid_editable = [c for c in table.columns_editable if c not in valid_columns]
+    if invalid_editable:
+        raise ImproperlyConfigured(
+            f"{table.__class__.__name__}.Meta.editable contains unknown column(s) {invalid_editable!r}. "
+            f"Valid columns are: {sorted(valid_columns)}"
+        )
+
     # Parse each column entry; value can be a string or (string, width) tuple
     sized = []  # (col_name, width) for all columns with an explicit width
     for col_name, attr in col_meta.items():
+        if col_name not in valid_columns:
+            raise ImproperlyConfigured(
+                f"{table.__class__.__name__}.Meta.columns: '{col_name}' is not a valid column. "
+                f"Valid columns are: {sorted(valid_columns)}"
+            )
         kind = attr[0] if isinstance(attr, tuple) else attr
         width = attr[1] if isinstance(attr, tuple) and len(attr) > 1 else None
 

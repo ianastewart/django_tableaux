@@ -35,6 +35,17 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
+TOOLBAR_ITEM_TEMPLATE_MAP = {
+    "actions": "dropdown_actions",
+    "buttons": "tb_buttons",
+    "rows": "dropdown_rows",
+    "columns": "dropdown_columns",
+    "filter_modal": "tb_filter_button",
+    "filters": "tb_filter_fields",
+    "filter_button": "tb_filter_apply",
+    "filter_clear": "tb_filter_clear",
+}
+
 
 class TableauxView(TemplateView):
     title = ""
@@ -62,6 +73,14 @@ class TableauxView(TemplateView):
     columns_control = False
     column_reset = True
     rows_control = False
+    toolbar = {
+        "left": "actions",
+        "center": "buttons",
+        "right": ["filter_modal", "columns", "rows"],
+    }
+    toolbar_filter = {
+        "left": ["filters", "filter_button", "filter_clear"],
+    }
 
     click_action = ClickAction.NONE
     click_url_name = ""
@@ -373,17 +392,63 @@ class TableauxView(TemplateView):
         )
         return exporter.response(filename=f"{self.export_filename}.{export_format}")
 
+    def _toolbar_item_visible(self, item: str) -> bool:
+        match item:
+            case "actions":
+                return bool(self.get_bulk_actions())
+            case "buttons":
+                return bool(self.get_buttons())
+            case "columns":
+                return self.columns_control
+            case "rows":
+                return self.rows_control
+            case "filter_modal":
+                return bool(self.filterset_class) and self.filter_style == FilterStyle.MODAL
+            case "filters":
+                return self.has_filter_toolbar
+            case "filter_button":
+                return self.filter_button and self.has_filter_toolbar
+            case "filter_clear":
+                return self.filter_clear_button and self.has_filter_toolbar
+            case _:
+                return True
+
+    def _build_toolbar_areas(self, config: dict, template_map: dict) -> dict:
+        if not isinstance(config, dict):
+            raise ImproperlyConfigured(
+                f"toolbar/toolbar_filter must be a dict mapping area names to item lists, got {type(config).__name__}"
+            )
+        valid_keys = set(template_map.keys())
+        result = {}
+        for area, items in config.items():
+            if isinstance(items, str):
+                items = [items]
+            invalid = [item for item in items if item not in valid_keys]
+            if invalid:
+                raise ImproperlyConfigured(
+                    f"Invalid toolbar item(s) {invalid!r} in area '{area}'. "
+                    f"Valid items are: {sorted(valid_keys)}"
+                )
+            paths = [
+                self.templates[template_map[item]]
+                for item in items
+                if template_map[item] in self.templates
+                and self._toolbar_item_visible(item)
+            ]
+            if paths:
+                result[area] = paths
+        return result
+
+    def get_toolbar_areas(self) -> dict:
+        return self._build_toolbar_areas(self.toolbar, TOOLBAR_ITEM_TEMPLATE_MAP)
+
+    def get_toolbar_filter_areas(self) -> dict:
+        return self._build_toolbar_areas(self.toolbar_filter, TOOLBAR_ITEM_TEMPLATE_MAP)
+
     def get_context_data(self, **kwargs) -> dict[str, Any]:
         buttons = self.get_buttons()
         actions = self.get_bulk_actions()
-        toolbar_visible = (
-            len(buttons) > 0
-            or len(actions) > 0
-            or self.rows_control
-            or self.columns_control
-            or self.filterset_class
-            and self.filter_style == FilterStyle.MODAL
-        )
+        toolbar_visible = bool(self.toolbar)
         addon_after = (
             '<span class="clear-field small" onclick="clearInput(this)">X</span>'
             if self.filter_clear_field
@@ -408,6 +473,8 @@ class TableauxView(TemplateView):
             "breakpoints": breakpoints(self.table),
             "breakpoint_values": self.get_breakpoint_values(),
             "toolbar_visible": toolbar_visible,
+            "toolbar_areas": self.get_toolbar_areas(),
+            "toolbar_filter_areas": self.get_toolbar_filter_areas(),
             "Pagination": Pagination,
             "FilterStyle": FilterStyle,
             "ClickAction": ClickAction,

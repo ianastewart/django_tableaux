@@ -1,6 +1,6 @@
 {% if view.rows_control %}
 <div class="dropdown">
-  <button class="btn btn-sm btn-outline-primary dropdown-toggle mx-1" type="button" id="{{ table.prefix }}dropdownRowsButton"
+  <button class="form-control form-control-sm d-inline-block w-auto dropdown-toggle mx-1" type="button" id="{{ table.prefix }}dropdownRowsButton"
           data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Show {{ per_page }} rows</button>
   <div class="dropdown-menu dropdown-menu-right dropdown-menu-end" aria-labelledby="{{ table.prefix }}dropdownRowsButton">
     {% for row in rows %}
