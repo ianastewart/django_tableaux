@@ -43,7 +43,7 @@
     cursor: pointer;
 }
 
-.tableaux .sticky th {
+.tableaux.sticky th {
     position: sticky;
     top: 0;
     background-color: #c2f4d7;
@@ -104,6 +104,13 @@ button.form-control {
   -webkit-appearance: none;
   appearance: none;
   cursor: pointer;
+}
+
+.tbx-sticky-bottom {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding-top: 4px;
 }
 
 /* Filter pill remove button — plain × with no outline, border, or colour */

@@ -1,0 +1,17 @@
+{% load bootstrap4 %}
+{% if filter.form.visible_fields %}
+<style>.clear-field { cursor: pointer; }</style>
+{{ filter.form.media }}
+{% for field in filter.form.visible_fields %}
+  {% bootstrap_field field label_class="small" size="small" placeholder="" %}
+{% endfor %}
+<script>
+function clearInput(el) {
+  const input = el.closest(".input-group")?.querySelector("input");
+  if (!input) return;
+  input.value = "";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+</script>
+{% endif %}

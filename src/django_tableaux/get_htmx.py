@@ -26,11 +26,12 @@ def get_htmx(self, request, *args, **kwargs):
 
             case "filter_modal" if self.filterset_class:
                 # Request to show the filter form in a modal
+                url = f"{request.path}?bp={self._bp}" if self._bp else request.path
                 context = {
                     "prefix": self.prefix,
                     "filter": self.get_filterset(self.get_queryset()),
                     "filter_button": self.filter_button,
-                    "url": request.path
+                    "url": url
                 }
                 return TemplateResponse(request, self.templates["modal_filter"], context)
 
@@ -38,6 +39,7 @@ def get_htmx(self, request, *args, **kwargs):
                 # filter button pressed
                 self.query_dict.pop(trigger_name)
                 self._filter_changed = True
+                self.query_dict["~page"] = "1"
                 return self.render_tableaux()
 
             case "filter_reset":
@@ -47,6 +49,7 @@ def get_htmx(self, request, *args, **kwargs):
                     if self.is_filter_name(key):
                         self.query_dict.pop(key)
                 self._filter_changed = True
+                self.query_dict["~page"] = "1"
                 return self.render_tableaux()
 
             case _:
@@ -80,12 +83,14 @@ def get_htmx(self, request, *args, **kwargs):
 
             case trigger if "filter_form" in trigger:
                 self._filter_changed = True
+                self.query_dict["~page"] = "1"
                 return self.render_tableaux()
 
             case trigger if "~remove~" in trigger:
                 # remove a single filter
                 self.query_dict.pop(param)
                 self._filter_changed = True
+                self.query_dict["~page"] = "1"
                 return self.render_tableaux()
 
             case trigger if "~col~" in trigger:

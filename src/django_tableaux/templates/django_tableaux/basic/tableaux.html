@@ -1,6 +1,6 @@
 {% load static %}
 {% spaceless %}
-<div class="tableaux sticky{% if not view.sticky_pagination %} tbx-scroll{% endif %}" data-controller="tableaux" data-prefix="{{ table.prefix }}" id="{{ table.prefix }}tableaux"
+<div class="tableaux sticky{% if not view.sticky_bottom_toolbar %} tbx-scroll{% endif %}" data-controller="tableaux" data-prefix="{{ table.prefix }}" id="{{ table.prefix }}tableaux"
      data-url="{{ url }}" hx-get="{{ url }}" hx-trigger="tableauxResize from:body"
      hx-include="#{{ table.prefix }}filter_form, #{{ table.prefix }}modal_filter_form"
      hx-swap="outerHTML">

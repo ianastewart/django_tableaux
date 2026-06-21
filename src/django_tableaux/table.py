@@ -48,6 +48,7 @@ def build_table(view, **kwargs):
         # Changing sort order or filtering resets page to 1
         if view._order_by_changed or view._filter_changed:
             kwargs["page"] = 1
+            # view.query_dict["~page"] = 1
         silent = kwargs.pop("silent", True)
         if not silent:
             table.paginate(**kwargs)

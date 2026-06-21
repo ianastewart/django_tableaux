@@ -1,0 +1,5 @@
+{% if toolbar_bottom_areas %}
+{% for tpl in toolbar_bottom_areas.left %}{% include tpl %}{% endfor %}
+{% for tpl in toolbar_bottom_areas.center %}{% include tpl %}{% endfor %}
+{% for tpl in toolbar_bottom_areas.right %}{% include tpl %}{% endfor %}
+{% endif %}

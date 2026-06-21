@@ -1,0 +1,7 @@
+<span class="text-muted small align-self-center mx-1">
+  {% if table.paginator %}
+    Showing records {{ record_start }} to {{ record_end }} of {{ record_count }}
+  {% else %}
+    {{ record_count }} records
+  {% endif %}
+</span>

@@ -18,6 +18,7 @@ from django_htmx.http import (
     push_url,
     retarget,
     replace_url,
+    reswap,
 )
 import django_tables2 as tables
 from django_tables2.export.export import TableExport
@@ -34,17 +35,6 @@ from .utils import (
 )
 
 logger = logging.getLogger(__name__)
-
-TOOLBAR_ITEM_TEMPLATE_MAP = {
-    "actions": "dropdown_actions",
-    "buttons": "tb_buttons",
-    "rows": "dropdown_rows",
-    "columns": "dropdown_columns",
-    "filter_modal": "tb_filter_button",
-    "filters": "tb_filter_fields",
-    "filter_button": "tb_filter_apply",
-    "filter_clear": "tb_filter_clear",
-}
 
 
 class TableauxView(TemplateView):
@@ -68,18 +58,22 @@ class TableauxView(TemplateView):
     filter_clear_field = True
     #
     pagination = Pagination.PAGED
-    page_size = 10
+    page_size = 20
     #
     columns_control = False
     column_reset = True
     rows_control = False
     toolbar = {
         "left": "actions",
-        "center": "buttons",
+        "center": "record_count",
         "right": ["filter_modal", "columns", "rows"],
     }
     toolbar_filter = {
         "left": ["filters", "filter_button", "filter_clear"],
+    }
+    toolbar_bottom = {
+        "left": "record_count",
+        "center": "paginator",
     }
 
     click_action = ClickAction.NONE
@@ -87,9 +81,10 @@ class TableauxView(TemplateView):
     click_target = "#modals-here"
     #
     sticky_header = True
-    sticky_pagination = True
+    sticky_bottom_toolbar = True
     fixed_height = 0
     buttons = []
+    
     object_name = ""
     #
     export_filename = "table"
@@ -218,9 +213,9 @@ class TableauxView(TemplateView):
                     for k, v in self.query_dict.items():
                         if self.is_filter_name(k):
                             if k in self.filter_data:
-                                if v != self.filter_data[k]:
+                                if v.lower() != self.filter_data[k].lower():
                                     self._filter_changed = True
-                            elif v != "":
+                            elif v not in ["", "unknown"]:
                                 self._filter_changed = True
 
             self.prefix = self.query_dict.pop("prefix", "")
@@ -331,6 +326,7 @@ class TableauxView(TemplateView):
         tableaux_id = f"#{self.table.prefix}{hx_target}"
         if hx_target:
             response = retarget(response, tableaux_id)
+            response = reswap(response, "outerHTML")
         if trigger_client:
             response = trigger_client_event(
                 response,
@@ -392,6 +388,31 @@ class TableauxView(TemplateView):
         )
         return exporter.response(filename=f"{self.export_filename}.{export_format}")
 
+    def get_record_count(self) -> int:
+        if hasattr(self.table, "paginator"):
+            return self.table.paginator.count
+        try:
+            return self.object_list.count()
+        except AttributeError:
+            return len(self.object_list)
+
+    def _record_count_context(self) -> dict:
+        total = self.get_record_count()
+        paginated = hasattr(self.table, "paginator")
+        if paginated:
+            page = int(self.query_dict.get("~page", 1))
+            per_page = int(self.query_dict.get("~per_page", self.page_size))
+            start = (page - 1) * per_page + 1
+            end = min(page * per_page, total)
+        else:
+            start = 1
+            end = total
+        return {
+            "record_count": total,
+            "record_start": start,
+            "record_end": end,
+        }
+
     def _toolbar_item_visible(self, item: str) -> bool:
         match item:
             case "actions":
@@ -410,50 +431,32 @@ class TableauxView(TemplateView):
                 return self.filter_button and self.has_filter_toolbar
             case "filter_clear":
                 return self.filter_clear_button and self.has_filter_toolbar
+            case "paginator":
+                return self.pagination == Pagination.PAGED
             case _:
                 return True
 
-    def _build_toolbar_areas(self, config: dict, template_map: dict) -> dict:
+    def _build_toolbar_areas(self, config: dict) -> dict:
         if not isinstance(config, dict):
             raise ImproperlyConfigured(
                 f"toolbar/toolbar_filter must be a dict mapping area names to item lists, got {type(config).__name__}"
             )
-        valid_keys = set(template_map.keys())
+        template_map = {key[3:]: key for key in self.templates if key.startswith("tb_")}
         result = {}
         for area, items in config.items():
             if isinstance(items, str):
                 items = [items]
-            invalid = [item for item in items if item not in valid_keys]
-            if invalid:
-                raise ImproperlyConfigured(
-                    f"Invalid toolbar item(s) {invalid!r} in area '{area}'. "
-                    f"Valid items are: {sorted(valid_keys)}"
-                )
             paths = [
                 self.templates[template_map[item]]
                 for item in items
-                if template_map[item] in self.templates
+                if item in template_map
                 and self._toolbar_item_visible(item)
             ]
             if paths:
                 result[area] = paths
         return result
 
-    def get_toolbar_areas(self) -> dict:
-        return self._build_toolbar_areas(self.toolbar, TOOLBAR_ITEM_TEMPLATE_MAP)
-
-    def get_toolbar_filter_areas(self) -> dict:
-        return self._build_toolbar_areas(self.toolbar_filter, TOOLBAR_ITEM_TEMPLATE_MAP)
-
     def get_context_data(self, **kwargs) -> dict[str, Any]:
-        buttons = self.get_buttons()
-        actions = self.get_bulk_actions()
-        toolbar_visible = bool(self.toolbar)
-        addon_after = (
-            '<span class="clear-field small" onclick="clearInput(this)">X</span>'
-            if self.filter_clear_field
-            else ""
-        )
         context = {
             "view": self,
             "url": self.request.path,
@@ -462,9 +465,8 @@ class TableauxView(TemplateView):
             "object_list": self.get_filtered_object_list(),
             "templates": self.templates,
             "filters": [],
-            "addon_after": addon_after,
-            "buttons": buttons,
-            "actions": actions,
+            "buttons": self.get_buttons(),
+            "actions": self.get_bulk_actions(),
             "rows": self.rows_list(),
             "page": self.query_dict.get("~page", "1"),
             "per_page": self.query_dict.get("~per_page", 20),
@@ -472,9 +474,11 @@ class TableauxView(TemplateView):
             "bp": self._bp,
             "breakpoints": breakpoints(self.table),
             "breakpoint_values": self.get_breakpoint_values(),
-            "toolbar_visible": toolbar_visible,
-            "toolbar_areas": self.get_toolbar_areas(),
-            "toolbar_filter_areas": self.get_toolbar_filter_areas(),
+            "toolbar_visible": bool(self.toolbar),
+            "toolbar_areas": self._build_toolbar_areas(self.toolbar),
+            "toolbar_filter_areas": self._build_toolbar_areas(self.toolbar_filter),
+            "toolbar_bottom_areas": self._build_toolbar_areas(self.toolbar_bottom),
+            **self._record_count_context(),
             "Pagination": Pagination,
             "FilterStyle": FilterStyle,
             "ClickAction": ClickAction,

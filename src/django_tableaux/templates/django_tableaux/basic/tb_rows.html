@@ -1,0 +1,11 @@
+<details class="tbx-dropdown click-to-close">
+  <summary>Rows</summary>
+  <ul class="tbx-dropdown-content">
+    {% for row in rows %}
+      <li class="tbx-dropdown-item" id="{{ table.prefix }}~row~{{ row }}" hx-get="{{ url }}" hx-include="#{{ table.prefix }}filter_form"
+      hx-target="#{{ table.prefix }}page_wrapper">
+        {{ row }} rows
+      </li>
+    {% endfor %}
+  </ul>
+</details>

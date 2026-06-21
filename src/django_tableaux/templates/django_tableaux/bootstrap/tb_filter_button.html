@@ -1,7 +1,7 @@
-{% if view.filter_style == FilterStyle.MODAL %}
-<!-- Dropdown class makes button consistent with row & column dropdown -->
-<div class="dropdown">
-  <button type="button" class="form-control form-control-sm w-auto btn-primary" hx-get="{{ url }}" hx-target="#modals-here" hx-swap="innerHTML" name="filter_modal">Filter
+<div class="form-group">
+  <label for="{{ table.prefix }}id_filter_button" class="small">&nbsp;</label>
+  <button type="button" name="filter_button" class="form-control form-control-sm"
+          id="{{ table.prefix }}id_filter_button" hx-get="{{ url }}" hx-include="closest form">
+    Filter
   </button>
 </div>
-{% endif %}

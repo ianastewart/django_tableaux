@@ -2,7 +2,7 @@
 {% load i18n %}
 {% if view.pagination == Pagination.PAGED %}
   {% if table.page and table.paginator.num_pages > 1 %}
-    <nav aria-label="Table navigation"{% if view.sticky_pagination %} style="position: sticky; bottom: 0; background: white; padding-top: 4px;"{% endif %}>
+    <nav aria-label="Table navigation">
       <ul class="pagination justify-content-center pb-2">
         {% if table.page.has_previous %}
           {% include templates.page_link with p=table.page.previous_page_number symbol="&laquo;" text="Previous" %}

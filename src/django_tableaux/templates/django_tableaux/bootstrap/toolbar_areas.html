@@ -1,0 +1,19 @@
+{% if areas %}
+<div class="d-flex {{ outer_class }}"{% if item_style %} style="{{ item_style }}"{% endif %}>
+  {% if areas.left %}
+    <div class="d-flex {{ item_class }}"{% if item_style %} style="{{ item_style }}"{% endif %}>
+      {% for tpl in areas.left %}{% include tpl %}{% endfor %}
+    </div>
+  {% endif %}
+  {% if areas.center %}
+    <div class="d-flex {{ item_class }} mx-auto"{% if item_style %} style="{{ item_style }}"{% endif %}>
+      {% for tpl in areas.center %}{% include tpl %}{% endfor %}
+    </div>
+  {% endif %}
+  {% if areas.right %}
+    <div class="d-flex {{ item_class }} ms-auto ml-auto"{% if item_style %} style="{{ item_style }}"{% endif %}>
+      {% for tpl in areas.right %}{% include tpl %}{% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endif %}

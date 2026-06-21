@@ -1,0 +1,5 @@
+{% if view.sticky_bottom_toolbar %}
+{% include templates.toolbar_areas with areas=toolbar_bottom_areas outer_class="align-items-center tbx-sticky-bottom" item_class="align-items-center" %}
+{% else %}
+{% include templates.toolbar_areas with areas=toolbar_bottom_areas outer_class="align-items-center" item_class="align-items-center" %}
+{% endif %}
