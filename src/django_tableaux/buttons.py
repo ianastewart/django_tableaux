@@ -9,16 +9,10 @@ class Button:
     prefix = "btn_"
     name = ""
 
-    def __init__(
-        self, content="", name="", typ="button", css="btn btn-primary btn-sm", **kwargs
-    ):
+    def __init__(self, content="", name="", typ="button", css="btn btn-primary btn-sm", **kwargs):
         if content == "" and name == "":
             raise ValueError("Button content and name cannot both be empty.")
-        self.name = (
-            f"{self.prefix}{name}"
-            if name
-            else f"{self.prefix}{slugify(content).replace('-', '_')}"
-        )
+        self.name = f"{self.prefix}{name}" if name else f"{self.prefix}{slugify(content).replace('-', '_')}"
         self.context = {
             "element": "a" if kwargs.get("href") else "button",
             "content": content,

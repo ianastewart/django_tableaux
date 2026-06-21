@@ -8,9 +8,7 @@ register = template.Library()
 
 @register.simple_tag(takes_context=False)
 def django_tableaux_script():
-    return mark_safe(
-        '<script src="/static/django_tableaux/js/django_tableaux.js"></script>'
-    )
+    return mark_safe('<script src="/static/django_tableaux/js/django_tableaux.js"></script>')
 
 
 @register.simple_tag(takes_context=True)
@@ -36,7 +34,11 @@ def tableaux(context, url_name="", prefix=""):
         url = context["request"].path
     query_string = context.request.GET.urlencode()
     hx_vals = f"js:{{ 'bp': BreakpointService.get(), 'prefix': '{prefix}', 'query_string': '{query_string}' }}"
-    code = f'<div id="{prefix}load_{url_name}" name="table_load" hx-trigger="load" hx-get="{url}" hx-vals="{hx_vals}" hx-swap="outerHTML" hx-target="#{prefix}load_{url_name}"></div>'
+    code = (
+        f'<div id="{prefix}load_{url_name}" name="table_load" hx-trigger="load"'
+        f' hx-get="{url}" hx-vals="{hx_vals}"'
+        f' hx-swap="outerHTML" hx-target="#{prefix}load_{url_name}"></div>'
+    )
     # Emit the overlay element immediately so it exists in the DOM before any HTMX request fires.
     # HTMX 2.x discards hx-swap-oob content when the target element is absent; the tableaux.html
     # response will OOB-swap the full overlay (with its loading image) into this placeholder.
