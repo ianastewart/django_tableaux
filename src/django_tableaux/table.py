@@ -1,24 +1,14 @@
-import logging
-import time
-from enum import IntEnum
-from django.utils.http import urlencode
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import EmptyPage, PageNotAnInteger
-from django.http import QueryDict, HttpResponse
-from django.shortcuts import render, reverse, redirect
-from django.template.response import TemplateResponse
+from django.shortcuts import reverse
 from django.urls.resolvers import NoReverseMatch
-from django.core.paginator import Paginator
 from django_tableaux.utils import merge_attrs
-from typing import Any, Optional
 
 from .models import Pagination, FilterStyle
 from .utils import (
-    breakpoints,
     define_columns,
     set_select_column,
     set_column_states,
-    save_columns_dict,
     load_columns_dict,
 )
 
@@ -41,8 +31,10 @@ def build_table(view, **kwargs):
 
     # Pagination
     if view.pagination != Pagination.NONE:
-        kwargs = {"per_page": view.query_dict.get("~per_page", view.page_size),
-                  "page": view.query_dict.get("~page", 1)}
+        kwargs = {
+            "per_page": view.query_dict.get("~per_page", view.page_size),
+            "page": view.query_dict.get("~page", 1),
+        }
         if hasattr(view, "paginator_class"):
             kwargs["paginator_class"] = view.paginator_class
         # Changing sort order or filtering resets page to 1
@@ -76,16 +68,10 @@ def build_table(view, **kwargs):
             # Detail or update views have a pk
             try:
                 sentinel = 987654321
-                table.url = reverse(view.click_url_name, kwargs={"pk": sentinel}).replace(
-                    str(sentinel), "__pk__"
-                )
+                table.url = reverse(view.click_url_name, kwargs={"pk": sentinel}).replace(str(sentinel), "__pk__")
                 table.pk = True
             except NoReverseMatch:
-                raise (
-                    ImproperlyConfigured(
-                        f"Cannot resolve click_url_name: '{view.click_url_name}'"
-                    )
-                )
+                raise (ImproperlyConfigured(f"Cannot resolve click_url_name: '{view.click_url_name}'"))
     table.target = view.click_target
 
     set_select_column(table)
@@ -129,4 +115,3 @@ def build_table(view, **kwargs):
         else:
             table.attrs["thead"]["class"] += " sticky"
     return table
-

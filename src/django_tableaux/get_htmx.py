@@ -5,8 +5,14 @@ from django.core.exceptions import ImproperlyConfigured
 from django.template.response import TemplateResponse
 from django_htmx.http import HttpResponseClientRedirect
 
-from django_tableaux.utils import define_columns, save_columns_dict, default_columns_dict, set_column, \
-    visible_columns, set_select_column
+from django_tableaux.utils import (
+    define_columns,
+    save_columns_dict,
+    default_columns_dict,
+    set_column,
+    visible_columns,
+    set_select_column,
+)
 
 
 def get_htmx(self, request, *args, **kwargs):
@@ -21,7 +27,7 @@ def get_htmx(self, request, *args, **kwargs):
         match trigger_name:
             case "table_load":
                 # Initiated by tableaux template tag — needs the outer wrapper
-                target = request.htmx.target[len(self.prefix):] if self.prefix else request.htmx.target
+                target = request.htmx.target[len(self.prefix) :] if self.prefix else request.htmx.target
                 return self.render_tableaux(hx_target=target, outer=True)
 
             case "filter_modal" if self.filterset_class:
@@ -31,7 +37,7 @@ def get_htmx(self, request, *args, **kwargs):
                     "prefix": self.prefix,
                     "filter": self.get_filterset(self.get_queryset()),
                     "filter_button": self.filter_button,
-                    "url": url
+                    "url": url,
                 }
                 return TemplateResponse(request, self.templates["modal_filter"], context)
 
@@ -58,15 +64,11 @@ def get_htmx(self, request, *args, **kwargs):
                 if buttons:
                     for button in buttons:
                         if button.name == trigger_name:
-                            result = self.handle_button(
-                                request, button.original_name()
-                            )
+                            result = self.handle_button(request, button.original_name())
                             if result is not None:
                                 return result
                             else:
-                                raise ImproperlyConfigured(
-                                    f"No handler for trigger_name {trigger_name}"
-                                )
+                                raise ImproperlyConfigured(f"No handler for trigger_name {trigger_name}")
 
     if trigger is not None:
         # Unpack the data stored in the id
@@ -101,9 +103,7 @@ def get_htmx(self, request, *args, **kwargs):
                 define_columns(table, self.get_breakpoint_values(), self._bp)
                 if col_name == "_reset":
                     # Reset to default columns
-                    save_columns_dict(
-                        request, table, self._bp, default_columns_dict(table)
-                    )
+                    save_columns_dict(request, table, self._bp, default_columns_dict(table))
                     # To make sure the column drop down is correct we update the whole tableaux
                     return self.render_tableaux()
                 # Click on a checkbox in the column dropdown re-renders the table data with new column settings.
@@ -122,7 +122,7 @@ def get_htmx(self, request, *args, **kwargs):
 
             case trigger if "~sort~" in trigger:
                 # change order_by
-                key = f"~order_by"
+                key = "~order_by"
                 old_value = self.query_dict.get(key, "")
                 old_field = ""
                 if len(old_value) > 0:
@@ -208,9 +208,7 @@ def get_htmx(self, request, *args, **kwargs):
                     # Clear filter value triggered by  click on X in input-prepend
                     qd = request.GET.copy()
                     qd.pop(trigger_name)
-                    return HttpResponseClientRedirect(
-                        f"{request.path}?{qd.urlencode()}"
-                    )
+                    return HttpResponseClientRedirect(f"{request.path}?{qd.urlencode()}")
                 #
                 # Filter value changed
                 # url = self._update_parameter(

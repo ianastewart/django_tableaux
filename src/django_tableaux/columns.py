@@ -13,20 +13,20 @@ class EditableColumn(tables.Column):
 
 
 class RightAlignedColumn(tables.Column):
-
     def __init__(self, **kwargs):
         attrs = kwargs.pop("attrs", {})
         # Merge / extend attrs safely
         td_attrs = attrs.get("td", {}).copy()
         th_attrs = attrs.get("th", {}).copy()
         cell_attrs = attrs.get("cell", {}).copy()
-        td_attrs["class"] = f'{td_attrs.get("class", "")} text-end'.strip()
-        th_attrs["class"] = f'{th_attrs.get("class", "")} text-end'.strip()
+        td_attrs["class"] = f"{td_attrs.get('class', '')} text-end".strip()
+        th_attrs["class"] = f"{th_attrs.get('class', '')} text-end".strip()
         attrs["td"] = td_attrs
         attrs["th"] = th_attrs
         attrs["cell"] = cell_attrs
         kwargs["attrs"] = attrs
         super().__init__(**kwargs)
+
 
 class CenteredColumn(RightAlignedColumn):
     def __init__(self, **kwargs):

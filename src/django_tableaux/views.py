@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit, parse_qs
@@ -31,7 +30,6 @@ from .utils import (
     visible_columns,
     build_templates_dictionary,
     strip_prefix_from_keys,
-    resolve_breakpoint,
 )
 
 logger = logging.getLogger(__name__)
@@ -84,7 +82,7 @@ class TableauxView(TemplateView):
     sticky_bottom_toolbar = True
     fixed_height = 0
     buttons = []
-    
+
     object_name = ""
     #
     export_filename = "table"
@@ -126,9 +124,7 @@ class TableauxView(TemplateView):
                 return
         for k, v in resolved.items():
             if not hasattr(self, k):
-                raise ImproperlyConfigured(
-                    f"'{k}' in responsive_settings is not a valid TableauxView attribute"
-                )
+                raise ImproperlyConfigured(f"'{k}' in responsive_settings is not a valid TableauxView attribute")
             setattr(self, k, v)
 
     def get_table_class(self):
@@ -182,10 +178,7 @@ class TableauxView(TemplateView):
             self.query_dict = request.GET.dict()
             query_string = self.query_dict.pop("query_string", None)
             if query_string:
-                self.query_dict = {
-                    k: v[0] if len(v) == 1 else v
-                    for k, v in parse_qs(query_string).items()
-                }
+                self.query_dict = {k: v[0] if len(v) == 1 else v for k, v in parse_qs(query_string).items()}
             else:
                 # self.filter_data contains the old filter values
                 # it is used to populate the filter form when this is a modal request
@@ -193,10 +186,7 @@ class TableauxView(TemplateView):
                 filter_raw = self.query_dict.pop("~filter_data", None)
                 has_prior_filter_state = bool(filter_raw)
                 if has_prior_filter_state:
-                    self.filter_data = {
-                        k: v[0] if len(v) == 1 else v
-                        for k, v in parse_qs(filter_raw).items()
-                    }
+                    self.filter_data = {k: v[0] if len(v) == 1 else v for k, v in parse_qs(filter_raw).items()}
 
                 # Update query_dict with any filter data that is not already present
                 # this will be the case when a modal filter is saved
@@ -224,9 +214,7 @@ class TableauxView(TemplateView):
             self.prefix = request.GET.get("prefix", self.prefix)
             query_dict = request.GET.copy()
             # todo
-            self.query_dict = strip_prefix_from_keys(
-                data=query_dict, prefix=self.prefix
-            )
+            self.query_dict = strip_prefix_from_keys(data=query_dict, prefix=self.prefix)
 
         table_class = self.get_table_class()
 
@@ -310,13 +298,9 @@ class TableauxView(TemplateView):
         if self.request.htmx:
             url = self.request.htmx.current_url
         parts = urlsplit(url)
-        return_url = urlunsplit(
-            (parts.scheme, parts.netloc, parts.path, query_string, parts.fragment)
-        )
+        return_url = urlunsplit((parts.scheme, parts.netloc, parts.path, query_string, parts.fragment))
 
-        context = self.get_context_data(
-            return_url=return_url, query_string=query_string
-        )
+        context = self.get_context_data(return_url=return_url, query_string=query_string)
         template_name = template_name or self.template_name
         response = TemplateResponse(
             request=self.request,
@@ -373,9 +357,7 @@ class TableauxView(TemplateView):
         subset = self.request.GET.get("_subset", None)
         if subset:
             if subset == "selected":
-                self.object_list = self.object_list.filter(
-                    id__in=self.request.session.get("selected_ids", [])
-                )
+                self.object_list = self.object_list.filter(id__in=self.request.session.get("selected_ids", []))
         export_format = self.request.GET.get("_export", self.export_format)
         # Use tablib to export in desired format
         table = build_table(self, prefix=self.prefix)
@@ -449,8 +431,7 @@ class TableauxView(TemplateView):
             paths = [
                 self.templates[template_map[item]]
                 for item in items
-                if item in template_map
-                and self._toolbar_item_visible(item)
+                if item in template_map and self._toolbar_item_visible(item)
             ]
             if paths:
                 result[area] = paths
@@ -499,15 +480,11 @@ class TableauxView(TemplateView):
 
     def get_filterset(self, queryset=None):
         if self.filterset_class is None and self.filterset_fields:
-            self.filterset_class = filterset_factory(
-                self.model, fields=self.filterset_fields
-            )
+            self.filterset_class = filterset_factory(self.model, fields=self.filterset_fields)
         data = self.get_initial_data()
         data.update(self.query_dict)
         return (
-            self.filterset_class(data=data, queryset=queryset, request=self.request)
-            if self.filterset_class
-            else None
+            self.filterset_class(data=data, queryset=queryset, request=self.request) if self.filterset_class else None
         )
 
     def rows_list(self):
@@ -533,9 +510,9 @@ class TableauxView(TemplateView):
         params = QueryDict(request.body)
         bits = request.htmx.target.split("_")
         # todo fix patch if needed
-        column_name = visible_columns(
-            request, self.table_class, self.get_breakpoint_values(), int(bits[3])
-        )[int(bits[2])]
+        column_name = visible_columns(request, self.table_class, self.get_breakpoint_values(), int(bits[3]))[
+            int(bits[2])
+        ]
         value = params.get(column_name, None)
         print(bits[1], value)
         if value:
@@ -569,9 +546,7 @@ class TableauxView(TemplateView):
                 subset = "selected"
                 if request.POST.get("selected_ids", None):
                     self.selected_ids = request.POST["selected_ids"].split(",")
-                    self.selected_objects = self.get_filtered_object_list().filter(
-                        pk__in=self.selected_ids
-                    )
+                    self.selected_objects = self.get_filtered_object_list().filter(pk__in=self.selected_ids)
             if request.htmx.trigger_name:
                 if "export" in request.htmx.trigger_name:
                     # Export is a special case. It redirects to a regular GET that returns the file
@@ -628,9 +603,7 @@ class TableauxView(TemplateView):
                 "Model must be specified or cell_clicked must be overriden for editable cells",
             )
         if not self.form_class:
-            raise ImproperlyConfigured(
-                "You must specify the form_class for editable cells"
-            )
+            raise ImproperlyConfigured("You must specify the form_class for editable cells")
         try:
             record = self.model.objects.get(pk=pk)
             form = self.form_class({column_name: getattr(record, column_name)})
@@ -697,10 +670,9 @@ class SelectedMixin:
             return self.model.objects.filter(id__in=ids)
         query_set = self.model.objects.all()
         if self.filterset_class:
-            return self.filterset_class(
-                self.request.GET, queryset=query_set, request=self.request
-            ).qs
+            return self.filterset_class(self.request.GET, queryset=query_set, request=self.request).qs
         return query_set
+
 
 class ModalMixin:
     """Mixin to convert generic views to operate as modal views when called by hx-get"""
@@ -726,9 +698,7 @@ class ModalMixin:
 
     def reload_table(self):
         response = HttpResponse("")
-        return trigger_client_event(
-            response, "reload", {"url": self.request.htmx.current_url_abs_path}
-        )
+        return trigger_client_event(response, "reload", {"url": self.request.htmx.current_url_abs_path})
 
 
 def bulk_action_namer(texts: list):

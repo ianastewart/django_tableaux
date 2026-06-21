@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 
+
 class UserTableSettings(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     table_name = models.CharField(max_length=100)
@@ -19,11 +20,13 @@ class Pagination(models.TextChoices):
     INFINITE = "infinite", "Infinite scroll"
     LOAD = "load", "Infinite load more"
 
+
 class FilterStyle(models.TextChoices):
     NONE = "", "No filter"
     TOOLBAR = "toolbar", "Toolbar above table"
     MODAL = "modal", "Modal"
     HEADER = "header", "In table header"
+
 
 class ClickAction(models.TextChoices):
     NONE = "", "No action"
