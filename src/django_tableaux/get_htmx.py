@@ -139,7 +139,7 @@ def get_htmx(self, request, *args, **kwargs):
                 # new page
                 self.query_dict["~page"] = param
                 return self.render_template(
-                    template_name=self.templates["tableaux_page_wrapper"],
+                    template_name=self.templates["tableaux_page_oob"],
                     hx_target="page_wrapper",
                 )
 

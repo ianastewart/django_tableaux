@@ -19,7 +19,7 @@
     {% include templates.tb_filter_pills %}
   </form>
   {% if toolbar_visible %}
-    {% include templates.toolbar_main %}
+    <div id="{{ table.prefix }}toolbar_main">{% include templates.toolbar_main %}</div>
   {% endif %}
   {% include templates.tableaux_page_wrapper %}
 </div>

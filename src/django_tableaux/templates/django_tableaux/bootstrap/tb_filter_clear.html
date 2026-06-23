@@ -1,3 +1,4 @@
+{% if filter.form.visible_fields %}
 <div class="form-group">
   <label for="{{ table.prefix }}id_filter_reset" class="small">&nbsp;</label>
   <button type="button" name="filter_reset" class="form-control form-control-sm"
@@ -5,3 +6,4 @@
     Clear filters
   </button>
 </div>
+{% endif %}

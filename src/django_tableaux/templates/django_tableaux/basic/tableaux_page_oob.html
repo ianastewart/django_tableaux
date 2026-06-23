@@ -1,0 +1,6 @@
+{% include templates.tableaux_page_wrapper %}
+{% if toolbar_visible %}
+<div id="{{ table.prefix }}toolbar_main" hx-swap-oob="outerHTML">
+  {% include templates.toolbar_main %}
+</div>
+{% endif %}

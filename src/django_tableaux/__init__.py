@@ -24,6 +24,7 @@ Full documentation to follow.
 0.7.4 Fix filter initialisation
 0.7.5 Ignore datepicker filter-clear
 0.7.6 Extensive rework to support multiple tables and component-like table handling
+0.8.0 Extensive additional features including customisable toolbars but onl;y bootstrap templates completed
 """
 
-__version__ = "0.7.7"
+__version__ = "0.8.0"

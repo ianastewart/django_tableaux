@@ -1,7 +1,7 @@
 {% if view.columns_control %}
 <div class="dropdown">
-  <button class="form-control form-control-sm d-inline-block w-auto dropdown-toggle mx-1" type="button"
-          id="{{ table.prefix }}dropdownColumnButton"
+  <button class="form-control form-control-sm d-inline-block w-auto dropdown-toggle mx-1 my-1" type="button"
+          id="{{ table.prefix }}dropdownColumnButton" data-boundary="window"
           data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Columns</button>
   <div class="dropdown-menu dropdown-menu-right dropdown-menu-end" aria-labelledby="{{ table.prefix }}dropdownColumnButton">
     {% if view.column_reset %}

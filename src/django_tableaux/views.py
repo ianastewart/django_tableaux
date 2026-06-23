@@ -63,7 +63,6 @@ class TableauxView(TemplateView):
     rows_control = False
     toolbar = {
         "left": "actions",
-        "center": "record_count",
         "right": ["filter_modal", "columns", "rows"],
     }
     toolbar_filter = {
@@ -176,6 +175,7 @@ class TableauxView(TemplateView):
     def get(self, request, *args, **kwargs):
         if request.htmx:
             self.query_dict = request.GET.dict()
+            # initial request from {% tableaux %} includes query_string
             query_string = self.query_dict.pop("query_string", None)
             if query_string:
                 self.query_dict = {k: v[0] if len(v) == 1 else v for k, v in parse_qs(query_string).items()}
@@ -199,14 +199,19 @@ class TableauxView(TemplateView):
                 # that always renders with a default non-empty value (e.g. ChoiceFilter with
                 # empty_label=None).  Explicit filter actions (filter_form, filter_button,
                 # ~remove~, filter_reset) set _filter_changed directly in get_htmx.py.
+                none_list = ["", (), {}, None]
+                initial = self.get_initial_data()
                 if has_prior_filter_state:
-                    for k, v in self.query_dict.items():
-                        if self.is_filter_name(k):
-                            if k in self.filter_data:
-                                if v.lower() != self.filter_data[k].lower():
-                                    self._filter_changed = True
-                            elif v not in ["", "unknown"]:
-                                self._filter_changed = True
+                    old_data = self._filter_cleaned_data(self.filter_data)
+                    new_data = self._filter_cleaned_data(self.query_dict)
+                    for k, v in new_data.items():
+                        if self.is_filter_name(k) and v != old_data.get(k):
+                            if k in initial and initial[k] == v:
+                                continue
+                            if v in none_list and old_data.get(k) in none_list:
+                                continue
+                            self._filter_changed = True
+                            break
 
             self.prefix = self.query_dict.pop("prefix", "")
             return get_htmx(self, request, *args, **kwargs)
@@ -240,7 +245,8 @@ class TableauxView(TemplateView):
 
     def is_filter_name(self, name: str) -> bool:
         if self.filterset_class is not None:
-            return name in self.filterset_class.declared_filters.keys()
+            if name in self.filterset_class.base_filters.keys() or name in self.filterset_class.declared_filters.keys():
+                return True
         return False
 
     def is_state_param(self, name: str) -> bool:
@@ -372,7 +378,11 @@ class TableauxView(TemplateView):
 
     def get_record_count(self) -> int:
         if hasattr(self.table, "paginator"):
-            return self.table.paginator.count
+            try:
+                return self.table.paginator.count
+            except NotImplementedError:
+                # lazy paginator does not support count
+                pass
         try:
             return self.object_list.count()
         except AttributeError:
@@ -389,6 +399,8 @@ class TableauxView(TemplateView):
         else:
             start = 1
             end = total
+        if total == 0:
+            start = 0
         return {
             "record_count": total,
             "record_start": start,
@@ -486,6 +498,15 @@ class TableauxView(TemplateView):
         return (
             self.filterset_class(data=data, queryset=queryset, request=self.request) if self.filterset_class else None
         )
+
+    def _filter_cleaned_data(self, data: dict) -> dict:
+        if self.filterset_class is None and self.filterset_fields:
+            self.filterset_class = filterset_factory(self.model, fields=self.filterset_fields)
+        if not self.filterset_class:
+            return {}
+        fs = self.filterset_class(data=data, queryset=self.get_queryset(), request=self.request)
+        fs.form.is_valid()
+        return getattr(fs.form, "cleaned_data", {})
 
     def rows_list(self):
         return [20, 50, 100]
