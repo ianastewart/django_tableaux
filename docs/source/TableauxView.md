@@ -1,74 +1,6 @@
 # django-tableaux
 
-**Django tables with Advanced User eXperience.**
 
-Almost every Django project needs to display data in tabular form. For a few
-rows and columns a plain list will do; for anything richer the established
-choice is [django-tables2](https://github.com/jieter/django-tables2), often
-paired with [django-filter](https://github.com/carltongibson/django-filter).
-Together those packages cover the basics — sorting, filtering, pagination —
-but a polished table involves a great deal more: column selection, responsive
-layouts, bulk actions, inline editing, click-through behaviour, modal forms
-and bookmarkable state. Building that from scratch every time is tedious and
-the result is rarely consistent across an application.
-
-**django-tableaux** wraps django-tables2 and django-filter in a single
-class-based view (`TableauxView`) and uses [htmx](https://htmx.org/) to
-deliver every interaction as a small fragment swap rather than a full page
-reload. The result is a single place to declare a table, with a complete set
-of user-experience features available as configuration rather than code.
-
-## Features
-
-- **User-configurable column selection.** Each user picks which optional
-  columns are visible from a dropdown; choices are stored per view and
-  per breakpoint in their session, so the layout is remembered when they
-  return.
-- **Responsive column layouts.** Declare separate `fixed` and `default`
-  column sets for any combination of breakpoints (`xs`, `sm`, `md`, `lg`,
-  `xl`, `xxl`). The table re-renders to match the user's current viewport
-  with fall-forward / fall-back resolution between declared breakpoints.
-- **HTMX pagination without page reloads.** The classic pager swaps only
-  the table fragment, so scroll position and page state are preserved.
-- **Infinite scroll** — the next page is appended automatically as the
-  user reaches the bottom of the table.
-- **"Load more" mode** — same as infinite scroll, but appended on demand
-  via a button.
-- **Sticky header** that pins to the top of the viewport on scroll.
-- **Bulk actions on selected rows.** A selection column adds checkboxes
-  with shift- and ctrl-click multi-select, "select all on page" and
-  "select all rows in the (filtered) table". Selected rows are passed to
-  your `handle_action` hook for processing.
-- **Row-level interactivity.** Configure a click on a row to issue either
-  a normal `GET` (redirect to a detail view, with a `return_url`) or an
-  HTMX `GET` that swaps a modal into place; the table refreshes
-  automatically when the modal closes.
-- **Cell-level interactivity.** Designate specific columns as interactive
-  and route clicks to a `cell_clicked` hook with the column name.
-- **Inline cell editing.** Mark columns as editable, supply a small
-  form, and users can edit values directly in the table.
-- **Flexible filter placement.** Render the filter form in a toolbar above
-  the table, in a modal opened from a toolbar button, or embedded inside
-  the table header in column order.
-- **Active filter pills** with one-click clear, and per-field clear "x"
-  inside filter inputs.
-- **Bookmarkable state.** Sort, filter and page state is mirrored into
-  the URL so any view configuration can be linked or refreshed.
-- **Toolbar buttons** with HTMX-aware handlers.
-- **Export.** CSV out of the box; pluggable formats (e.g. XLSX) via
-  `django_tables2.export.TableExport`. Selected-rows-only exports are
-  supported.
-- **Three-tier settings cascade.** Class attributes win over a per-view
-  `settings` dict, which wins over a project-wide `DJANGO_TABLEAUX`
-  dictionary, so you can set defaults once and override where needed.
-- **Pluggable template library.** Ships with `basic` and `bootstrap`
-  libraries; point at your own directory to override individual templates
-  without forking.
-- **Companion mixins** (`SelectedMixin`, `ModalMixin`) that make generic
-  CRUD views and bulk-action target views slot cleanly into a tableaux
-  workflow.
-
----
 
 # `TableauxView` — Developer Reference
 
@@ -77,7 +9,8 @@ django-tableaux. It is a subclass of Django's `TemplateView`, augmented with
 HTMX-driven sorting, filtering, pagination, column selection, bulk actions,
 click-through behaviour, inline editing and responsive column layouts.
 
-You use the package by writing your own subclass:
+You use the package by writing your own subclass and enable the features you want by setting class attributes or
+by overriding methods.
 
 ```python
 from django_tableaux.views import TableauxView
@@ -730,7 +663,7 @@ class InvoiceUpdateView(ModalMixin, UpdateView):
 ## 16. Helper — `bulk_action_namer`
 
 ```python
-from django_tableaux.views import bulk_action_namer
+from django_tableaux.utils import bulk_action_namer
 
 def get_bulk_actions(self):
     return bulk_action_namer(["Send to customer", "Archive", "Mark as paid"])

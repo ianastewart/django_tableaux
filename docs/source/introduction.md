@@ -1,91 +1,105 @@
 # Django Tableaux
 
-The aim of this project is to make it easy to create truly user-friendly HTML
-tables. Almost every Django project needs a way to display multiple records in
-tabular form. In simple projects with few rows and columns you might use a
-simple bulleted list view. When there are more rows and columns, the goto
-package is [django_tables2](https://github.com/jieter/django-tables2).
+**Django tables with Advanced User eXperience.**
 
-Django_tables2 is great for creating HTML tables from your Django models.
-It supports sorting and pagination and when used alongside
-[django_filter](https://github.com/carltongibson/django-filter), another
-great package, you can easily add custom filtering to your HTML tables. 
+Almost every Django project needs to display data in tabular form. For a few
+rows and columns a plain list will do; for anything richer the established
+choice is [django-tables2](https://github.com/jieter/django-tables2), often
+paired with [django-filter](https://github.com/carltongibson/django-filter).
+Together those packages cover the basics — sorting, filtering, pagination —
+but a polished table involves a great deal more: column selection, responsive
+layouts, bulk actions, inline editing, click-through behaviour, modal forms
+and bookmarkable state. Building that from scratch every time is tedious and
+the result is rarely consistent across an application.
 
-However, many desirable table-related features are 
-missing, particularly if you have many rows and columns and demanding users.
-This project aims to fill those gaps.
+**django-tableaux** wraps django-tables2 and django-filter in a single
+class-based view (`TableauxView`) and uses [htmx](https://htmx.org/) to
+deliver every interaction as a small fragment swap rather than a full page
+reload. The result is a single place to declare a table, with a complete set
+of user-experience features available as configuration rather than code.
 
-## User-configurable column selection
+## Features
 
-If your user wants to view your table on a smaller device such as a phone, the
-chances are it won't fit properly and it won't be easy to use. If your
-data has more than a few columns the user will have to scroll horizontally
-to view the rightmost columns, losing sight of the leftmost columns in the
-process. Similarly as you scroll down, you lose the headers.
+### User-configurable column selection.
+- Each user picks which optional
+  columns are visible from a dropdown; choices are stored per view and
+  per breakpoint in their session, so the layout is remembered when they
+  return.
+### Responsive column layouts
+- Declare separate `fixed` and `default`
+  column sets for any combination of breakpoints (`xs`, `sm`, `md`, `lg`,
+  `xl`, `xxl`). 
+- The table re-renders to match the user's current viewport
+  with fall-forward / fall-back resolution between declared breakpoints.
+- Freeze columns to the left of the viewport and set defined column widths
 
-Django tableaux gives the user control over which columns should be visible.
-The selected column layouts are stored in session variables so that they
-persist when the user leaves then returns to a specific view.
+### Pagination options
+- Paged mode with user selectable number of rows per page
+- Infinite scroll mode - the next page is loaded
+  automatically as the user scrolls to the bottom of the table.
+- 'Load more' mode -  Same as infinite scroll, but appended on demand
+  via a button
 
-## Responsive column layouts
+### Header options
+- Stick header pins to the top of the viewport on scroll.
+- Sort icons show the current sort order.
 
-As a developer you can define different default column combinations for
-different viewport sizes and have the table automatically reformat to match the
-user's current device.
+### Bulk actions on selected rows
+- A selection column adds a checkbox to ecah row
+ - Shift- and ctrl-click support multi-select
+ - "select all on page" and
+  "select all rows in the (filtered) table". 
+ - The ids of selected rows are passed to your `handle_action` hook for processing.
 
-## Pagination
+### Row-level interactivity
+- Configure a click on a row to issue either
+  - Normal `GET` (redirect to a detail view, with a `return_url`) or an
+  - 'hx-get` that swaps a modal into place; the table refreshes
+  automatically when the modal closes.
 
-Pagination is provided off the shelf by django_tables2, but the standard
-functionality results in the whole page being refreshed.
-Django_tableaux implements paging using htmx-calls which refreshes only
-the table, leaving the position in the page intact.
+### Cell-level interactivity
+- Designate specific columns as interactive when clicked
+- Route clicks to a `cell_clicked` hook with the column name.
 
-## Infinite scroll
+### Inline cell editing
+- Mark specific columns as editable
+- supply a small form, and users can edit values directly in the table.
 
-As an alternative to fixed page sizes you can enable infinite scroll. Whenever
-the user scrolls to the bottom of the current set of rows, a new page-sized set
-of rows is displayed.
+### Flexible filter placement
+- Render the filter form in 1 of 3 places
+  - In a toolbar above the table
+  - In a modal opened from a toolbar button
+  - Embedded beneath the table header
 
-## Load more
+### Active filter pills
+- Show active filter with one-click clear, and per-field clear "x"
 
-Another alternative is to show a "load more" button at the bottom of the current
-page and display the next page-sized set of rows when clicked.
+### Bookmarkable state
+- Sort, filter and page state is mirrored into
+  the URL so any view configuration can be linked or refreshed.
+- Option to not show the URL parameters in the browser's address bar.
 
-## Sticky header
+### 3 Configurable toolbars
+- A filter toolbar shows the filter form above the table when enabled
+- The main toolbar typically shows the bulk action menu and row and column buttons
+- The footer toolbar typically shows the pagination menu.
+- The content of each menu can be defined form a list of `MenuItem`s
 
-When this option is turned on the table's header row remains visible at the top
-of the page when scrolling down.
+### Export
+- CSV and xlsx exports are supported via
+  `django_tables2.export.TableExport`.
+- Selected-rows-only exports are supported.
 
-## Bulk actions on specific rows
+### Three-tier settings cascade
+- Class attributes win over a per-view
+  `settings` dict, which wins over a project-wide `DJANGO_TABLEAUX`
+  dictionary, so you can set defaults once and override where needed.
 
-A common requirement when working with tabular data is to select one or more rows
-and then perform a specific action on them. Django's admin system provides that
-by default, but it is missing in django_tables2.
+### Pluggable template library
+- Ships with `basic` and `bootstrap` template libraries
+- Point at your own directory to override individual templates
 
-Django_tableaux adds the ability to add a checkbox to each row and supports the
-common conventions of using shift and control to select multiple rows.
-When data is paged, if you select all the rows on a page, you can optionally allow
-selection of all rows in the table.
-
-The bulk actions that can be performed are defined in a list, and the selected
-objects are then passed to your code to process them.
-
-## Row level interactivity
-
-Another common requirement is to open a detail view when clicking on a specific
-row. Django_Tableaux supports this with two variations. In each case you provide the
-name of the target url. You can then define this to be called by either a regular get
-request or an hx-get request. The primary key of the object in the clicked row is
-passed in both cases.
-
-1. You can define a url name that a table click will redirect to with a GET request.
-   In this case the url of the table is passed in a `return_url` parameter.
-2. You can define a url name that is called by hx-get.
-   In this case typically the detail page will be displayed in a modal and the table
-   will be automatically refreshed when the modal is closed.
-
-## Cell level interactivity
-
-If you want to call a particular function when a cell is clicked, specific columns
-can be designated to be interactive. A typical use for such functionality is to show
-a set of choices. Django_Tableaux has built in handling for that case.
+### Companion mixins
+- `SelectedMixin` makes generic
+   bulk-action target views slot cleanly into a tableaux
+  workflow.

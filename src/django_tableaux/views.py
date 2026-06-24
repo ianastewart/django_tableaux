@@ -56,7 +56,7 @@ class TableauxView(TemplateView):
     filter_clear_field = True
     #
     pagination = Pagination.PAGED
-    page_size = 20
+    per_page = 20
     #
     columns_control = False
     column_reset = True
@@ -393,7 +393,7 @@ class TableauxView(TemplateView):
         paginated = hasattr(self.table, "paginator")
         if paginated:
             page = int(self.query_dict.get("~page", 1))
-            per_page = int(self.query_dict.get("~per_page", self.page_size))
+            per_page = int(self.query_dict.get("~per_page", self.per_page))
             start = (page - 1) * per_page + 1
             end = min(page * per_page, total)
         else:
@@ -695,35 +695,30 @@ class SelectedMixin:
         return query_set
 
 
-class ModalMixin:
-    """Mixin to convert generic views to operate as modal views when called by hx-get"""
+# class ModalMixin:
+#     """Mixin to convert generic views to operate as modal views when called by hx-get"""
+#
+#     title = ""
+#
+#     def get_template_names(self):
+#         # handle case where same view can have different templates
+#         if self.request.htmx:
+#             if hasattr(self, "modal_template_name"):
+#                 return [self.modal_template_name]
+#         if hasattr(self, "template_name"):
+#             return [self.template_name]
+#         raise ValueError("Template name missing")
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         url = self.request.resolver_match.route
+#         if "<int:pk>" in url and self.object:
+#             url = url.replace("<int:pk>", str(self.object.pk))
+#         context["modal_url"] = "/" + url
+#         return context
+#
+#     def reload_table(self):
+#         response = HttpResponse("")
+#         return trigger_client_event(response, "reload", {"url": self.request.htmx.current_url_abs_path})
 
-    title = ""
 
-    def get_template_names(self):
-        # handle case where same view can have different templates
-        if self.request.htmx:
-            if hasattr(self, "modal_template_name"):
-                return [self.modal_template_name]
-        if hasattr(self, "template_name"):
-            return [self.template_name]
-        raise ValueError("Template name missing")
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        url = self.request.resolver_match.route
-        if "<int:pk>" in url and self.object:
-            url = url.replace("<int:pk>", str(self.object.pk))
-        context["modal_url"] = "/" + url
-        return context
-
-    def reload_table(self):
-        response = HttpResponse("")
-        return trigger_client_event(response, "reload", {"url": self.request.htmx.current_url_abs_path})
-
-
-def bulk_action_namer(texts: list):
-    result = []
-    for text in texts:
-        name = text.lower().replace(" ", "_")
-        result.append((name, text))

@@ -32,7 +32,7 @@ def build_table(view, **kwargs):
     # Pagination
     if view.pagination != Pagination.NONE:
         kwargs = {
-            "per_page": view.query_dict.get("~per_page", view.page_size),
+            "per_page": view.query_dict.get("~per_page", view.per_page),
             "page": view.query_dict.get("~page", 1),
         }
         if hasattr(view, "paginator_class"):
@@ -68,10 +68,16 @@ def build_table(view, **kwargs):
             # Detail or update views have a pk
             try:
                 sentinel = 987654321
-                table.url = reverse(view.click_url_name, kwargs={"pk": sentinel}).replace(str(sentinel), "__pk__")
+                table.url = reverse(
+                    view.click_url_name, kwargs={"pk": sentinel}
+                ).replace(str(sentinel), "__pk__")
                 table.pk = True
             except NoReverseMatch:
-                raise (ImproperlyConfigured(f"Cannot resolve click_url_name: '{view.click_url_name}'"))
+                raise (
+                    ImproperlyConfigured(
+                        f"Cannot resolve click_url_name: '{view.click_url_name}'"
+                    )
+                )
     table.target = view.click_target
 
     set_select_column(table)
@@ -96,7 +102,9 @@ def build_table(view, **kwargs):
         current_dict = None
 
     # set visible columns according to saved setting
-    columns_dict = load_columns_dict(view.request, table, view._bp, current_dict=current_dict)
+    columns_dict = load_columns_dict(
+        view.request, table, view._bp, current_dict=current_dict
+    )
     table.columns_visible = [col for col in columns_dict if columns_dict[col]]
     set_column_states(table)
 

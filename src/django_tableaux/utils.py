@@ -22,7 +22,9 @@ def _session_key(request: HttpRequest, table: Table, bp: str) -> str:
     return f"columns:{_view_name(request)}:{table.__class__.__name__}:{bp}"
 
 
-def save_columns_dict(request: HttpRequest, table: Table, bp: str, columns_dict: dict[str, bool]):
+def save_columns_dict(
+    request: HttpRequest, table: Table, bp: str, columns_dict: dict[str, bool]
+):
     if request.user.is_authenticated:
         from django_tableaux.models import UserTableSettings
 
@@ -53,11 +55,19 @@ def load_columns_dict(
             )
             stored_dict = row.visible_columns
         except UserTableSettings.DoesNotExist:
-            stored_dict = current_dict if current_dict is not None else default_columns_dict(table)
+            stored_dict = (
+                current_dict
+                if current_dict is not None
+                else default_columns_dict(table)
+            )
     else:
         stored_dict = request.session.get(_session_key(request, table, bp))
         if stored_dict is None:
-            stored_dict = current_dict if current_dict is not None else default_columns_dict(table)
+            stored_dict = (
+                current_dict
+                if current_dict is not None
+                else default_columns_dict(table)
+            )
 
     # Sync with the table's current sequence: new columns default to False.
     columns_dict = {col: stored_dict.get(col, False) for col in table.sequence}
@@ -79,13 +89,17 @@ def default_columns_dict(table: Table) -> dict[str, bool]:
     return columns_dict
 
 
-def set_column(request: HttpRequest, table: Table, bp: str, column_name: str, checked: bool) -> list:
+def set_column(
+    request: HttpRequest, table: Table, bp: str, column_name: str, checked: bool
+) -> list:
     column_dict = load_columns_dict(request, table, bp)
     column_dict[column_name] = checked
     save_columns_dict(request, table, bp, column_dict)
 
 
-def visible_columns(request: HttpRequest, table_class, bp_dict: dict[str, int], bp: str) -> list[str]:
+def visible_columns(
+    request: HttpRequest, table_class, bp_dict: dict[str, int], bp: str
+) -> list[str]:
     """
     Return the list of visible column names in correct sequence
     """
@@ -101,7 +115,11 @@ def set_select_column(table):
     and update sequence if necessary.
     """
     table.select_name = next(
-        (col.name for col in table.columns if col.column.__class__.__name__ == "SelectionColumn"),
+        (
+            col.name
+            for col in table.columns
+            if col.column.__class__.__name__ == "SelectionColumn"
+        ),
         "",
     )
 
@@ -116,56 +134,6 @@ def set_select_column(table):
         if index > 0:
             table.sequence.remove(table.select_name)
             table.sequence.insert(0, table.select_name)
-
-
-def define_columns_old(table, bp_dict: dict[str, int], bp: str = ""):
-    """
-    Add 4 lists of column names to table according to the breakpoint
-      columns_fixed = columns that are always visible
-      columns_optional = columns that the user can choose to show
-      columns_default = default visible columns
-      columns_editable = columns that can be edited in situ
-    """
-    table.responsive = False
-    table.columns_fixed = []
-    table.columns_default = table.sequence
-    table.columns_editable = []
-    # Ensure table.select_name path.exists for ease of testing
-    if not hasattr(table, "select_name"):
-        table.select_name = ""
-    if table.Meta:
-        col_dict = {}
-        if hasattr(table.Meta, "editable"):
-            if isinstance(table.Meta.editable, list):
-                table.columns_editable = table.Meta.editable
-            else:
-                raise ImproperlyConfigured("Meta.editable must be a list")
-        if hasattr(table.Meta, "columns"):
-            if isinstance(table.Meta.columns, dict):
-                col_dict = table.Meta.columns
-            else:
-                raise ImproperlyConfigured("Meta.columns must be a dictionary")
-        # responsive overides any existing column definition
-        if hasattr(table.Meta, "responsive"):
-            if isinstance(table.Meta.responsive, dict):
-                table.responsive = True
-                col_dict = resolve_breakpoint(bp_dict, table.Meta.responsive, bp)
-            else:
-                raise ImproperlyConfigured("Meta.responsive must be a dictionary")
-            # # todo attrs
-        table.columns_fixed = col_dict.get("fixed", [])
-        table.columns_default = col_dict.get("default", table.sequence)
-        # Default columns always include fixed columns, but they may not have been specified.
-        # Combine lists and remove duplicates, preserving order (requires Python 3.7+).
-        table.columns_default = list(dict.fromkeys(table.columns_fixed + table.columns_default))
-        table.mobile = col_dict.get("mobile", False)
-    if not table.columns_fixed:
-        table.columns_fixed = table.sequence[:1]
-        if table.columns_fixed[0] == table.select_name and len(table.sequence) > 1:
-            table.columns_fixed = table.sequence[:2]
-        if table.select_name and table.select_name not in table.columns_fixed:
-            table.columns_fixed.append(table.select_name)
-    table.columns_optional = [c for c in table.sequence if c not in table.columns_fixed and c != table.select_name]
 
 
 def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
@@ -231,7 +199,9 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
 
     # columns_default always includes fixed columns (fixed are a subset of default).
     # If no columns were defined at all, show every column by default.
-    table.columns_default = list(dict.fromkeys(table.columns_fixed + table.columns_default))
+    table.columns_default = list(
+        dict.fromkeys(table.columns_fixed + table.columns_default)
+    )
     if not table.columns_default:
         table.columns_default = list(table.sequence)
 
@@ -244,7 +214,9 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
 
     # columns_optional: all non-fixed columns the user can show/hide, excluding selection
     fixed_set = set(table.columns_fixed)
-    table.columns_optional = [c for c in table.sequence if c not in fixed_set and c != table.select_name]
+    table.columns_optional = [
+        c for c in table.sequence if c not in fixed_set and c != table.select_name
+    ]
 
     # Apply width-only attrs to fixed/default columns that have a pixel width
     for col_name, width in sized:
@@ -263,11 +235,15 @@ def define_columns(table, bp_dict: dict[str, int], bp: str = ""):
                 "td": {"class": "frozen", "style": style},
             }
             existing_attrs = table.columns[col_name].column.attrs
-            table.columns[col_name].column.attrs = merge_attrs(frozen_attrs, existing_attrs)
+            table.columns[col_name].column.attrs = merge_attrs(
+                frozen_attrs, existing_attrs
+            )
             offset += width
 
 
-def resolve_breakpoint(bp_dict: dict[str, int], responsive: dict[str, dict], bp: str) -> dict | None:
+def resolve_breakpoint(
+    bp_dict: dict[str, int], responsive: dict[str, dict], bp: str
+) -> dict | None:
     """
     Finds the most appropriate responsive configuration for a given breakpoint.
 
@@ -312,12 +288,15 @@ def set_column_states(table):
     Expects 'table.columns_visible' to have been updated beforehand
     """
     table.column_states = [
-        (col, table.columns.columns[col].header, col in table.columns_visible) for col in table.columns_optional
+        (col, table.columns.columns[col].header, col in table.columns_visible)
+        for col in table.columns_optional
     ]
 
 
 def breakpoints(table):
-    bps = list(table.Meta.responsive.keys()) if hasattr(table.Meta, "responsive") else []
+    bps = (
+        list(table.Meta.responsive.keys()) if hasattr(table.Meta, "responsive") else []
+    )
     return {"breakpoints": bps}
 
 
@@ -329,7 +308,9 @@ def get_template_library():
     if hasattr(settings, "DJANGO_TABLEAUX"):
         if isinstance(settings.DJANGO_TABLEAUX, dict):
             return settings.DJANGO_TABLEAUX.get("templates_library", DEFAULT_LIBRARY)
-        raise ImproperlyConfigured("DJANGO_TABLEAUX in settings.py must be a dictionary")
+        raise ImproperlyConfigured(
+            "DJANGO_TABLEAUX in settings.py must be a dictionary"
+        )
     return DEFAULT_LIBRARY
 
 
@@ -339,16 +320,7 @@ def template_paths(library=None):
 
     custom_path = None
     library = library or get_template_library()
-    # if library == "bootstrap4":
-    #     try:
-    #         from bootstrap4 import forms
-    #     except ImportError:
-    #         raise ImproperlyConfigured("django-bootstrap4 is not installed")
-    # if library == "bootstrap5":
-    #     try:
-    #         from django_bootstrap5 import forms
-    #     except ImportError:
-    #         raise ImproperlyConfigured("django-bootstrap5 is not installed")
+
     if library != DEFAULT_LIBRARY:
         if library.startswith("templates/"):
             custom_path = Path(settings.BASE_DIR) / library
@@ -388,7 +360,9 @@ def build_templates_dictionary(library=None):
     return result
 
 
-def render_editable_link(record=None, column=None, value=None, url="", template_name=None):
+def render_editable_link(
+    record=None, column=None, value=None, url="", template_name=None
+):
     """
     Call this code in a 'render_foo' method within a table definition
     Renders an <a> tag with hx-get to fetch a form that is rendered inside the cell
@@ -396,12 +370,16 @@ def render_editable_link(record=None, column=None, value=None, url="", template_
     """
     template_name = template_name or "django_tableaux/basic/cell_edit.html"
     if record is None or column is None or value is None:
-        raise ValueError("Function render_editable() requires record, column and value to be specified")
+        raise ValueError(
+            "Function render_editable() requires record, column and value to be specified"
+        )
     context = {"id": record.id, "column": column, "value": value, "url": url}
     return mark_safe(loader.render_to_string(template_name, context))
 
 
-def render_editable_form(request, record_id, column=None, value=None, form_class=None, template_name=None):
+def render_editable_form(
+    request, record_id, column=None, value=None, form_class=None, template_name=None
+):
     """
     Render a form inside a table cell so the cell value can be edited
     django_tableaux.js will send hx-post when a value is selected or entered
@@ -415,7 +393,10 @@ def render_editable_form(request, record_id, column=None, value=None, form_class
 
 def strip_prefix_from_keys(data: dict, prefix: str) -> dict:
     plen = len(prefix)
-    return {(key[plen:] if key.startswith(prefix) else key): value for key, value in data.items()}
+    return {
+        (key[plen:] if key.startswith(prefix) else key): value
+        for key, value in data.items()
+    }
 
 
 AttrValue = Union[str, dict]
@@ -466,3 +447,10 @@ def merge_attrs(col_attrs: AttrDict, table_attrs: AttrDict) -> AttrDict:
             result[section] = merged
 
     return result
+
+
+def bulk_action_namer(texts: list) -> list[tuple[str, str]] | None:
+    result = []
+    for text in texts:
+        name = text.lower().replace(" ", "_")
+        result.append((name, text))
