@@ -415,6 +415,11 @@ def merge_attrs(col_attrs: AttrDict, table_attrs: AttrDict) -> AttrDict:
     RELEVANT_SECTIONS = {"th", "td", "cell"}
     result: Dict[str, dict[str, AttrValue]] = {}
 
+    # First, copy column attributes
+    for section, col_section in col_attrs.items():
+        if isinstance(col_section, dict):
+            result[section] = dict(col_section)
+        else:
             result[section] = col_section
 
     # Merge relevant table sections
