@@ -63,7 +63,7 @@ class TableauxView(TemplateView):
     rows_control = False
     toolbar = {
         "left": "actions",
-        "right": ["filter_modal", "columns", "rows"],
+        "right": ["buttons", "filter_modal", "columns", "rows"],
     }
     toolbar_filter = {
         "left": ["filters", "filter_button", "filter_clear"],
@@ -304,7 +304,6 @@ class TableauxView(TemplateView):
         update_url=True,
         **kwargs,
     ):
-        self.get_filtered_object_list()
         self.table = build_table(self, prefix=self.prefix, **kwargs)
         query_string = self.make_query_string()
         url = self.request.path
