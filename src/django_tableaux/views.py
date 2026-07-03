@@ -264,8 +264,15 @@ class TableauxView(TemplateView):
                 "%(cls)s.get_queryset()." % {"cls": self.__class__.__name__}
             )
 
+    def get_table_data(self):
+        if self.table_data is not None:
+            return self.table_data
+        elif hasattr(self, "object_list"):
+            return self.object_list
+        return self.get_filtered_object_list()
+
     def get_filtered_object_list(self):
-        self.object_list = self.table_data if self.table_data is not None else self.get_queryset()
+        self.object_list = self.get_queryset()
         self.filterset = self.get_filterset(self.object_list)
         if self.filterset is not None:
             self.object_list = self.filterset.qs
@@ -455,7 +462,7 @@ class TableauxView(TemplateView):
             "url": self.request.path,
             "table": self.table,
             "filter": self.filterset,
-            "object_list": self.get_filtered_object_list(),
+            "object_list": self.object_list,
             "templates": self.templates,
             "filters": [],
             "buttons": self.get_buttons(),

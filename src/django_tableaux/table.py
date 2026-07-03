@@ -18,7 +18,7 @@ def build_table(view, **kwargs):
     # This allows us to control pagination when sorting and add extra properties to the table
     # to manage column visibility
     table_class = view.get_table_class()
-    table = table_class(data=view.object_list, **kwargs)
+    table = table_class(data=view.get_table_data(), **kwargs)
     # Merge table-level with column attributes
     for bound_column in table.columns:
         col = bound_column.column

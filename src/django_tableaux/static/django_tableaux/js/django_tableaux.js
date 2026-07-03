@@ -322,7 +322,8 @@ class TableController {
                     window.htmx.ajax("GET", url, {
                         source: this.table,
                         target: this.table.dataset.target,
-                        values: formObject
+                        values: formObject,
+                        swap: "innerHTML"
                     });
                 }
             } else if (this.table.dataset.click === "custom") {
@@ -331,7 +332,7 @@ class TableController {
                     source: `#${target.id}`,
                     target: `#${target.id}`,
                     values: formObject,
-                    context: {'swap': innerHTML}
+                    swap: "innerHTML"
                 });
             }
         } else if (target.name === "select-checkbox") {
