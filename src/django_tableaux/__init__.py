@@ -3,8 +3,8 @@ Django tables with Advanced User eXperience
 ===============
 This project builds upon two well-established django apps: `django_tables2 <https://github.com/jieter/django-tables2>`_
 and `django_filter <https://github.com/carltongibson/django-filter>`_ and enhances their functionality through a
-sprinkling of `htmx <https://htmx.org>`_ magic. It provides a single class-based view in which you can enable multiple
-features to deliver a customised user experience that embodies the best practice for interactive tables.
+sprinkling of `htmx <https://htmx.org>`_ magic. It provides a single class-based view that renders HTML tables.
+You can enable multiple features to deliver a customised user experience that embodies the best practice for interactive tables.
 
 Key features
 ============
@@ -18,13 +18,19 @@ Key features
 * Edit specific fields directly inside the table
 * Easy integration with generic views for CRUD operations
 
-The project is still in beta but is fully usable.
+The project is ina late beta stage but is fully usable.
 
 Full documentation to follow.
 0.7.4 Fix filter initialisation
 0.7.5 Ignore datepicker filter-clear
 0.7.6 Extensive rework to support multiple tables and component-like table handling
-0.8.0 Extensive additional features including customisable toolbars but onl;y bootstrap templates completed
+0.8.0 Extensive additional features including customisable toolbars but only bootstrap templates completed
+0.8.1 Revised naming of template tags making them cache-busting
 """
 
-__version__ = "0.8.0"
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("django-tableaux")
+except PackageNotFoundError:
+    __version__ = "unknown"

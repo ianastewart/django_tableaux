@@ -2,13 +2,25 @@ from django import template
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.safestring import mark_safe
 from django.urls import reverse, NoReverseMatch
+from django.templatetags.static import static
+
+from django_tableaux import __version__
 
 register = template.Library()
 
 
 @register.simple_tag(takes_context=False)
-def django_tableaux_script():
-    return mark_safe('<script src="/static/django_tableaux/js/django_tableaux.js"></script>')
+def tableaux_js():
+    url = static("django_tableaux/js/tableaux.js")
+    return mark_safe(f'<script src="{url}?v={__version__}"></script>')
+
+
+@register.simple_tag(takes_context=False)
+def tableaux_css():
+    url = static("django_tableaux/css/tableaux_base.css")
+    return mark_safe(
+        f'<link rel="stylesheet" type="text/css" href="{url}?v={__version__}">'
+    )
 
 
 @register.simple_tag(takes_context=True)

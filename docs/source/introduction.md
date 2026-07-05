@@ -23,7 +23,7 @@ of user-experience features available as configuration rather than code.
 ### User-configurable column selection.
 - Each user picks which optional
   columns are visible from a dropdown; choices are stored per view and
-  per breakpoint in their session, so the layout is remembered when they
+  per breakpoint in the database, so the layout is remembered when they
   return.
 ### Responsive column layouts
 - Declare separate `fixed` and `default`
@@ -41,11 +41,11 @@ of user-experience features available as configuration rather than code.
   via a button
 
 ### Header options
-- Stick header pins to the top of the viewport on scroll.
+- Sticky header pins to the top of the viewport on scroll.
 - Sort icons show the current sort order.
 
 ### Bulk actions on selected rows
-- A selection column adds a checkbox to ecah row
+- A selection column adds a checkbox at the start of each row
  - Shift- and ctrl-click support multi-select
  - "select all on page" and
   "select all rows in the (filtered) table". 
@@ -63,7 +63,7 @@ of user-experience features available as configuration rather than code.
 
 ### Inline cell editing
 - Mark specific columns as editable
-- supply a small form, and users can edit values directly in the table.
+- Supply a small form, and users can edit values directly in the table.
 
 ### Flexible filter placement
 - Render the filter form in 1 of 3 places
@@ -82,7 +82,7 @@ of user-experience features available as configuration rather than code.
 ### 3 Configurable toolbars
 - A filter toolbar shows the filter form above the table when enabled
 - The main toolbar typically shows the bulk action menu and row and column buttons
-- The footer toolbar typically shows the pagination menu.
+- The footer toolbar typically shows the pagination menu beow the table.
 - The content of each menu can be defined form a list of `MenuItem`s
 
 ### Export
@@ -96,7 +96,8 @@ of user-experience features available as configuration rather than code.
   dictionary, so you can set defaults once and override where needed.
 
 ### Pluggable template library
-- Ships with `basic` and `bootstrap` template libraries
+- Ships with `basic` and `Bootstrap` template libraries. The Bootsrap library
+  works with both version 4 and version 5
 - Point at your own directory to override individual templates
 
 ### Companion mixins

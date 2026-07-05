@@ -1,15 +1,15 @@
 {% load static django_htmx django_tableaux %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  {% include templates.block_head %}
+  <title>Django Tableaux</title>
+  {% htmx_script %}
+  {% tableaux_css %}
 </head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-<div class="container">
-<h3>{{ view.title }}</h3>
+<body>
+<h3>Django Tableaux</h3>
 {% tableaux %}
-</div>
-{% include templates.block_scripts %}
+{% tableaux_script %}
 </body>
 </html>

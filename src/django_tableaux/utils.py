@@ -382,7 +382,7 @@ def render_editable_form(
 ):
     """
     Render a form inside a table cell so the cell value can be edited
-    django_tableaux.js will send hx-post when a value is selected or entered
+    tableaux.js will send hx-post when a value is selected or entered
     Note this does not use the template library code
     """
     template_name = template_name or "django_tableaux/basic/cell_edit.html"
