@@ -75,6 +75,7 @@ See [docs/source/templates.md](docs/source/templates.md) for details on the temp
 Full documentation is in [docs/source](docs/source):
 
 - [Introduction](docs/source/introduction.md) — overview of the features django-tableaux provides
+  - [Getting Started](docs/source/getting_started.md) — installation and minimal working example
 - [TableauxView](docs/source/TableauxView.md) — the main class-based view
 - [Views](docs/source/views.md) — view configuration
 - [Columns](docs/source/columns.md) — defining and customising columns
