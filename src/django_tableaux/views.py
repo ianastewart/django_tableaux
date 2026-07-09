@@ -2,6 +2,7 @@ import logging
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit, parse_qs
 
+from django import forms
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import QueryDict, HttpResponse
@@ -172,13 +173,60 @@ class TableauxView(TemplateView):
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
+    def _multi_value_filter_names(self) -> set:
+        """
+        Names of filterset fields whose widget accepts multiple values
+        (e.g. MultipleChoiceFilter/ModelMultipleChoiceFilter with
+        CheckboxSelectMultiple or SelectMultiple widgets).
+        """
+        if not self.filterset_class:
+            return set()
+        names = set()
+        for name, f in self.filterset_class.base_filters.items():
+            field_class = getattr(f, "field_class", None)
+            if field_class and issubclass(
+                field_class, (forms.MultipleChoiceField, forms.ModelMultipleChoiceField)
+            ):
+                names.add(name)
+        return names
+
+    def _querydict_to_dict(self, query_dict) -> dict:
+        """
+        Convert a QueryDict to a plain dict without silently dropping values
+        for multi-value filter fields (request.GET.dict() only keeps the
+        last value per key, which breaks checkbox/multi-select filters).
+        """
+        multi_value_names = self._multi_value_filter_names()
+        result = {}
+        for key, values in query_dict.lists():
+            if key in multi_value_names:
+                result[key] = values
+            else:
+                result[key] = values[-1]
+        return result
+
+    def _parse_qs_dict(self, raw: str) -> dict:
+        """
+        Parse a urlencoded string (e.g. ~filter_data / query_string) into a
+        plain dict, keeping list values only for multi-value filter fields
+        so single-value fields still collapse to scalars as before.
+        """
+        multi_value_names = self._multi_value_filter_names()
+        result = {}
+        for key, values in parse_qs(raw).items():
+            if key in multi_value_names:
+                result[key] = values
+            else:
+                result[key] = values[0] if len(values) == 1 else values
+        return result
+
     def get(self, request, *args, **kwargs):
         if request.htmx:
-            self.query_dict = request.GET.dict()
+            self.query_dict = self._querydict_to_dict(request.GET)
             # initial request from {% tableaux %} includes query_string
             query_string = self.query_dict.pop("query_string", None)
             if query_string:
-                self.query_dict = {k: v[0] if len(v) == 1 else v for k, v in parse_qs(query_string).items()}
+                self.query_dict = self._parse_qs_dict(query_string)
             else:
                 # self.filter_data contains the old filter values
                 # it is used to populate the filter form when this is a modal request
@@ -186,7 +234,7 @@ class TableauxView(TemplateView):
                 filter_raw = self.query_dict.pop("~filter_data", None)
                 has_prior_filter_state = bool(filter_raw)
                 if has_prior_filter_state:
-                    self.filter_data = {k: v[0] if len(v) == 1 else v for k, v in parse_qs(filter_raw).items()}
+                    self.filter_data = self._parse_qs_dict(filter_raw)
 
                 # Update query_dict with any filter data that is not already present
                 # this will be the case when a modal filter is saved
@@ -217,8 +265,7 @@ class TableauxView(TemplateView):
             return get_htmx(self, request, *args, **kwargs)
         else:
             self.prefix = request.GET.get("prefix", self.prefix)
-            query_dict = request.GET.copy()
-            # todo
+            query_dict = self._querydict_to_dict(request.GET)
             self.query_dict = strip_prefix_from_keys(data=query_dict, prefix=self.prefix)
 
         table_class = self.get_table_class()
@@ -493,7 +540,7 @@ class TableauxView(TemplateView):
                 if v not in (None, "", [], (), {}) and v != initial.get(k)
             }
             context["filter_dict"] = filter_dict
-            context["filter_data"] = urlencode(filter_dict)
+            context["filter_data"] = urlencode(filter_dict, doseq=True)
         return context
 
     def get_filterset(self, queryset=None):

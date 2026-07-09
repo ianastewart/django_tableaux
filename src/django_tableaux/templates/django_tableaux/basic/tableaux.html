@@ -15,11 +15,13 @@
     <input type="hidden" name="~order_by" value="{{ order_by }}">
     <input type="hidden" name="~filter_data" value="{{ filter_data }}">
     <input type="hidden" name="bp" value="{{ bp }}">
-    {% include templates.toolbar_filter %}
+    {% if view.filter_style == FilterStyle.TOOLBAR %}
+      {% include templates.toolbar_filter %}
+    {% endif %}
     {% include templates.tb_filter_pills %}
   </form>
   {% if toolbar_visible %}
-    <div id="{{ table.prefix }}toolbar_main">{% include templates.toolbar_main %}</div>
+    <div class="tbx-toolbar-main" id="{{ table.prefix }}toolbar_main">{% include templates.toolbar_main %}</div>
   {% endif %}
   {% include templates.tableaux_page_wrapper %}
 </div>

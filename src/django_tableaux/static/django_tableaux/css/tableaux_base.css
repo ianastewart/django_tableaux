@@ -29,6 +29,13 @@
     flex-direction: column;
 }
 
+/* Keep the filter toolbar and main toolbar at their natural content height so wrapped
+   checkboxes/fields are never squeezed; the table wrapper below absorbs the shrinkage. */
+.tableaux > .filter-form,
+.tableaux > .tbx-toolbar-main {
+    flex-shrink: 0;
+}
+
 .tbx-table-wrapper.tbx-sticky {
     flex: 1;
     min-height: 0;
