@@ -508,7 +508,7 @@ class TableauxView(TemplateView):
             "url": self.request.path,
             "table": self.table,
             "filter": self.filterset,
-            "object_list": self.object_list,
+            # "object_list": self.object_list,
             "templates": self.templates,
             "filters": [],
             "buttons": self.get_buttons(),
