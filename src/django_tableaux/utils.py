@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest
 from django.shortcuts import render
-from django.template import loader
+from django.template import TemplateDoesNotExist, loader
 from django.utils.safestring import mark_safe
 from django_tables2 import Table
 
@@ -375,11 +375,57 @@ def get_template_path(template_name: str) -> str:
     raise ValueError(f"Template '{template_name}' does not exist.")
 
 
+def get_extra_template_names() -> list:
+    """
+    Extra template stems (without .html) declared via
+    settings.DJANGO_TABLEAUX["extra_templates"]. Used to add project-specific
+    toolbar items (tb_*) - or any other template - that don't ship with
+    django_tableaux itself.
+    """
+    if hasattr(settings, "DJANGO_TABLEAUX") and isinstance(settings.DJANGO_TABLEAUX, dict):
+        return list(settings.DJANGO_TABLEAUX.get("extra_templates", []))
+    return []
+
+
+def _resolve_extra_template(name: str, custom_path, custom_library_folder) -> str:
+    """
+    Resolve a name declared in settings.DJANGO_TABLEAUX["extra_templates"] to a
+    template to load, in the same place a consuming project would put an
+    override: inside the active library's folder. The project must supply the
+    actual template file - this only wires the name into self.templates so
+    it can be used as a toolbar item.
+    """
+    if custom_path and not custom_library_folder:
+        # Library is an arbitrary BASE_DIR-relative directory.
+        candidate = custom_path / f"{name}.html"
+        if not candidate.exists():
+            raise ImproperlyConfigured(
+                f"DJANGO_TABLEAUX['extra_templates'] declares '{name}' but "
+                f"'{candidate}' does not exist."
+            )
+        return str(candidate)
+
+    template_name = _app_relative_name(custom_library_folder or DEFAULT_LIBRARY, name)
+    try:
+        loader.get_template(template_name)
+    except TemplateDoesNotExist:
+        raise ImproperlyConfigured(
+            f"DJANGO_TABLEAUX['extra_templates'] declares '{name}' but no template "
+            f"named '{template_name}' could be found. Add it under a "
+            f"'templates/{template_name}' directory in your project."
+        )
+    return template_name
+
+
 def build_templates_dictionary(library=None):
     """
     Returns a dictionary with key=template name (without .html) and value=
     template name to load (see get_template_path for why this is usually an
     app-relative name rather than an absolute path).
+
+    Includes any names declared via settings.DJANGO_TABLEAUX["extra_templates"],
+    letting a project add toolbar items (tb_*) that don't ship with
+    django_tableaux - see _resolve_extra_template.
     """
     default_path, custom_path, custom_library_folder = template_paths(library=library)
     # Load default templates, then overwrite with any custom templates
@@ -396,6 +442,12 @@ def build_templates_dictionary(library=None):
         else:
             custom_templates = {p.stem: str(p) for p in custom_path.glob("*.html")}
         result.update(custom_templates)
+
+    for name in get_extra_template_names():
+        if name in result:
+            continue
+        result[name] = _resolve_extra_template(name, custom_path, custom_library_folder)
+
     return result
 
 
