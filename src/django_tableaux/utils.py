@@ -315,10 +315,21 @@ def get_template_library():
 
 
 def template_paths(library=None):
+    """
+    Returns (default_path, custom_path, custom_library_folder).
+
+    default_path/custom_path are filesystem paths used only to discover which
+    template names are available. custom_library_folder is the app-relative
+    folder name (e.g. "bootstrap") when the library lives inside this app's own
+    templates directory, or None when it's an arbitrary BASE_DIR-relative
+    directory (the "templates/..." form), which isn't part of the app's
+    template namespace.
+    """
     app_path = Path(apps.get_app_config(DEFAULT_APP).path)
     default_path = app_path / "templates" / DEFAULT_APP / "basic"
 
     custom_path = None
+    custom_library_folder = None
     library = library or get_template_library()
 
     if library != DEFAULT_LIBRARY:
@@ -326,36 +337,64 @@ def template_paths(library=None):
             custom_path = Path(settings.BASE_DIR) / library
         else:
             custom_path = app_path / "templates" / DEFAULT_APP / library
+            custom_library_folder = library
         if not custom_path.exists():
             raise ImproperlyConfigured(f"Template library '{library}' does not exist.")
-    return default_path, custom_path
+    return default_path, custom_path, custom_library_folder
+
+
+def _app_relative_name(library_folder: str, stem: str) -> str:
+    return f"{DEFAULT_APP}/{library_folder}/{stem}.html"
 
 
 def get_template_path(template_name: str) -> str:
     """
-    Return the full path for a template by first searching the custom directory
-    then the default directory.
+    Return the template name to load for `template_name`, preferring the custom
+    library over the default "basic" one.
+
+    For templates that live inside this app's own templates directory (the
+    default "basic" library, or a named library such as "bootstrap"), this
+    returns an app-relative template name (e.g. "django_tableaux/bootstrap/foo.html")
+    rather than an absolute filesystem path. That lets a consuming project
+    override any of these templates the normal Django way, by placing a
+    same-named file under its own templates/django_tableaux/<library>/
+    directory - standard template loader precedence (project template dirs
+    before app template dirs) then picks up the override automatically.
     """
-    default_path, custom_path = template_paths()
+    default_path, custom_path, custom_library_folder = template_paths()
+    stem = Path(template_name).stem
     if custom_path:
         custom_file = custom_path / template_name
         if custom_file.exists():
+            if custom_library_folder:
+                return _app_relative_name(custom_library_folder, stem)
             return str(custom_file)
     default_file = default_path / template_name
     if default_file.exists():
-        return str(default_file)
+        return _app_relative_name(DEFAULT_LIBRARY, stem)
     raise ValueError(f"Template '{template_name}' does not exist.")
 
 
 def build_templates_dictionary(library=None):
     """
-    Returns a dictionary with key=template name (without .html) and value=full template path
+    Returns a dictionary with key=template name (without .html) and value=
+    template name to load (see get_template_path for why this is usually an
+    app-relative name rather than an absolute path).
     """
-    default_path, custom_path = template_paths(library=library)
+    default_path, custom_path, custom_library_folder = template_paths(library=library)
     # Load default templates, then overwrite with any custom templates
-    result = {p.stem: str(p) for p in default_path.glob("*.html")}
+    result = {
+        p.stem: _app_relative_name(DEFAULT_LIBRARY, p.stem)
+        for p in default_path.glob("*.html")
+    }
     if custom_path:
-        custom_templates = {p.stem: str(p) for p in custom_path.glob("*.html")}
+        if custom_library_folder:
+            custom_templates = {
+                p.stem: _app_relative_name(custom_library_folder, p.stem)
+                for p in custom_path.glob("*.html")
+            }
+        else:
+            custom_templates = {p.stem: str(p) for p in custom_path.glob("*.html")}
         result.update(custom_templates)
     return result
 
