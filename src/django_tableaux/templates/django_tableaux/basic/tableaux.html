@@ -4,7 +4,6 @@
      data-url="{{ url }}" hx-get="{{ url }}" hx-trigger="tableauxResize from:body"
      hx-include="#{{ table.prefix }}filter_form, #{{ table.prefix }}modal_filter_form"
      hx-swap="outerHTML">
-  {{ breakpoints|json_script:"breakpoints" }}
   {{ breakpoint_values|json_script:"breakpoint-values" }}
   <form id="{{ table.prefix }}filter_form" class="filter-form" hx-get="{{ url }}"
       {% if not view.filter_button %} hx-trigger="change from:#{{ table.prefix }}filter_form"{% endif %}

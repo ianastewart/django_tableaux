@@ -3,7 +3,7 @@
     <input type="hidden" name="return_url" value="{{ return_url }}">
     <input type="hidden" name="selected_ids">
     <div style="display: flex; align-items: center;">
-      <div class="d-flex flex-column justify-content-center" style="width:150px; height:2.5em;">
+      <div class="d-flex flex-column justify-content-center" style="min-width:150px; height:2.5em;">
         <div id="{{ table.prefix }}selected" class="selected-rows mt-0 ml-2 ms-2 ">
           <span class="selected-count">0</span> of {{ table.rows|length }} selected
         </div>
