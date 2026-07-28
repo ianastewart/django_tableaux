@@ -3,6 +3,7 @@
   <span class="page-link"
         {% if p != "..." %}
         hx-get="{{ url }}" hx-target="#{{ table.prefix }}page_wrapper" hx-swap="outerHTML"
+        hx-include="#{{ table.prefix }}filter_form"
         {% if table.indicator %}hx-indicator="#{{ table.prefix }}tableaux_overlay"{% endif %}
         id="{{ table.prefix }}~page~{{p}}"
         {% endif %}>

@@ -540,7 +540,14 @@ class TableauxView(TemplateView):
                 if v not in (None, "", [], (), {}) and v != initial.get(k)
             }
             context["filter_dict"] = filter_dict
-            context["filter_data"] = urlencode(filter_dict, doseq=True)
+            # Round-trip via the raw submitted values (e.g. FK pks), not the
+            # cleaned values (e.g. model instances) - urlencoding a model
+            # instance falls back to str(instance), which then fails
+            # re-validation on the next request and looks like the filter
+            # was never applied (see _filter_cleaned_data / old_data vs new_data).
+            raw_data = self.filterset.data
+            filter_data_raw = {k: raw_data[k] for k in filter_dict if k in raw_data}
+            context["filter_data"] = urlencode(filter_data_raw, doseq=True)
         return context
 
     def get_filterset(self, queryset=None):

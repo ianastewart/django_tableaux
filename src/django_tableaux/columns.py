@@ -19,8 +19,8 @@ class RightAlignedColumn(tables.Column):
         td_attrs = attrs.get("td", {}).copy()
         th_attrs = attrs.get("th", {}).copy()
         cell_attrs = attrs.get("cell", {}).copy()
-        td_attrs["class"] = f"{td_attrs.get('class', '')} text-end".strip()
-        th_attrs["class"] = f"{th_attrs.get('class', '')} text-end".strip()
+        td_attrs["class"] = f"{td_attrs.get('class', '')} text-end text-right".strip()
+        th_attrs["class"] = f"{th_attrs.get('class', '')} text-end text-right".strip()
         attrs["td"] = td_attrs
         attrs["th"] = th_attrs
         attrs["cell"] = cell_attrs
