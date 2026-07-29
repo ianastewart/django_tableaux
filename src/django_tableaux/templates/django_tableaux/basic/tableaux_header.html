@@ -21,13 +21,13 @@
             <input type="checkbox" id="{{ table.prefix }}select_all_page" name="select_all_page" class="select-all-page select-checkbox"
             aria-label="Select all rows on this page">
           {% else %}
-            <span style="display: inline-block;">
+            <span style="display: inline-flex; align-items: center; min-height: 24px;">
             {% if column.orderable %}
               {% if column.is_ordered %}
                 {% if "-" in column.order_by.0 %}{{ column.header }} {% include templates.svg_sort_down %}{% else %}{{ column.header }}
                  {% include templates.svg_sort_up %}{% endif %}
               {% else %}
-                {{ column.header }}<span style="color: lightgrey;"> {% include templates.svg_sortable %}</span>
+                {{ column.header }} {% include templates.svg_sortable %}
               {% endif %}
             {% else %}
               &nbsp;&nbsp;{{ column.header }}

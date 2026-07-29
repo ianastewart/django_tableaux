@@ -40,6 +40,10 @@
     background-color: #eafcf8; /* Optional: A slightly lighter shade of the header for feedback */
 }
 
+.tableaux th svg {
+    vertical-align: middle;
+}
+
 /*.tableaux .sticky-header {*/
     th {
         position: sticky;
