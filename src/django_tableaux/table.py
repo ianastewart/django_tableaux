@@ -25,7 +25,7 @@ def build_table(view, **kwargs):
         col.attrs = merge_attrs(col.attrs, table.attrs)
 
     # Sorting
-    order_by = view.query_dict.get("~order_by", "")
+    order_by = view.query_dict.get("~order_by") or view.get_initial_data().get("~order_by", "")
     if order_by:
         table.order_by = order_by
 

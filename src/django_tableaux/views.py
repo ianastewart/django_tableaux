@@ -516,7 +516,7 @@ class TableauxView(TemplateView):
             "rows": self.rows_list(),
             "page": self.query_dict.get("~page", "1"),
             "per_page": self.query_dict.get("~per_page", 20),
-            "order_by": self.query_dict.get("~order_by", ""),
+            "order_by": self.query_dict.get("~order_by") or self.get_initial_data().get("~order_by", ""),
             "bp": self._bp,
             "breakpoints": breakpoints(self.table),
             "breakpoint_values": self.get_breakpoint_values(),
